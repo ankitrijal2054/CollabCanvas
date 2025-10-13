@@ -90,7 +90,7 @@ collabcanvas/
   - Install: `firebase`, `react-konva`, `konva`, `react-router-dom`
   - Install dev dependencies: `@types/node`
 
-- [ ] **Task 1.3: Set up Firebase project & configuration**
+- [x] **Task 1.3: Set up Firebase project & configuration**
 
   - Files to create: `src/services/firebase.ts`, `.env.local`, `firebase.json`, `.firebaserc`
   - Create Firebase project in console
@@ -99,24 +99,24 @@ collabcanvas/
   - Add Firebase config to `.env.local`
   - Initialize Firebase in `firebase.ts`
 
-- [ ] **Task 1.4: Configure project structure**
+- [x] **Task 1.4: Configure project structure**
 
   - Files to create: All folder structure from above
   - Files to update: `.gitignore` (add `.env.local`, `node_modules`, `dist`)
   - Create empty placeholder files for future components
 
-- [ ] **Task 1.5: Set up basic routing**
+- [x] **Task 1.5: Set up basic routing**
 
   - Files to create: `src/App.tsx`, `src/main.tsx`
   - Files to update: `src/index.css`
   - Create basic routing structure (login, canvas routes)
 
-- [ ] **Task 1.6: Create README with setup instructions**
+- [x] **Task 1.6: Create README with setup instructions**
 
   - Files to create: `README.md`
   - Include: Setup steps, Firebase configuration, running locally
 
-- [ ] **Task 1.7: Create constants file**
+- [x] **Task 1.7: Create constants file**
   - Files to create: `src/constants/canvas.ts`
   - Define: `DEFAULT_CANVAS_ID = "default"` (hardcoded for MVP, dynamic post-MVP)
   - Note: Used throughout app for single canvas, easily made dynamic later

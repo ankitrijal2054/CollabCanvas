@@ -1,0 +1,27 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "canvases": {
+      "$canvasId": {
+        "objects": {
+          "$objectId": {
+            ".validate": "newData.hasChildren(['id', 'x', 'y', 'width', 'height', 'color', 'createdBy', 'timestamp'])"
+          }
+        }
+      }
+    },
+    "presence": {
+      "$canvasId": {
+        "$userId": {
+          ".validate": "newData.hasChildren(['name', 'online', 'lastSeen'])"
+        }
+      }
+    },
+    "users": {
+      "$userId": {
+        ".validate": "newData.hasChildren(['name', 'email'])"
+      }
+    }
+  }
+}
