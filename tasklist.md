@@ -79,12 +79,12 @@ collabcanvas/
 
 **Goal:** Initialize React + Vite + TypeScript project with Firebase integration
 
-- [ ] **Task 1.1: Initialize Vite + React + TypeScript project**
+- [x] **Task 1.1: Initialize Vite + React + TypeScript project**
 
   - Files to create: `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`
   - Run: `npm create vite@latest collabcanvas -- --template react-ts`
 
-- [ ] **Task 1.2: Install core dependencies**
+- [x] **Task 1.2: Install core dependencies**
 
   - Files to update: `package.json`
   - Install: `firebase`, `react-konva`, `konva`, `react-router-dom`
