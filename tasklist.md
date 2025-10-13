@@ -90,7 +90,7 @@ collabcanvas/
   - Install: `firebase`, `react-konva`, `konva`, `react-router-dom`
   - Install dev dependencies: `@types/node`
 
-- [ ] **Task 1.3: Set up Firebase project & configuration**
+- [x] **Task 1.3: Set up Firebase project & configuration**
 
   - Files to create: `src/services/firebase.ts`, `.env.local`, `firebase.json`, `.firebaserc`
   - Create Firebase project in console
