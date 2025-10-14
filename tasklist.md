@@ -129,47 +129,47 @@ collabcanvas/
 
 **Goal:** Implement user authentication with Firebase Auth
 
-- [ ] **Task 2.1: Create TypeScript types for auth**
+- [x] **Task 2.1: Create TypeScript types for auth**
 
   - Files to create: `src/types/user.types.ts`
   - Define: `User`, `AuthState` interfaces
 
-- [ ] **Task 2.2: Build authentication service**
+- [x] **Task 2.2: Build authentication service**
 
   - Files to create: `src/services/authService.ts`
   - Implement: `signUp()`, `signIn()`, `signInWithGoogle()`, `signOut()`, `getCurrentUser()`
 
-- [ ] **Task 2.3: Create Auth Context & Provider**
+- [x] **Task 2.3: Create Auth Context & Provider**
 
   - Files to create: `src/contexts/AuthContext.tsx`
   - Files to create: `src/hooks/useAuth.ts`
   - Implement: Auth state management, loading states, error handling
 
-- [ ] **Task 2.4: Build Login component**
+- [x] **Task 2.4: Build Login component**
 
   - Files to create: `src/components/auth/Login.tsx`
   - Implement: Login form with email/password inputs AND Google Sign-In button, error display
 
-- [ ] **Task 2.5: Build Signup component**
+- [x] **Task 2.5: Build Signup component**
 
   - Files to create: `src/components/auth/Signup.tsx`
   - Implement: Signup form with name + email/password inputs AND Google Sign-In option, validation
 
-- [ ] **Task 2.6: Create AuthGuard component**
+- [x] **Task 2.6: Create AuthGuard component**
 
   - Files to create: `src/components/auth/AuthGuard.tsx`
   - Implement: Protected route wrapper, redirect logic
 
-- [ ] **Task 2.7: Update App routing with auth protection**
+- [x] **Task 2.7: Update App routing with auth protection**
 
   - Files to update: `src/App.tsx`
   - Add: Protected routes, auth redirects
 
-- [ ] **Task 2.8: Test authentication flow**
+- [x] **Task 2.8: Test authentication flow**
 
   - Manual testing: Sign up, log in, log out, protected routes
 
-- [ ] **Task 2.9: Test Google authentication**
+- [x] **Task 2.9: Test Google authentication**
   - Manual testing: Sign in with Google, verify profile data, test logout
 
 **PR Title:** `feat: implement Firebase authentication system`
