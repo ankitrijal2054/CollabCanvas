@@ -52,7 +52,7 @@
     "presence": {
       "$canvasId": {
         "$userId": {
-          ".validate": "newData.hasChildren(['name', 'online', 'lastSeen'])",
+          ".write": "$userId === auth.uid",
           "name": {
             ".validate": "newData.isString() && newData.val().length > 0"
           },
@@ -60,7 +60,6 @@
             ".validate": "newData.isBoolean()"
           },
           "cursor": {
-            ".validate": "newData.hasChildren(['x', 'y'])",
             "x": {
               ".validate": "newData.isNumber()"
             },
@@ -70,6 +69,9 @@
           },
           "lastSeen": {
             ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
           }
         }
       }

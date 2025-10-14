@@ -4,12 +4,14 @@ import { Stage, Layer, Rect } from "react-konva";
 import type Konva from "konva";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
+import { usePresence } from "../../hooks/usePresence";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
 import CanvasToolbar from "./CanvasToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
+import CursorLayer from "../collaboration/CursorLayer";
 import "./Canvas.css";
 
 export default function Canvas() {
@@ -24,6 +26,20 @@ export default function Canvas() {
     selectObject,
     deleteObject,
   } = useCanvas();
+
+  // Initialize presence tracking for multiplayer cursors
+  const { cursors, updateCursor, removeCursor } = usePresence(
+    user?.id ?? null,
+    user?.name ?? user?.email ?? null,
+    {
+      throttleMs: 16, // 60 FPS
+    }
+  );
+
+  // Debug: Log cursors array changes
+  useEffect(() => {
+    console.log("👥 Cursors updated:", cursors.length, cursors);
+  }, [cursors]);
 
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
@@ -95,6 +111,49 @@ export default function Canvas() {
   );
 
   /**
+   * Handle cursor movement tracking for multiplayer presence
+   * Converts screen coordinates to canvas coordinates and updates Firebase
+   */
+  const handleCursorMove = () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    // Get pointer position relative to stage
+    const pointerPos = stage.getPointerPosition();
+    if (!pointerPos) return;
+
+    // Convert screen coordinates to canvas coordinates
+    const canvasPos = canvasHelpers.screenToCanvas(
+      pointerPos.x,
+      pointerPos.y,
+      viewport.scale,
+      { x: viewport.x, y: viewport.y }
+    );
+
+    // Check if cursor is within canvas bounds
+    const isInBounds = canvasHelpers.isWithinBounds(canvasPos, canvasBounds);
+
+    if (isInBounds) {
+      // Update cursor position (throttled by usePresence hook)
+      updateCursor(canvasPos);
+      // Debug: Log occasionally (every 60 frames = ~1 second)
+      if (Math.random() < 0.016) {
+        console.log("🖱️ Cursor update sent:", canvasPos);
+      }
+    } else {
+      // Remove cursor if outside canvas
+      removeCursor();
+    }
+  };
+
+  /**
+   * Handle cursor leaving the canvas area
+   */
+  const handleCursorLeave = () => {
+    removeCursor();
+  };
+
+  /**
    * Handle background click - deselect objects when clicking on empty space
    */
   const handleBackgroundClick = (e: any) => {
@@ -128,6 +187,9 @@ export default function Canvas() {
    * Handle pan move (mouse move or touch move)
    */
   const handlePanMove = () => {
+    // Always track cursor movement for multiplayer presence
+    handleCursorMove();
+
     if (!isPanning) return;
 
     const stage = stageRef.current;
@@ -247,7 +309,10 @@ export default function Canvas() {
             onMouseDown={handlePanStart}
             onMouseMove={handlePanMove}
             onMouseUp={handlePanEnd}
-            onMouseLeave={handlePanEnd}
+            onMouseLeave={() => {
+              handlePanEnd();
+              handleCursorLeave();
+            }}
             onTouchStart={handlePanStart}
             onTouchMove={handlePanMove}
             onTouchEnd={handlePanEnd}
@@ -298,6 +363,14 @@ export default function Canvas() {
               ))}
             </Layer>
           </Stage>
+
+          {/* Multiplayer Cursors Overlay */}
+          <CursorLayer
+            cursors={cursors}
+            scale={viewport.scale}
+            offsetX={viewport.x}
+            offsetY={viewport.y}
+          />
         </div>
       </div>
     </div>
