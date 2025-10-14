@@ -6,12 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type {
-  User,
-  AuthState,
-  SignupData,
-  LoginData,
-} from "../types/user.types";
+import type { AuthState, SignupData, LoginData } from "../types/user.types";
 import { authService } from "../services/authService";
 import { presenceService } from "../services/presenceService";
 
