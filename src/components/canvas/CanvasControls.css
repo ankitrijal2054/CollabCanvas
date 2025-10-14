@@ -1,0 +1,85 @@
+/* Canvas Controls styling */
+
+.canvas-controls {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.controls-group {
+  display: flex;
+  gap: 0.25rem;
+  background-color: white;
+  border-radius: 8px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+.control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.control-button:active:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.control-button:disabled {
+  color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.zoom-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  padding: 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.reset-button {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .canvas-controls {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .control-button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .zoom-display {
+    min-width: 45px;
+    font-size: 0.8rem;
+  }
+}

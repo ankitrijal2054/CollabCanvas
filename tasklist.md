@@ -180,47 +180,47 @@ collabcanvas/
 
 **Goal:** Create canvas workspace with pan and zoom functionality
 
-- [ ] **Task 3.1: Create canvas TypeScript types**
+- [x] **Task 3.1: Create canvas TypeScript types**
 
   - Files to create: `src/types/canvas.types.ts`
   - Define: `CanvasObject`, `Position`, `Size`, `Transform` interfaces
 
-- [ ] **Task 3.2: Set up Canvas Context**
+- [x] **Task 3.2: Set up Canvas Context**
 
   - Files to create: `src/contexts/CanvasContext.tsx`
   - Files to create: `src/hooks/useCanvas.ts`
   - Implement: Canvas state management (objects, zoom, pan)
 
-- [ ] **Task 3.3: Create main Canvas component with Konva**
+- [x] **Task 3.3: Create main Canvas component with Konva**
 
   - Files to create: `src/components/canvas/Canvas.tsx`
   - Implement: Konva Stage and Layer setup
   - Add: Canvas container with bounded workspace (e.g., 10000x10000px)
   - Add: Visual boundary indicators (border or background grid)
 
-- [ ] **Task 3.4: Implement pan functionality**
+- [x] **Task 3.4: Implement pan functionality**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Mouse drag to pan, touch support for mobile
   - Implement: Stage position state management
 
-- [ ] **Task 3.5: Implement zoom functionality**
+- [x] **Task 3.5: Implement zoom functionality**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Mouse wheel zoom, pinch zoom for mobile
   - Implement: Zoom limits (min/max), zoom to cursor position
 
-- [ ] **Task 3.6: Create canvas controls UI**
+- [x] **Task 3.6: Create canvas controls UI**
 
   - Files to create: `src/components/canvas/CanvasControls.tsx`
   - Add: Zoom in/out buttons, reset view button, zoom percentage display
 
-- [ ] **Task 3.7: Create canvas helpers**
+- [x] **Task 3.7: Create canvas helpers**
 
   - Files to create: `src/utils/canvasHelpers.ts`
   - Implement: Coordinate transformations, zoom calculations
 
-- [ ] **Task 3.8: Add canvas to main app layout**
+- [x] **Task 3.8: Add canvas to main app layout**
 
   - Files to update: `src/App.tsx`
   - Create: Canvas route/page component
@@ -230,7 +230,7 @@ collabcanvas/
 
   - Manual testing: Smooth 60 FPS, responsive controls
 
-- [ ] **Task 3.10: Implement canvas boundaries**
+- [x] **Task 3.10: Implement canvas boundaries**
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Bounded workspace dimensions (responsive to screen size)
   - Add: Visual boundary rendering (border/background)

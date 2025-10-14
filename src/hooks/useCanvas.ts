@@ -1,5 +1,2 @@
-// useCanvas hook - to be implemented in PR #3
-export function useCanvas() {
-  // TODO: Implement canvas hook
-  return null;
-}
+// useCanvas hook - re-exported from CanvasContext for convenience
+export { useCanvas } from "../contexts/CanvasContext";
