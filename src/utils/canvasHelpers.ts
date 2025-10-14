@@ -1,8 +1,12 @@
-// Canvas helper functions - to be implemented in PR #3
-import { Position } from "../types/canvas.types";
+// Canvas helper functions for coordinate transformations and calculations
+import type { Position, Viewport, CanvasBounds } from "../types/canvas.types";
+import { CANVAS_CONFIG } from "../constants/canvas";
 
 export const canvasHelpers = {
-  // Convert screen coordinates to canvas coordinates
+  /**
+   * Convert screen coordinates to canvas coordinates
+   * Takes into account zoom and pan transformations
+   */
   screenToCanvas: (
     screenX: number,
     screenY: number,
@@ -15,7 +19,10 @@ export const canvasHelpers = {
     };
   },
 
-  // Convert canvas coordinates to screen coordinates
+  /**
+   * Convert canvas coordinates to screen coordinates
+   * Takes into account zoom and pan transformations
+   */
   canvasToScreen: (
     canvasX: number,
     canvasY: number,
@@ -28,14 +35,138 @@ export const canvasHelpers = {
     };
   },
 
-  // Calculate zoom level
+  /**
+   * Calculate new zoom level with constraints
+   * @param currentZoom - Current zoom level
+   * @param delta - Change in zoom (negative to zoom out, positive to zoom in)
+   * @param min - Minimum zoom level
+   * @param max - Maximum zoom level
+   */
   calculateZoom: (
     currentZoom: number,
     delta: number,
-    min = 0.1,
-    max = 5
+    min = CANVAS_CONFIG.MIN_ZOOM,
+    max = CANVAS_CONFIG.MAX_ZOOM
   ): number => {
     const newZoom = currentZoom * (1 + delta);
     return Math.min(Math.max(newZoom, min), max);
+  },
+
+  /**
+   * Get pointer position relative to the stage
+   * Handles both mouse and touch events
+   */
+  getPointerPosition: (stage: any): Position | null => {
+    const pointerPosition = stage.getPointerPosition();
+    if (!pointerPosition) return null;
+
+    return {
+      x: pointerPosition.x,
+      y: pointerPosition.y,
+    };
+  },
+
+  /**
+   * Calculate new position when zooming to keep the point under cursor stationary
+   * @param pointerPos - Cursor/pointer position in screen coordinates
+   * @param oldScale - Current scale before zoom
+   * @param newScale - New scale after zoom
+   * @param oldPos - Current stage position
+   */
+  getZoomPointPosition: (
+    pointerPos: Position,
+    oldScale: number,
+    newScale: number,
+    oldPos: Position
+  ): Position => {
+    const mousePointTo = {
+      x: (pointerPos.x - oldPos.x) / oldScale,
+      y: (pointerPos.y - oldPos.y) / oldScale,
+    };
+
+    return {
+      x: pointerPos.x - mousePointTo.x * newScale,
+      y: pointerPos.y - mousePointTo.y * newScale,
+    };
+  },
+
+  /**
+   * Check if position is within canvas bounds
+   */
+  isWithinBounds: (pos: Position, bounds: CanvasBounds): boolean => {
+    return (
+      pos.x >= bounds.minX &&
+      pos.x <= bounds.maxX &&
+      pos.y >= bounds.minY &&
+      pos.y <= bounds.maxY
+    );
+  },
+
+  /**
+   * Constrain position to stay within bounds
+   */
+  constrainToBounds: (
+    pos: Position,
+    bounds: CanvasBounds,
+    scale: number,
+    stageSize: { width: number; height: number }
+  ): Position => {
+    // Calculate the visible area size in canvas coordinates
+    const visibleWidth = stageSize.width / scale;
+    const visibleHeight = stageSize.height / scale;
+
+    // Calculate the boundaries for the position
+    // The position represents the top-left corner of the visible area
+    const minX = bounds.minX;
+    const minY = bounds.minY;
+    const maxX = bounds.maxX - visibleWidth;
+    const maxY = bounds.maxY - visibleHeight;
+
+    return {
+      x: Math.max(minX, Math.min(maxX, pos.x)),
+      y: Math.max(minY, Math.min(maxY, pos.y)),
+    };
+  },
+
+  /**
+   * Calculate canvas bounds based on canvas size
+   */
+  getCanvasBounds: (
+    canvasWidth: number,
+    canvasHeight: number
+  ): CanvasBounds => {
+    return {
+      minX: 0,
+      maxX: canvasWidth,
+      minY: 0,
+      maxY: canvasHeight,
+    };
+  },
+
+  /**
+   * Clamp a number between min and max
+   */
+  clamp: (value: number, min: number, max: number): number => {
+    return Math.min(Math.max(value, min), max);
+  },
+
+  /**
+   * Calculate the default viewport that centers the canvas
+   */
+  getDefaultViewport: (
+    canvasWidth: number,
+    canvasHeight: number,
+    stageWidth: number,
+    stageHeight: number
+  ): Viewport => {
+    // Center the canvas in the viewport
+    const x = (stageWidth - canvasWidth) / 2;
+    const y = (stageHeight - canvasHeight) / 2;
+
+    return {
+      x,
+      y,
+      scale: CANVAS_CONFIG.DEFAULT_ZOOM,
+    };
   },
 };

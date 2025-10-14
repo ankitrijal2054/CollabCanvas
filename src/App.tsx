@@ -9,6 +9,7 @@ import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
 import Canvas from "./components/canvas/Canvas";
 import AuthGuard from "./components/auth/AuthGuard";
+import { CanvasProvider } from "./contexts/CanvasContext";
 
 function App() {
   return (
@@ -26,7 +27,9 @@ function App() {
           path="/canvas"
           element={
             <AuthGuard>
-              <Canvas />
+              <CanvasProvider>
+                <Canvas />
+              </CanvasProvider>
             </AuthGuard>
           }
         />

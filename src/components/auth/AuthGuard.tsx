@@ -23,7 +23,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          minHeight: "100vh",
+          height: "100vh",
           fontSize: "1.125rem",
           color: "var(--text-secondary)",
         }}
