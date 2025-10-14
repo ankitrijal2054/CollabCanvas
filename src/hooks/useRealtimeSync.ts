@@ -114,7 +114,7 @@ export const useRealtimeSync = ({
 
     const connectedRef = ref(database, "/.info/connected");
 
-    const handleConnected = (snap: any) => {
+    const handleConnected = (snap: { val: () => unknown }) => {
       const isConnected = !!snap.val();
       if (!isConnected) return;
 
@@ -244,6 +244,49 @@ export const useCanvasInitialization = () => {
  * Hook for syncing object operations to Firebase with retry logic
  */
 export const useSyncOperations = () => {
+  // Pending update coalescing for performance
+  const pendingUpdatesRef = useRef<Record<string, Partial<CanvasObject>>>({});
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPendingUpdates = useCallback(async () => {
+    const pending = pendingUpdatesRef.current;
+    pendingUpdatesRef.current = {};
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+
+    const ids = Object.keys(pending);
+    if (ids.length === 0) return;
+
+    try {
+      if (ids.length === 1) {
+        const id = ids[0];
+        await canvasService.updateObject(id, pending[id]);
+      } else {
+        await canvasService.batchUpdateObjects(pending);
+      }
+    } catch (error) {
+      console.error("Error flushing pending object updates:", error);
+    }
+  }, []);
+
+  const enqueueUpdate = useCallback(
+    (
+      objectId: string,
+      updates: Partial<CanvasObject>,
+      delayMs: number = 50
+    ) => {
+      pendingUpdatesRef.current[objectId] = {
+        ...(pendingUpdatesRef.current[objectId] || {}),
+        ...updates,
+      };
+      if (!flushTimerRef.current) {
+        flushTimerRef.current = setTimeout(flushPendingUpdates, delayMs);
+      }
+    },
+    [flushPendingUpdates]
+  );
   /**
    * Save object with retry logic
    */
@@ -264,24 +307,37 @@ export const useSyncOperations = () => {
   const updateObject = useCallback(
     async (objectId: string, updates: Partial<CanvasObject>): Promise<void> => {
       return syncHelpers.retryOperation(
-        () => canvasService.updateObject(objectId, updates),
+        async () => enqueueUpdate(objectId, updates),
         3,
-        500
+        100
       );
     },
-    []
+    [enqueueUpdate]
   );
 
   /**
    * Delete object with retry logic
    */
-  const deleteObject = useCallback(async (objectId: string): Promise<void> => {
-    return syncHelpers.retryOperation(
-      () => canvasService.deleteObject(objectId),
-      3,
-      500
-    );
-  }, []);
+  const deleteObject = useCallback(
+    async (objectId: string): Promise<void> => {
+      // Remove any pending changes for this object; flush others first
+      // Omit pending updates for this object without creating an unused binding
+      const clone = { ...pendingUpdatesRef.current };
+      delete (clone as Record<string, unknown>)[objectId];
+      pendingUpdatesRef.current = clone as Record<
+        string,
+        Partial<CanvasObject>
+      >;
+      await flushPendingUpdates();
+
+      return syncHelpers.retryOperation(
+        () => canvasService.deleteObject(objectId),
+        3,
+        500
+      );
+    },
+    [flushPendingUpdates]
+  );
 
   /**
    * Batch update multiple objects
@@ -302,5 +358,6 @@ export const useSyncOperations = () => {
     updateObject,
     deleteObject,
     batchUpdate,
+    flushPendingUpdates,
   };
 };
