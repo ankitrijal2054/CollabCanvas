@@ -13,6 +13,7 @@ import type {
   LoginData,
 } from "../types/user.types";
 import { authService } from "../services/authService";
+import { presenceService } from "../services/presenceService";
 
 /**
  * Auth Context Interface
@@ -127,6 +128,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async (): Promise<void> => {
     try {
       setAuthState((prev) => ({ ...prev, loading: true, error: null }));
+      // Ensure presence is marked offline before auth token is cleared
+      const currentUserId = authState.user?.id;
+      if (currentUserId) {
+        try {
+          await presenceService.setUserOffline(currentUserId);
+        } catch (e) {
+          console.error("Failed to set user offline during signOut:", e);
+        }
+      }
+
       await authService.signOut();
       setAuthState({ user: null, loading: false, error: null });
     } catch (error: any) {
