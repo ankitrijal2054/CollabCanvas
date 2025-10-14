@@ -1,7 +1,7 @@
 // Database connection test utility
 // Run this file to test Firebase Realtime Database connection and operations
 
-import { ref, set, get, onValue, off } from "firebase/database";
+import { ref, set, get } from "firebase/database";
 import { database } from "../services/firebase";
 import { canvasService } from "../services/canvasService";
 import type { CanvasObject } from "../types/canvas.types";
@@ -196,4 +196,65 @@ if (typeof window !== "undefined") {
   console.log("   testDatabase.runAll()");
   console.log("   testDatabase.connection()");
   console.log("   testDatabase.realtime()");
+}
+
+/**
+ * Generate many test objects efficiently (for performance testing)
+ * Creates objects in a grid using batch updates to minimize writes.
+ */
+export const generateTestObjects = async (count: number = 500) => {
+  const now = Date.now();
+  const gridSize = Math.ceil(Math.sqrt(count));
+  const gap = 40; // spacing between rects
+  const width = 120;
+  const height = 80;
+
+  // Build updates map: objectId -> partial object record
+  const updatesBatch: Record<string, Partial<CanvasObject>> = {};
+
+  let created = 0;
+  for (let i = 0; i < gridSize && created < count; i++) {
+    for (let j = 0; j < gridSize && created < count; j++) {
+      const id = `rect-bulk-${now}-${created}`;
+      updatesBatch[id] = {
+        id,
+        x: j * (width + gap) + 20,
+        y: i * (height + gap) + 20,
+        width,
+        height,
+        color: "#3B82F6",
+        createdBy: "bulk-test",
+        timestamp: Date.now(),
+      };
+      created++;
+    }
+  }
+
+  // Chunk into smaller payloads to keep requests responsive
+  const ids = Object.keys(updatesBatch);
+  const chunkSize = 100;
+  for (let start = 0; start < ids.length; start += chunkSize) {
+    const sliceIds = ids.slice(start, start + chunkSize);
+    const slice: Record<string, Partial<CanvasObject>> = {};
+    sliceIds.forEach((id) => (slice[id] = updatesBatch[id]));
+    await canvasService.batchUpdateObjects(slice);
+  }
+
+  console.log(`✅ Generated ${created} test objects.`);
+  return created;
+};
+
+/**
+ * Remove all canvas objects (use carefully during tests)
+ */
+export const clearAllObjects = async () => {
+  await canvasService.clearCanvas();
+};
+
+// Extend console helpers
+if (typeof window !== "undefined") {
+  (window as any).testDatabase.generate = generateTestObjects;
+  (window as any).testDatabase.clear = clearAllObjects;
+  console.log("   testDatabase.generate(500)");
+  console.log("   testDatabase.clear()");
 }

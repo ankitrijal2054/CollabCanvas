@@ -580,19 +580,19 @@ collabcanvas/
 
 **Goal:** Ensure 60 FPS and optimize sync performance
 
-- [ ] **Task 10.1: Optimize canvas rendering**
+- [x] **Task 10.1: Optimize canvas rendering**
 
   - Files to update: `src/components/canvas/Canvas.tsx`, `src/components/canvas/CanvasObject.tsx`
   - Add: Memoization for components (`React.memo`)
   - Optimize: Konva layer updates (avoid full redraws)
 
-- [ ] **Task 10.2: Optimize sync operations**
+- [x] **Task 10.2: Optimize sync operations**
 
   - Files to update: `src/hooks/useRealtimeSync.ts`, `src/hooks/usePresence.ts`
   - Add: Throttling/debouncing for frequent updates
   - Optimize: Batch updates where possible
 
-- [ ] **Task 10.3: Add performance monitoring**
+- [x] **Task 10.3: Add performance monitoring**
 
   - Files to create: `src/utils/performanceMonitor.ts`
   - Add: FPS counter (development only)
