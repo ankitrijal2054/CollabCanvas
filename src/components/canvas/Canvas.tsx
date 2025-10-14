@@ -177,7 +177,9 @@ export default function Canvas() {
   /**
    * Handle background click - deselect objects when clicking on empty space
    */
-  const handleBackgroundClick = (e: any) => {
+  const handleBackgroundClick = (e: {
+    target: { getStage: () => unknown };
+  }) => {
     // Check if we clicked on the stage background (not an object)
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty && selectedObjectId) {
@@ -188,7 +190,7 @@ export default function Canvas() {
   /**
    * Handle pan start (mouse down or touch start)
    */
-  const handlePanStart = (e: any) => {
+  const handlePanStart = (e: { target: unknown }) => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -225,8 +227,8 @@ export default function Canvas() {
     const dy = pos.y - panStart.y;
 
     // Calculate new position
-    let newX = viewport.x + dx;
-    let newY = viewport.y + dy;
+    const newX = viewport.x + dx;
+    const newY = viewport.y + dy;
 
     // Constrain to bounds
     const constrainedPos = canvasHelpers.constrainToBounds(
@@ -255,7 +257,7 @@ export default function Canvas() {
   /**
    * Handle wheel zoom (mouse wheel)
    */
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: { evt: WheelEvent }) => {
     e.evt.preventDefault();
 
     const stage = stageRef.current;
@@ -316,7 +318,10 @@ export default function Canvas() {
         <CanvasToolbar />
         <CanvasControls />
 
-        <div id="canvas-container" className="canvas-container">
+        <div
+          id="canvas-container"
+          className={`canvas-container ${!loading ? "loaded" : ""}`}
+        >
           {import.meta.env.DEV && devPerf && (
             <div
               style={{
