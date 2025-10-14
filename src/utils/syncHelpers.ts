@@ -64,6 +64,7 @@ export const syncHelpers = {
   /**
    * Merge local and remote object arrays
    * Resolves conflicts using Last-Write-Wins
+   * Remote is the source of truth - objects not in remote are considered deleted
    * @param local - Local objects array
    * @param remote - Remote objects array
    * @returns Merged array with conflicts resolved
@@ -73,15 +74,16 @@ export const syncHelpers = {
     remote: CanvasObject[]
   ): CanvasObject[] => {
     const merged = new Map<string, CanvasObject>();
+    const localMap = new Map<string, CanvasObject>();
 
-    // Add all local objects
-    local.forEach((obj) => merged.set(obj.id, obj));
+    // Create map of local objects for quick lookup
+    local.forEach((obj) => localMap.set(obj.id, obj));
 
-    // Add or update with remote objects (resolving conflicts)
+    // Process remote objects (remote is source of truth for what should exist)
     remote.forEach((remoteObj) => {
-      const localObj = merged.get(remoteObj.id);
+      const localObj = localMap.get(remoteObj.id);
       if (localObj) {
-        // Conflict: resolve using timestamps
+        // Object exists in both - resolve conflict using timestamps
         merged.set(
           remoteObj.id,
           syncHelpers.resolveConflict(localObj, remoteObj)
@@ -91,6 +93,8 @@ export const syncHelpers = {
         merged.set(remoteObj.id, remoteObj);
       }
     });
+
+    // Objects in local but not in remote are considered deleted - don't add them
 
     return Array.from(merged.values());
   },

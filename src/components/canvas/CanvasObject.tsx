@@ -3,6 +3,7 @@ import { Rect, Transformer } from "react-konva";
 import type Konva from "konva";
 import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types";
 import { useCanvas } from "../../contexts/CanvasContext";
+import { useSyncOperations } from "../../hooks/useRealtimeSync";
 
 interface CanvasObjectProps {
   object: CanvasObjectType;
@@ -13,6 +14,7 @@ interface CanvasObjectProps {
 /**
  * CanvasObject Component
  * Renders a single canvas object (rectangle) with selection, drag, and resize capabilities
+ * Now with Firebase sync for all operations!
  */
 export default function CanvasObject({
   object,
@@ -22,6 +24,7 @@ export default function CanvasObject({
   const shapeRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const { updateObject, canvasSize } = useCanvas();
+  const syncOps = useSyncOperations();
 
   // Attach transformer to shape when selected
   useEffect(() => {
@@ -32,21 +35,32 @@ export default function CanvasObject({
   }, [isSelected]);
 
   /**
-   * Handle drag end - update object position in state
+   * Handle drag end - update object position in state and Firebase
    */
-  const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
+  const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
     const node = e.target;
-    updateObject(object.id, {
+    const updates = {
       x: node.x(),
       y: node.y(),
       timestamp: Date.now(),
-    });
+    };
+
+    // Update local state immediately (optimistic update)
+    updateObject(object.id, updates);
+
+    // Sync to Firebase
+    try {
+      await syncOps.updateObject(object.id, updates);
+      console.log("✅ Object position synced:", object.id);
+    } catch (error) {
+      console.error("❌ Failed to sync object position:", error);
+    }
   };
 
   /**
-   * Handle transform end (resize) - update object dimensions in state
+   * Handle transform end (resize) - update object dimensions in state and Firebase
    */
-  const handleTransformEnd = () => {
+  const handleTransformEnd = async () => {
     const node = shapeRef.current;
     if (!node) return;
 
@@ -57,13 +71,24 @@ export default function CanvasObject({
     node.scaleX(1);
     node.scaleY(1);
 
-    updateObject(object.id, {
+    const updates = {
       x: node.x(),
       y: node.y(),
       width: Math.max(5, node.width() * scaleX), // Minimum width of 5px
       height: Math.max(5, node.height() * scaleY), // Minimum height of 5px
       timestamp: Date.now(),
-    });
+    };
+
+    // Update local state immediately (optimistic update)
+    updateObject(object.id, updates);
+
+    // Sync to Firebase
+    try {
+      await syncOps.updateObject(object.id, updates);
+      console.log("✅ Object resize synced:", object.id);
+    } catch (error) {
+      console.error("❌ Failed to sync object resize:", error);
+    }
   };
 
   return (
@@ -137,6 +162,7 @@ export default function CanvasObject({
             "bottom-center",
             "bottom-right",
           ]}
+          rotateEnabled={false}
         />
       )}
     </>

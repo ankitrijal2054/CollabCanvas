@@ -1,5 +1,12 @@
-// CanvasContext - Manages canvas state globally
-import { createContext, useContext, useState, type ReactNode } from "react";
+// CanvasContext - Manages canvas state globally with real-time sync
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
 import type {
   CanvasObject,
   CanvasState,
@@ -8,6 +15,12 @@ import type {
 import { DEFAULT_RECTANGLE } from "../types/canvas.types";
 import { CANVAS_CONFIG } from "../constants/canvas";
 import { useAuth } from "../hooks/useAuth";
+import {
+  useRealtimeSync,
+  useCanvasInitialization,
+  useSyncOperations,
+} from "../hooks/useRealtimeSync";
+import { syncHelpers } from "../utils/syncHelpers";
 
 /**
  * Canvas Context Interface
@@ -20,9 +33,9 @@ interface CanvasContextType extends CanvasState {
   resetViewport: () => void;
   addObject: (object: CanvasObject) => void;
   updateObject: (id: string, updates: Partial<CanvasObject>) => void;
-  deleteObject: (id: string) => void;
+  deleteObject: (id: string) => Promise<void>;
   selectObject: (id: string | null) => void;
-  createRectangle: () => void;
+  createRectangle: () => Promise<void>;
 }
 
 // Create the context with undefined default value
@@ -38,9 +51,12 @@ interface CanvasProviderProps {
 /**
  * CanvasProvider Component
  * Wraps canvas-related components and provides canvas state and methods
+ * Now with real-time synchronization!
  */
 export function CanvasProvider({ children }: CanvasProviderProps) {
   const { user } = useAuth();
+  const { initializeCanvas } = useCanvasInitialization();
+  const syncOps = useSyncOperations();
 
   const [canvasState, setCanvasState] = useState<CanvasState>({
     objects: [],
@@ -54,9 +70,72 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       width: CANVAS_CONFIG.DEFAULT_WIDTH,
       height: CANVAS_CONFIG.DEFAULT_HEIGHT,
     },
-    loading: false,
+    loading: true, // Start with loading state
     isDragging: false,
     isResizing: false,
+  });
+
+  /**
+   * Handle incoming objects from Firebase
+   * Merges remote changes with local state using Last-Write-Wins
+   */
+  const handleObjectsUpdate = useCallback((remoteObjects: CanvasObject[]) => {
+    setCanvasState((prev) => {
+      // Merge local and remote objects with conflict resolution
+      const mergedObjects = syncHelpers.mergeObjects(
+        prev.objects,
+        remoteObjects
+      );
+
+      // Log sync info in development
+      if (import.meta.env.DEV) {
+        console.log(
+          `🔄 Objects synced: ${mergedObjects.length} total (${prev.objects.length} local, ${remoteObjects.length} remote)`
+        );
+      }
+
+      return {
+        ...prev,
+        objects: mergedObjects,
+        loading: false, // Data loaded
+      };
+    });
+  }, []);
+
+  /**
+   * Initialize canvas and load initial state
+   */
+  useEffect(() => {
+    const loadInitialState = async () => {
+      try {
+        console.log("🚀 Loading initial canvas state...");
+        const initialObjects = await initializeCanvas();
+
+        setCanvasState((prev) => ({
+          ...prev,
+          objects: initialObjects,
+          loading: false,
+        }));
+
+        console.log(
+          `✅ Initial state loaded: ${initialObjects.length} objects`
+        );
+      } catch (error) {
+        console.error("❌ Failed to load initial state:", error);
+        setCanvasState((prev) => ({ ...prev, loading: false }));
+      }
+    };
+
+    loadInitialState();
+  }, [initializeCanvas]);
+
+  /**
+   * Subscribe to real-time updates
+   * Only enable after user is authenticated
+   */
+  useRealtimeSync({
+    onObjectsUpdate: handleObjectsUpdate,
+    enabled: !!user, // Only sync when user is logged in
   });
 
   /**
@@ -101,7 +180,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   };
 
   /**
-   * Add a new object to the canvas
+   * Add a new object to the canvas (local state only)
+   * Firebase sync happens separately
    */
   const addObject = (object: CanvasObject) => {
     setCanvasState((prev) => ({
@@ -111,27 +191,39 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   };
 
   /**
-   * Update an existing object
+   * Update an existing object (local state only)
+   * Firebase sync happens separately
    */
   const updateObject = (id: string, updates: Partial<CanvasObject>) => {
     setCanvasState((prev) => ({
       ...prev,
       objects: prev.objects.map((obj) =>
-        obj.id === id ? { ...obj, ...updates } : obj
+        obj.id === id ? { ...obj, ...updates, timestamp: Date.now() } : obj
       ),
     }));
   };
 
   /**
    * Delete an object from the canvas
+   * Updates local state and syncs to Firebase
    */
-  const deleteObject = (id: string) => {
+  const deleteObject = async (id: string) => {
+    // Update local state immediately (optimistic update)
     setCanvasState((prev) => ({
       ...prev,
       objects: prev.objects.filter((obj) => obj.id !== id),
       selectedObjectId:
         prev.selectedObjectId === id ? null : prev.selectedObjectId,
     }));
+
+    // Sync deletion to Firebase
+    try {
+      await syncOps.deleteObject(id);
+      console.log("✅ Object deleted from Firebase:", id);
+    } catch (error) {
+      console.error("❌ Failed to delete object from Firebase:", error);
+      // Optionally: Restore object in local state if deletion fails
+    }
   };
 
   /**
@@ -146,12 +238,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
   /**
    * Create a new rectangle at canvas center with default size and color
+   * Saves to Firebase for real-time sync
    */
-  const createRectangle = () => {
+  const createRectangle = async () => {
     // Generate unique ID using timestamp + random string
-    const id = `rect-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
+    const id = syncHelpers.generateObjectId("rect");
 
     // Calculate center position of the visible viewport
     const centerX =
@@ -176,9 +267,20 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       timestamp: Date.now(),
     };
 
+    // Add to local state immediately (optimistic update)
     addObject(newRectangle);
     // Auto-select the newly created object
     selectObject(id);
+
+    // Save to Firebase for real-time sync
+    try {
+      await syncOps.saveObject(newRectangle);
+      console.log("✅ Rectangle saved to Firebase:", id);
+    } catch (error) {
+      console.error("❌ Failed to save rectangle to Firebase:", error);
+      // Optionally: Remove from local state if save fails
+      // deleteObject(id);
+    }
   };
 
   const value: CanvasContextType = {
