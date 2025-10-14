@@ -194,11 +194,6 @@ export default function Canvas() {
     const stage = stageRef.current;
     if (!stage) return;
 
-    // Don't pan if clicking on an object
-    const clickedOnEmpty = e.target === stage;
-    if (!clickedOnEmpty) return;
-
-    // Get pointer position
     const pos = stage.getPointerPosition();
     if (!pos) return;
 
