@@ -1,6 +1,7 @@
 // useRealtimeSync hook - Manages real-time synchronization with Firebase
 import { useEffect, useCallback, useRef } from "react";
 import { canvasService } from "../services/canvasService";
+import { setSyncLatency } from "../utils/performanceMonitor";
 import { ref, onValue, off } from "firebase/database";
 import { database } from "../services/firebase";
 import type { CanvasObject } from "../types/canvas.types";
@@ -46,6 +47,7 @@ export const useRealtimeSync = ({
         syncMetrics.current.updateCount;
 
       lastSyncTime.current = now;
+      if (import.meta.env.DEV) setSyncLatency(latency);
 
       // Log sync performance in development
       if (import.meta.env.DEV) {
