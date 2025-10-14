@@ -543,31 +543,31 @@ collabcanvas/
 
 **Goal:** Ensure canvas state persists and recovers correctly
 
-- [ ] **Task 9.1: Implement initial state loading**
+- [x] **Task 9.1: Implement initial state loading**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: Load all canvas objects on mount
   - Implement: Loading state while fetching
 
-- [ ] **Task 9.2: Add state persistence on changes**
+- [x] **Task 9.2: Add state persistence on changes**
 
   - Files to update: `src/services/canvasService.ts`
   - Ensure: All object changes save to Firebase
   - Add: Error handling for failed writes
 
-- [ ] **Task 9.3: Handle page refresh**
+- [x] **Task 9.3: Handle page refresh**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Test: Refresh page mid-edit
   - Verify: Canvas state fully restored
 
-- [ ] **Task 9.4: Implement cleanup on logout**
+- [x] **Task 9.4: Implement cleanup on logout**
 
   - Files to update: `src/contexts/AuthContext.tsx`
   - Add: Remove presence on logout
   - Clear: Local canvas state
 
-- [ ] **Task 9.5: Test persistence scenarios**
+- [x] **Task 9.5: Test persistence scenarios**
   - Manual testing: Create objects, refresh page
   - Test: All users leave, new user joins, sees previous state
   - Test: Network disconnect/reconnect
