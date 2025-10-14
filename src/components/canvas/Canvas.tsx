@@ -365,7 +365,12 @@ export default function Canvas() {
           </Stage>
 
           {/* Multiplayer Cursors Overlay */}
-          <CursorLayer cursors={cursors} scale={viewport.scale} />
+          <CursorLayer
+            cursors={cursors}
+            scale={viewport.scale}
+            offsetX={viewport.x}
+            offsetY={viewport.y}
+          />
         </div>
       </div>
     </div>

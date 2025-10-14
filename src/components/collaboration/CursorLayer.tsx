@@ -7,6 +7,8 @@ import type { CursorData } from "../../types/collaboration.types";
 export interface CursorLayerProps {
   cursors: CursorData[];
   scale?: number; // Viewport scale for inverse scaling
+  offsetX?: number; // Viewport x offset (pan)
+  offsetY?: number; // Viewport y offset (pan)
   className?: string;
 }
 
@@ -17,18 +19,30 @@ export interface CursorLayerProps {
  *
  * @param cursors - Array of cursor data for all online users (excluding current user)
  * @param scale - Canvas viewport scale (for inverse scaling cursors)
+ * @param offsetX - Viewport x offset (for transforming to screen coords)
+ * @param offsetY - Viewport y offset (for transforming to screen coords)
  * @param className - Optional additional CSS class
  */
 const CursorLayer: React.FC<CursorLayerProps> = ({
   cursors,
   scale = 1,
+  offsetX = 0,
+  offsetY = 0,
   className = "",
 }) => {
   return (
     <div className={`cursor-layer ${className}`}>
-      {cursors.map((cursor) => (
-        <Cursor key={cursor.userId} cursor={cursor} scale={scale} />
-      ))}
+      {cursors.map((cursor) => {
+        const screenX = cursor.position.x * scale + offsetX;
+        const screenY = cursor.position.y * scale + offsetY;
+        return (
+          <Cursor
+            key={cursor.userId}
+            cursor={{ ...cursor, position: { x: screenX, y: screenY } }}
+            scale={scale}
+          />
+        );
+      })}
     </div>
   );
 };
@@ -38,6 +52,14 @@ const CursorLayer: React.FC<CursorLayerProps> = ({
 export default memo(CursorLayer, (prevProps, nextProps) => {
   // Check if scale changed
   if (prevProps.scale !== nextProps.scale) {
+    return false; // Re-render
+  }
+
+  // Check if offsets changed
+  if (
+    prevProps.offsetX !== nextProps.offsetX ||
+    prevProps.offsetY !== nextProps.offsetY
+  ) {
     return false; // Re-render
   }
 
@@ -73,13 +95,23 @@ export default memo(CursorLayer, (prevProps, nextProps) => {
 export const SimpleCursorLayer: React.FC<CursorLayerProps> = ({
   cursors,
   scale = 1,
+  offsetX = 0,
+  offsetY = 0,
   className = "",
 }) => {
   return (
     <div className={`cursor-layer ${className}`}>
-      {cursors.map((cursor) => (
-        <Cursor key={cursor.userId} cursor={cursor} scale={scale} />
-      ))}
+      {cursors.map((cursor) => {
+        const screenX = cursor.position.x * scale + offsetX;
+        const screenY = cursor.position.y * scale + offsetY;
+        return (
+          <Cursor
+            key={cursor.userId}
+            cursor={{ ...cursor, position: { x: screenX, y: screenY } }}
+            scale={scale}
+          />
+        );
+      })}
     </div>
   );
 };
