@@ -1,0 +1,111 @@
+/* Canvas Toolbar styling - Modern design */
+
+.canvas-toolbar {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+  background-color: white;
+  padding: 0.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.toolbar-button svg {
+  flex-shrink: 0;
+}
+
+/* Primary button (Add Rectangle) */
+.toolbar-button-primary {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.toolbar-button-primary:hover:not(:disabled) {
+  background-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.toolbar-button-primary:active:not(:disabled) {
+  background-color: #1d4ed8;
+  transform: translateY(0);
+}
+
+/* Danger button (Delete) */
+.toolbar-button-danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.toolbar-button-danger:hover:not(:disabled) {
+  background-color: #dc2626;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.toolbar-button-danger:active:not(:disabled) {
+  background-color: #b91c1c;
+  transform: translateY(0);
+}
+
+.toolbar-button-danger:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  border: 1px solid #e5e7eb;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+  .canvas-toolbar {
+    top: 1rem;
+    padding: 0.4rem;
+    gap: 0.4rem;
+    border-radius: 10px;
+  }
+
+  .toolbar-button {
+    height: 36px;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .toolbar-button svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Very small screens - hide text, show only icons */
+@media (max-width: 480px) {
+  .toolbar-button span {
+    display: none;
+  }
+
+  .toolbar-button {
+    padding: 0;
+    width: 36px;
+  }
+}

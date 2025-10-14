@@ -5,14 +5,7 @@ import { CANVAS_CONFIG } from "../../constants/canvas";
 import "./CanvasControls.css";
 
 export default function CanvasControls() {
-  const {
-    viewport,
-    setViewport,
-    resetViewport,
-    createRectangle,
-    selectedObjectId,
-    deleteObject,
-  } = useCanvas();
+  const { viewport, setViewport, resetViewport } = useCanvas();
 
   /**
    * Zoom in centered on current viewport
@@ -41,42 +34,12 @@ export default function CanvasControls() {
     resetViewport();
   };
 
-  /**
-   * Delete the selected object
-   */
-  const handleDelete = () => {
-    if (selectedObjectId) {
-      deleteObject(selectedObjectId);
-    }
-  };
-
   // Calculate zoom percentage
   const zoomPercentage = Math.round(viewport.scale * 100);
 
   return (
     <div className="canvas-controls">
-      {/* Add Rectangle Button */}
-      <div className="controls-group">
-        <button
-          className="control-button add-rectangle-button"
-          onClick={createRectangle}
-          title="Add Rectangle (R)"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            stroke="currentColor"
-          >
-            <rect x="3" y="3" width="14" height="14" strokeWidth="1.5" rx="1" />
-            <path d="M10 6v8" strokeWidth="1.5" strokeLinecap="round" />
-            <path d="M6 10h8" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <span className="button-text">Rectangle</span>
-        </button>
-      </div>
-
+      {/* Zoom Controls Group */}
       <div className="controls-group">
         {/* Zoom Out Button */}
         <button
@@ -86,8 +49,8 @@ export default function CanvasControls() {
           title="Zoom Out"
         >
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 20 20"
             fill="none"
             stroke="currentColor"
@@ -111,8 +74,8 @@ export default function CanvasControls() {
           title="Zoom In"
         >
           <svg
-            width="20"
-            height="20"
+            width="18"
+            height="18"
             viewBox="0 0 20 20"
             fill="none"
             stroke="currentColor"
@@ -125,7 +88,7 @@ export default function CanvasControls() {
         </button>
       </div>
 
-      {/* Reset View Button */}
+      {/* Reset View Button (Icon Only) */}
       <button
         className="control-button reset-button"
         onClick={handleResetView}
@@ -151,44 +114,6 @@ export default function CanvasControls() {
           <path d="M4 6v4h4" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M16 14v-4h-4" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span className="reset-button-text">Reset View</span>
-      </button>
-
-      {/* Delete Button - Only shown when object is selected */}
-      <button
-        className="control-button delete-button"
-        onClick={handleDelete}
-        disabled={!selectedObjectId}
-        title={
-          selectedObjectId
-            ? "Delete Selected (Delete)"
-            : "Select an object to delete"
-        }
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 20 20"
-          fill="none"
-          stroke="currentColor"
-        >
-          <path d="M3 5h14" strokeWidth="1.5" strokeLinecap="round" />
-          <path
-            d="M8 5V3h4v2"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M16 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path d="M8 9v6" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M12 9v6" strokeWidth="1.5" strokeLinecap="round" />
-        </svg>
-        <span className="delete-button-text">Delete</span>
       </button>
     </div>
   );

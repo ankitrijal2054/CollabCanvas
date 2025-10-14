@@ -6,8 +6,10 @@ import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
+import CanvasToolbar from "./CanvasToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
+import CanvasGrid from "./CanvasGrid";
 import "./Canvas.css";
 
 export default function Canvas() {
@@ -227,6 +229,7 @@ export default function Canvas() {
           }
         }}
       >
+        <CanvasToolbar />
         <CanvasControls />
 
         <div id="canvas-container" className="canvas-container">
@@ -264,6 +267,13 @@ export default function Canvas() {
                 shadowOffset={{ x: 0, y: 2 }}
               />
 
+              {/* Grid pattern */}
+              <CanvasGrid
+                width={canvasSize.width}
+                height={canvasSize.height}
+                scale={viewport.scale}
+              />
+
               {/* Canvas border */}
               <Rect
                 x={0}
@@ -274,9 +284,6 @@ export default function Canvas() {
                 strokeWidth={2 / viewport.scale} // Scale-independent border
                 fill="transparent"
               />
-
-              {/* Grid pattern for visual reference (optional) */}
-              {/* Will be added later if needed */}
             </Layer>
 
             {/* Objects Layer - Canvas objects */}
