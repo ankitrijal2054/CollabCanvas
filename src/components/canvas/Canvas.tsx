@@ -218,7 +218,15 @@ export default function Canvas() {
     <div className="canvas-page">
       <Header user={user} />
 
-      <div className="canvas-workspace">
+      <div
+        className="canvas-workspace"
+        onClick={(e) => {
+          // Deselect when clicking outside canvas container
+          if (e.target === e.currentTarget && selectedObjectId) {
+            selectObject(null);
+          }
+        }}
+      >
         <CanvasControls />
 
         <div id="canvas-container" className="canvas-container">

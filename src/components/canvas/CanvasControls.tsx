@@ -5,7 +5,14 @@ import { CANVAS_CONFIG } from "../../constants/canvas";
 import "./CanvasControls.css";
 
 export default function CanvasControls() {
-  const { viewport, setViewport, resetViewport, createRectangle } = useCanvas();
+  const {
+    viewport,
+    setViewport,
+    resetViewport,
+    createRectangle,
+    selectedObjectId,
+    deleteObject,
+  } = useCanvas();
 
   /**
    * Zoom in centered on current viewport
@@ -32,6 +39,15 @@ export default function CanvasControls() {
    */
   const handleResetView = () => {
     resetViewport();
+  };
+
+  /**
+   * Delete the selected object
+   */
+  const handleDelete = () => {
+    if (selectedObjectId) {
+      deleteObject(selectedObjectId);
+    }
   };
 
   // Calculate zoom percentage
@@ -136,6 +152,43 @@ export default function CanvasControls() {
           <path d="M16 14v-4h-4" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
         <span className="reset-button-text">Reset View</span>
+      </button>
+
+      {/* Delete Button - Only shown when object is selected */}
+      <button
+        className="control-button delete-button"
+        onClick={handleDelete}
+        disabled={!selectedObjectId}
+        title={
+          selectedObjectId
+            ? "Delete Selected (Delete)"
+            : "Select an object to delete"
+        }
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M3 5h14" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M8 5V3h4v2"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M16 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path d="M8 9v6" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M12 9v6" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        <span className="delete-button-text">Delete</span>
       </button>
     </div>
   );

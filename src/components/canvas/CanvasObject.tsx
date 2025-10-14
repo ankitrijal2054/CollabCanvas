@@ -21,7 +21,7 @@ export default function CanvasObject({
 }: CanvasObjectProps) {
   const shapeRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const { updateObject } = useCanvas();
+  const { updateObject, canvasSize } = useCanvas();
 
   // Attach transformer to shape when selected
   useEffect(() => {
@@ -82,6 +82,18 @@ export default function CanvasObject({
         shadowBlur={isSelected ? 10 : 0}
         shadowOffset={isSelected ? { x: 0, y: 0 } : undefined}
         draggable
+        dragBoundFunc={(pos) => {
+          // Constrain drag position within canvas bounds
+          const newX = Math.max(
+            0,
+            Math.min(pos.x, canvasSize.width - object.width)
+          );
+          const newY = Math.max(
+            0,
+            Math.min(pos.y, canvasSize.height - object.height)
+          );
+          return { x: newX, y: newY };
+        }}
         onClick={onSelect}
         onTap={onSelect}
         onDragEnd={handleDragEnd}
@@ -95,6 +107,18 @@ export default function CanvasObject({
             if (newBox.width < 5 || newBox.height < 5) {
               return oldBox;
             }
+
+            // Constrain resize within canvas bounds
+            // Check if new box would go outside canvas
+            if (
+              newBox.x < 0 ||
+              newBox.y < 0 ||
+              newBox.x + newBox.width > canvasSize.width ||
+              newBox.y + newBox.height > canvasSize.height
+            ) {
+              return oldBox;
+            }
+
             return newBox;
           }}
           // Styling for transformer

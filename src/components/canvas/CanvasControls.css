@@ -97,6 +97,34 @@
   white-space: nowrap;
 }
 
+.delete-button {
+  background-color: #ef4444;
+  color: white;
+  width: auto;
+  padding: 0 1rem;
+  gap: 0.5rem;
+}
+
+.delete-button:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.delete-button:active:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.delete-button:disabled {
+  background-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.delete-button-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* Responsive design */
 @media (max-width: 640px) {
   .canvas-controls {
@@ -115,12 +143,14 @@
   }
 
   .reset-button-text,
-  .button-text {
+  .button-text,
+  .delete-button-text {
     display: none; /* Hide text on mobile, show only icon */
   }
 
   .reset-button,
-  .add-rectangle-button {
+  .add-rectangle-button,
+  .delete-button {
     width: 36px;
     padding: 0;
   }
