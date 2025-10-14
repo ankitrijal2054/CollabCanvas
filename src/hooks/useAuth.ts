@@ -1,5 +1,2 @@
-// useAuth hook - to be implemented in PR #2
-export function useAuth() {
-  // TODO: Implement auth hook
-  return null;
-}
+// useAuth hook - re-exported from AuthContext for convenience
+export { useAuth } from "../contexts/AuthContext";
