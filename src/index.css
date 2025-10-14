@@ -39,6 +39,11 @@ body {
   color: var(--text-primary);
 }
 
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.2);
+}
+
 #root {
   height: 100%;
   display: flex;
@@ -131,6 +136,17 @@ input:focus,
 textarea:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Utilities */

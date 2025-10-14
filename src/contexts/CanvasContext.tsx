@@ -139,6 +139,26 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   });
 
   /**
+   * Clear local canvas state on logout
+   * Ensures no stale objects remain after user signs out
+   */
+  useEffect(() => {
+    if (!user) {
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: [],
+        selectedObjectId: null,
+        loading: false,
+        viewport: {
+          x: 0,
+          y: 0,
+          scale: CANVAS_CONFIG.DEFAULT_ZOOM,
+        },
+      }));
+    }
+  }, [user]);
+
+  /**
    * Set the entire viewport (position + scale)
    */
   const setViewport = (viewport: Viewport) => {

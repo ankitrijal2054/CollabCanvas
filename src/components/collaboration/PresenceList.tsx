@@ -21,7 +21,16 @@ export default function PresenceList() {
         <span className="presence-count">{count}</span>
       </div>
 
-      {!isInitialized && <div className="presence-loading">Connecting…</div>}
+      {!isInitialized && (
+        <div className="presence-skeletons">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="presence-skeleton">
+              <span className="presence-skeleton-dot" />
+              <span className="presence-skeleton-bar" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {isInitialized && count === 0 && (
         <div className="presence-empty">No other users online</div>

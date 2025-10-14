@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { Rect, Transformer } from "react-konva";
 import type Konva from "konva";
 import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types";
@@ -16,11 +16,7 @@ interface CanvasObjectProps {
  * Renders a single canvas object (rectangle) with selection, drag, and resize capabilities
  * Now with Firebase sync for all operations!
  */
-export default function CanvasObject({
-  object,
-  isSelected,
-  onSelect,
-}: CanvasObjectProps) {
+function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
   const shapeRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const { updateObject, canvasSize } = useCanvas();
@@ -168,3 +164,21 @@ export default function CanvasObject({
     </>
   );
 }
+
+export default React.memo(CanvasObject, (prevProps, nextProps) => {
+  // Avoid re-render unless this object's props meaningfully change
+  if (prevProps.isSelected !== nextProps.isSelected) return false;
+  if (prevProps.object.id !== nextProps.object.id) return false;
+  if (prevProps.onSelect !== nextProps.onSelect) return false;
+
+  const prev = prevProps.object;
+  const next = nextProps.object;
+
+  if (prev.x !== next.x) return false;
+  if (prev.y !== next.y) return false;
+  if (prev.width !== next.width) return false;
+  if (prev.height !== next.height) return false;
+  if (prev.color !== next.color) return false;
+
+  return true; // props equal -> skip re-render
+});

@@ -14,6 +14,10 @@ import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
 import "./Canvas.css";
+import {
+  startPerfMonitor,
+  subscribePerf,
+} from "../../utils/performanceMonitor";
 
 export default function Canvas() {
   const { user } = useAuth();
@@ -47,6 +51,10 @@ export default function Canvas() {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [devPerf, setDevPerf] = useState<{
+    fps: number;
+    latencyMs: number;
+  } | null>(null);
 
   /**
    * Handle window resize - update stage size
@@ -65,6 +73,17 @@ export default function Canvas() {
     updateSize();
     window.addEventListener("resize", updateSize);
     return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
+  // Dev-only performance monitor
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const stop = startPerfMonitor();
+    const unsub = subscribePerf((m) => setDevPerf(m));
+    return () => {
+      unsub();
+      stop();
+    };
   }, []);
 
   /**
@@ -158,7 +177,9 @@ export default function Canvas() {
   /**
    * Handle background click - deselect objects when clicking on empty space
    */
-  const handleBackgroundClick = (e: any) => {
+  const handleBackgroundClick = (e: {
+    target: { getStage: () => unknown };
+  }) => {
     // Check if we clicked on the stage background (not an object)
     const clickedOnEmpty = e.target === e.target.getStage();
     if (clickedOnEmpty && selectedObjectId) {
@@ -169,7 +190,7 @@ export default function Canvas() {
   /**
    * Handle pan start (mouse down or touch start)
    */
-  const handlePanStart = (e: any) => {
+  const handlePanStart = (e: { target: unknown }) => {
     const stage = stageRef.current;
     if (!stage) return;
 
@@ -206,8 +227,8 @@ export default function Canvas() {
     const dy = pos.y - panStart.y;
 
     // Calculate new position
-    let newX = viewport.x + dx;
-    let newY = viewport.y + dy;
+    const newX = viewport.x + dx;
+    const newY = viewport.y + dy;
 
     // Constrain to bounds
     const constrainedPos = canvasHelpers.constrainToBounds(
@@ -236,7 +257,7 @@ export default function Canvas() {
   /**
    * Handle wheel zoom (mouse wheel)
    */
-  const handleWheel = (e: any) => {
+  const handleWheel = (e: { evt: WheelEvent }) => {
     e.evt.preventDefault();
 
     const stage = stageRef.current;
@@ -297,7 +318,29 @@ export default function Canvas() {
         <CanvasToolbar />
         <CanvasControls />
 
-        <div id="canvas-container" className="canvas-container">
+        <div
+          id="canvas-container"
+          className={`canvas-container ${!loading ? "loaded" : ""}`}
+        >
+          {import.meta.env.DEV && devPerf && (
+            <div
+              style={{
+                position: "absolute",
+                top: 8,
+                left: 8,
+                zIndex: 1003,
+                background: "rgba(17,24,39,0)",
+                color: "#000",
+                padding: "4px 8px",
+                borderRadius: 6,
+                fontSize: 12,
+                pointerEvents: "none",
+              }}
+            >
+              <div>FPS: {devPerf.fps}</div>
+              <div>Latency: {devPerf.latencyMs} ms</div>
+            </div>
+          )}
           {loading && (
             <div
               style={{
