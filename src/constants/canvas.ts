@@ -5,8 +5,8 @@ export const DEFAULT_CANVAS_ID = "default";
 
 // Canvas configuration
 export const CANVAS_CONFIG = {
-  DEFAULT_WIDTH: 10000,
-  DEFAULT_HEIGHT: 10000,
+  DEFAULT_WIDTH: 8000,
+  DEFAULT_HEIGHT: 6000,
   MIN_ZOOM: 0.1,
   MAX_ZOOM: 5,
   DEFAULT_ZOOM: 1,

@@ -398,6 +398,7 @@ export default function Canvas() {
                 shadowColor="rgba(0, 0, 0, 0.1)"
                 shadowBlur={10}
                 shadowOffset={{ x: 0, y: 2 }}
+                listening={false}
               />
 
               {/* Grid pattern */}
@@ -416,6 +417,7 @@ export default function Canvas() {
                 stroke="#e5e7eb"
                 strokeWidth={2 / viewport.scale} // Scale-independent border
                 fill="transparent"
+                listening={false}
               />
             </Layer>
 
