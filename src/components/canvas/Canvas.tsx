@@ -190,7 +190,7 @@ export default function Canvas() {
   /**
    * Handle pan start (mouse down or touch start)
    */
-  const handlePanStart = (e: { target: unknown }) => {
+  const handlePanStart = () => {
     const stage = stageRef.current;
     if (!stage) return;
 

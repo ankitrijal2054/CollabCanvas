@@ -2,6 +2,10 @@
 
 A real-time collaborative canvas application built with React, TypeScript, Firebase, and Konva. Multiple users can draw, create shapes, and interact on a shared canvas with live cursor tracking and presence awareness.
 
+## Live Demo
+
+Visit the deployed app here: [`https://collabcanvas-1fd25.web.app/`](https://collabcanvas-1fd25.web.app/)
+
 ## Features
 
 - 🎨 **Interactive Canvas**: Pan, zoom, and manipulate objects on an infinite canvas
@@ -35,7 +39,7 @@ Before you begin, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/ankitrijal2054/CollabCanvas
 cd collabcanvas
 ```
 
@@ -120,78 +124,6 @@ Preview the production build:
 npm run preview
 ```
 
-## Project Structure
-
-```
-collabcanvas/
-├── src/
-│   ├── components/        # React components
-│   │   ├── auth/          # Authentication components
-│   │   ├── canvas/        # Canvas-related components
-│   │   ├── collaboration/ # Collaboration features (cursors, presence)
-│   │   └── layout/        # Layout components (header, sidebar)
-│   ├── contexts/          # React contexts for state management
-│   ├── hooks/             # Custom React hooks
-│   ├── services/          # Firebase and API services
-│   ├── types/             # TypeScript type definitions
-│   ├── utils/             # Helper functions and utilities
-│   ├── constants/         # App constants (canvas config, defaults)
-│   ├── App.tsx            # Main app component with routing
-│   ├── main.tsx           # App entry point
-│   └── index.css          # Global styles
-├── public/                # Static assets
-├── .env.local             # Environment variables (not in git)
-├── firebase.json          # Firebase configuration
-├── .firebaserc            # Firebase project reference
-├── database.rules.json    # Realtime Database security rules
-├── package.json           # Dependencies and scripts
-├── tsconfig.json          # TypeScript configuration
-└── vite.config.ts         # Vite configuration
-```
-
-## Firebase Database Structure
-
-```json
-{
-  "canvases": {
-    "default": {
-      "metadata": {
-        "name": "Main Canvas",
-        "createdAt": 1697123456789
-      },
-      "objects": {
-        "{objectId}": {
-          "id": "obj-123",
-          "x": 100,
-          "y": 200,
-          "width": 150,
-          "height": 100,
-          "color": "#3B82F6",
-          "createdBy": "userId",
-          "timestamp": 1697123456789
-        }
-      }
-    }
-  },
-  "presence": {
-    "default": {
-      "{userId}": {
-        "name": "User Name",
-        "online": true,
-        "cursor": { "x": 250, "y": 300 },
-        "lastSeen": 1697123456789
-      }
-    }
-  },
-  "users": {
-    "{userId}": {
-      "name": "User Name",
-      "email": "user@example.com"
-    }
-  }
-}
-```
-
 ## Available Scripts
 
 - `npm run dev` - Start development server
@@ -229,6 +161,8 @@ firebase deploy
 ```
 
 Your app will be live at: `https://your-project-id.web.app`
+
+This project is currently live at: [`https://collabcanvas-1fd25.web.app/`](https://collabcanvas-1fd25.web.app/)
 
 ## MVP Requirements Checklist
 
