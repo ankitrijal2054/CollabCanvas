@@ -94,8 +94,8 @@ export default function CanvasControls() {
         title="Reset View"
       >
         <svg
-          width="20"
-          height="20"
+          width="18"
+          height="18"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -113,6 +113,7 @@ export default function CanvasControls() {
           <path d="M4 6v4h4" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M16 14v-4h-4" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
+        <span className="reset-button-text">Reset View</span>
       </button>
     </div>
   );

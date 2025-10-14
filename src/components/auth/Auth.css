@@ -145,6 +145,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%; /* Make button full width */
+  text-align: center; /* Center text */
 }
 
 .btn-google:hover:not(:disabled) {

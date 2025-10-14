@@ -64,6 +64,15 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 1px solid var(--border-color);
+  width: auto;
+  padding: 0 1rem;
+  gap: 0.5rem;
+}
+
+.reset-button-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Responsive design */
@@ -81,5 +90,14 @@
   .zoom-display {
     min-width: 45px;
     font-size: 0.8rem;
+  }
+
+  .reset-button-text {
+    display: none; /* Hide text on mobile, show only icon */
+  }
+
+  .reset-button {
+    width: 36px;
+    padding: 0;
   }
 }
