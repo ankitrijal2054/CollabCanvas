@@ -55,6 +55,20 @@ export interface Rectangle extends CanvasObject {
 }
 
 /**
+ * Union type for all shape types (future-proof for circles, lines, etc.)
+ */
+export type ShapeObject = Rectangle;
+
+/**
+ * Default shape properties for new rectangles
+ */
+export const DEFAULT_RECTANGLE = {
+  width: 150,
+  height: 100,
+  color: "#3B82F6", // Blue color
+} as const;
+
+/**
  * Canvas state interface for context
  */
 export interface CanvasState {
@@ -63,6 +77,20 @@ export interface CanvasState {
   viewport: Viewport; // Current viewport state
   canvasSize: Size; // Bounded canvas dimensions
   loading: boolean; // Loading state
+  isDragging: boolean; // Track if user is dragging an object
+  isResizing: boolean; // Track if user is resizing an object
+}
+
+/**
+ * Object transformation data (for move/resize operations)
+ */
+export interface ObjectTransform {
+  id: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number; // Future-proof for rotation
 }
 
 /**

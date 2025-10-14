@@ -104,6 +104,7 @@ export const canvasHelpers = {
 
   /**
    * Constrain position to stay within bounds
+   * Allows panning to see all parts of canvas when zoomed in
    */
   constrainToBounds: (
     pos: Position,
@@ -115,12 +116,31 @@ export const canvasHelpers = {
     const visibleWidth = stageSize.width / scale;
     const visibleHeight = stageSize.height / scale;
 
+    // Canvas dimensions
+    const canvasWidth = bounds.maxX - bounds.minX;
+    const canvasHeight = bounds.maxY - bounds.minY;
+
     // Calculate the boundaries for the position
     // The position represents the top-left corner of the visible area
-    const minX = bounds.minX;
-    const minY = bounds.minY;
-    const maxX = bounds.maxX - visibleWidth;
-    const maxY = bounds.maxY - visibleHeight;
+    let minX, maxX, minY, maxY;
+
+    if (canvasWidth > visibleWidth) {
+      // Canvas is wider than viewport - allow panning to see all of it
+      minX = bounds.minX;
+      maxX = bounds.maxX - visibleWidth;
+    } else {
+      // Canvas fits within viewport - center it
+      minX = maxX = bounds.minX - (visibleWidth - canvasWidth) / 2;
+    }
+
+    if (canvasHeight > visibleHeight) {
+      // Canvas is taller than viewport - allow panning to see all of it
+      minY = bounds.minY;
+      maxY = bounds.maxY - visibleHeight;
+    } else {
+      // Canvas fits within viewport - center it
+      minY = maxY = bounds.minY - (visibleHeight - canvasHeight) / 2;
+    }
 
     return {
       x: Math.max(minX, Math.min(maxX, pos.x)),
