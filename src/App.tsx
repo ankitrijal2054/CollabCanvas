@@ -7,9 +7,10 @@ import {
 import "./App.css";
 import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
-import Canvas from "./components/canvas/Canvas";
+import Canvas from "./components/canvas/Canvas.tsx";
 import AuthGuard from "./components/auth/AuthGuard";
 import { CanvasProvider } from "./contexts/CanvasContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   return (
@@ -27,9 +28,11 @@ function App() {
           path="/canvas"
           element={
             <AuthGuard>
-              <CanvasProvider>
-                <Canvas />
-              </CanvasProvider>
+              <ErrorBoundary>
+                <CanvasProvider>
+                  <Canvas />
+                </CanvasProvider>
+              </ErrorBoundary>
             </AuthGuard>
           }
         />
