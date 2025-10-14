@@ -5,14 +5,23 @@ import type Konva from "konva";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { canvasHelpers } from "../../utils/canvasHelpers";
-import { CANVAS_CONFIG } from "../../constants/canvas";
 import Header from "../layout/Header";
 import CanvasControls from "./CanvasControls";
+import CanvasObject from "./CanvasObject";
 import "./Canvas.css";
 
 export default function Canvas() {
   const { user } = useAuth();
-  const { viewport, canvasSize, setViewport, setPosition } = useCanvas();
+  const {
+    viewport,
+    canvasSize,
+    setViewport,
+    setPosition,
+    objects,
+    selectedObjectId,
+    selectObject,
+    deleteObject,
+  } = useCanvas();
 
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
@@ -56,6 +65,27 @@ export default function Canvas() {
     }
   }, [stageSize, canvasSize, viewport, setViewport]);
 
+  /**
+   * Handle keyboard shortcuts (Delete key)
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Delete or Backspace key - delete selected object
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selectedObjectId &&
+        // Don't delete if user is typing in an input
+        !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        deleteObject(selectedObjectId);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedObjectId, deleteObject]);
+
   // Calculate canvas bounds for boundary checking
   const canvasBounds = canvasHelpers.getCanvasBounds(
     canvasSize.width,
@@ -63,11 +93,26 @@ export default function Canvas() {
   );
 
   /**
+   * Handle background click - deselect objects when clicking on empty space
+   */
+  const handleBackgroundClick = (e: any) => {
+    // Check if we clicked on the stage background (not an object)
+    const clickedOnEmpty = e.target === e.target.getStage();
+    if (clickedOnEmpty && selectedObjectId) {
+      selectObject(null);
+    }
+  };
+
+  /**
    * Handle pan start (mouse down or touch start)
    */
   const handlePanStart = (e: any) => {
     const stage = stageRef.current;
     if (!stage) return;
+
+    // Don't pan if clicking on an object
+    const clickedOnEmpty = e.target === stage;
+    if (!clickedOnEmpty) return;
 
     // Get pointer position
     const pos = stage.getPointerPosition();
@@ -80,7 +125,7 @@ export default function Canvas() {
   /**
    * Handle pan move (mouse move or touch move)
    */
-  const handlePanMove = (e: any) => {
+  const handlePanMove = () => {
     if (!isPanning) return;
 
     const stage = stageRef.current;
@@ -136,7 +181,6 @@ export default function Canvas() {
     if (!pointer) return;
 
     // Determine zoom direction and amount
-    const scaleBy = 1.05;
     const direction = e.evt.deltaY > 0 ? -1 : 1;
 
     // Calculate new scale
@@ -187,6 +231,8 @@ export default function Canvas() {
             x={viewport.x}
             y={viewport.y}
             draggable={false}
+            onClick={handleBackgroundClick}
+            onTap={handleBackgroundClick}
             onMouseDown={handlePanStart}
             onMouseMove={handlePanMove}
             onMouseUp={handlePanEnd}
@@ -225,8 +271,17 @@ export default function Canvas() {
               {/* Will be added later if needed */}
             </Layer>
 
-            {/* Objects Layer - objects will be rendered here in PR #4 */}
-            <Layer>{/* Canvas objects will be added in the next PR */}</Layer>
+            {/* Objects Layer - Canvas objects */}
+            <Layer>
+              {objects.map((obj) => (
+                <CanvasObject
+                  key={obj.id}
+                  object={obj}
+                  isSelected={obj.id === selectedObjectId}
+                  onSelect={() => selectObject(obj.id)}
+                />
+              ))}
+            </Layer>
           </Stage>
         </div>
       </div>

@@ -75,6 +75,28 @@
   white-space: nowrap;
 }
 
+.add-rectangle-button {
+  background-color: var(--primary-color, #3b82f6);
+  color: white;
+  width: auto;
+  padding: 0 1rem;
+  gap: 0.5rem;
+}
+
+.add-rectangle-button:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.add-rectangle-button:active:not(:disabled) {
+  background-color: #1d4ed8;
+}
+
+.button-text {
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* Responsive design */
 @media (max-width: 640px) {
   .canvas-controls {
@@ -92,11 +114,13 @@
     font-size: 0.8rem;
   }
 
-  .reset-button-text {
+  .reset-button-text,
+  .button-text {
     display: none; /* Hide text on mobile, show only icon */
   }
 
-  .reset-button {
+  .reset-button,
+  .add-rectangle-button {
     width: 36px;
     padding: 0;
   }

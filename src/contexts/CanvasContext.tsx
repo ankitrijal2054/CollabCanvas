@@ -5,7 +5,9 @@ import type {
   CanvasState,
   Viewport,
 } from "../types/canvas.types";
+import { DEFAULT_RECTANGLE } from "../types/canvas.types";
 import { CANVAS_CONFIG } from "../constants/canvas";
+import { useAuth } from "../hooks/useAuth";
 
 /**
  * Canvas Context Interface
@@ -20,6 +22,7 @@ interface CanvasContextType extends CanvasState {
   updateObject: (id: string, updates: Partial<CanvasObject>) => void;
   deleteObject: (id: string) => void;
   selectObject: (id: string | null) => void;
+  createRectangle: () => void;
 }
 
 // Create the context with undefined default value
@@ -37,6 +40,8 @@ interface CanvasProviderProps {
  * Wraps canvas-related components and provides canvas state and methods
  */
 export function CanvasProvider({ children }: CanvasProviderProps) {
+  const { user } = useAuth();
+
   const [canvasState, setCanvasState] = useState<CanvasState>({
     objects: [],
     selectedObjectId: null,
@@ -50,6 +55,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       height: CANVAS_CONFIG.DEFAULT_HEIGHT,
     },
     loading: false,
+    isDragging: false,
+    isResizing: false,
   });
 
   /**
@@ -137,6 +144,43 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }));
   };
 
+  /**
+   * Create a new rectangle at canvas center with default size and color
+   */
+  const createRectangle = () => {
+    // Generate unique ID using timestamp + random string
+    const id = `rect-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+
+    // Calculate center position of the visible viewport
+    const centerX =
+      -canvasState.viewport.x +
+      window.innerWidth / 2 / canvasState.viewport.scale;
+    const centerY =
+      -canvasState.viewport.y +
+      window.innerHeight / 2 / canvasState.viewport.scale;
+
+    // Position rectangle so its center is at viewport center
+    const x = centerX - DEFAULT_RECTANGLE.width / 2;
+    const y = centerY - DEFAULT_RECTANGLE.height / 2;
+
+    const newRectangle: CanvasObject = {
+      id,
+      x,
+      y,
+      width: DEFAULT_RECTANGLE.width,
+      height: DEFAULT_RECTANGLE.height,
+      color: DEFAULT_RECTANGLE.color,
+      createdBy: user?.id || "anonymous",
+      timestamp: Date.now(),
+    };
+
+    addObject(newRectangle);
+    // Auto-select the newly created object
+    selectObject(id);
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -147,6 +191,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     updateObject,
     deleteObject,
     selectObject,
+    createRectangle,
   };
 
   return (

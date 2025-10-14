@@ -5,7 +5,7 @@ import { CANVAS_CONFIG } from "../../constants/canvas";
 import "./CanvasControls.css";
 
 export default function CanvasControls() {
-  const { viewport, setViewport, resetViewport } = useCanvas();
+  const { viewport, setViewport, resetViewport, createRectangle } = useCanvas();
 
   /**
    * Zoom in centered on current viewport
@@ -39,6 +39,28 @@ export default function CanvasControls() {
 
   return (
     <div className="canvas-controls">
+      {/* Add Rectangle Button */}
+      <div className="controls-group">
+        <button
+          className="control-button add-rectangle-button"
+          onClick={createRectangle}
+          title="Add Rectangle (R)"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+          >
+            <rect x="3" y="3" width="14" height="14" strokeWidth="1.5" rx="1" />
+            <path d="M10 6v8" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M6 10h8" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span className="button-text">Rectangle</span>
+        </button>
+      </div>
+
       <div className="controls-group">
         {/* Zoom Out Button */}
         <button
