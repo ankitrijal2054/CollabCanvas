@@ -36,24 +36,6 @@ export interface UsePresenceReturn {
   updatePresence: (updates: Partial<UserPresenceExtended>) => void;
 }
 
-/**
- * Custom hook for managing user presence and cursor tracking
- * Handles initialization, cursor updates, and real-time synchronization
- *
- * @param userId - Current user's Firebase ID
- * @param userName - Current user's display name
- * @param options - Configuration options
- * @returns Presence state and control functions
- *
- * @example
- * ```tsx
- * const { cursors, onlineUsers, updateCursor } = usePresence(
- *   user.uid,
- *   user.displayName,
- *   { throttleMs: 16 }
- * );
- * ```
- */
 export function usePresence(
   userId: string | null,
   userName: string | null,
@@ -69,78 +51,72 @@ export function usePresence(
   const [presenceMap, setPresenceMap] = useState<PresenceMap>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Refs to avoid recreating throttled function
+  // Refs
   const throttledUpdateRef = useRef<
     ((position: CursorPosition) => void) | null
   >(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const stopPresenceSessionRef = useRef<(() => void) | null>(null);
+  const prevPresenceMapRef = useRef<PresenceMap>({});
 
-  /**
-   * Initialize user presence when they join
-   */
+  /** Initialize presence session */
   useEffect(() => {
     if (!enabled || !userId || !userName) {
       setIsInitialized(false);
       return;
     }
 
-    let isMounted = true;
+    stopPresenceSessionRef.current = presenceService.startPresenceSession(
+      userId,
+      userName,
+      canvasId
+    );
 
-    const initializePresence = async () => {
-      try {
-        // Set user as online in Firebase
-        await presenceService.setUserOnline(userId, userName, canvasId);
+    setIsInitialized(true);
 
-        if (isMounted) {
-          setIsInitialized(true);
-          console.log(`Presence initialized for ${userName}`);
-        }
-      } catch (error) {
-        console.error("Error initializing presence:", error);
-        if (isMounted) {
-          setIsInitialized(false);
-        }
-      }
-    };
-
-    initializePresence();
-
-    // Cleanup on unmount
     return () => {
-      isMounted = false;
-      if (userId) {
-        presenceService.setUserOffline(userId, canvasId).catch((error) => {
-          console.error("Error setting user offline:", error);
-        });
+      if (stopPresenceSessionRef.current) {
+        stopPresenceSessionRef.current();
+        stopPresenceSessionRef.current = null;
       }
     };
   }, [userId, userName, canvasId, enabled]);
 
-  /**
-   * Subscribe to all user presence updates
-   */
+  /** Subscribe to presence updates */
   useEffect(() => {
-    if (!enabled || !userId) {
-      return;
-    }
+    if (!enabled || !userId) return;
 
-    // Subscribe to all presence updates
     const unsubscribe = presenceService.subscribeToPresence(
       canvasId,
       (newPresenceMap) => {
-        console.log(
-          "🔔 Presence update received:",
-          Object.keys(newPresenceMap).length,
-          "users",
-          newPresenceMap
+        // Diff users to detect joins/leaves (excluding current user)
+        const prev = prevPresenceMapRef.current;
+        const prevIds = new Set(
+          Object.keys(prev).filter((id) => id !== userId)
         );
+        const nextIds = new Set(
+          Object.keys(newPresenceMap).filter((id) => id !== userId)
+        );
+
+        for (const id of nextIds) {
+          if (!prevIds.has(id) && newPresenceMap[id]?.online) {
+            console.log(`➕ User joined: ${newPresenceMap[id].name}`);
+          }
+        }
+        for (const id of prevIds) {
+          if (!nextIds.has(id) || newPresenceMap[id]?.online === false) {
+            const name = prev[id]?.name ?? id;
+            console.log(`➖ User left: ${name}`);
+          }
+        }
+
+        prevPresenceMapRef.current = newPresenceMap;
         setPresenceMap(newPresenceMap);
       }
     );
 
     unsubscribeRef.current = unsubscribe;
 
-    // Cleanup subscription
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
@@ -149,13 +125,10 @@ export function usePresence(
     };
   }, [userId, canvasId, enabled]);
 
-  /**
-   * Create throttled update function
-   */
+  /** Create throttled update */
   useEffect(() => {
     if (!userId) return;
 
-    // Create throttled function for cursor updates
     const throttledUpdate = syncHelpers.throttle((position: CursorPosition) => {
       presenceService
         .updateCursorPosition(userId, position, canvasId)
@@ -167,9 +140,6 @@ export function usePresence(
     throttledUpdateRef.current = throttledUpdate;
   }, [userId, canvasId, throttleMs]);
 
-  /**
-   * Update cursor position (throttled)
-   */
   const updateCursor = useCallback(
     (position: CursorPosition) => {
       if (!enabled || !userId || !throttledUpdateRef.current) return;
@@ -178,9 +148,6 @@ export function usePresence(
     [userId, enabled]
   );
 
-  /**
-   * Remove cursor (when leaving canvas area)
-   */
   const removeCursor = useCallback(() => {
     if (!enabled || !userId) return;
 
@@ -189,9 +156,6 @@ export function usePresence(
     });
   }, [userId, canvasId, enabled]);
 
-  /**
-   * Update presence with custom data
-   */
   const updatePresence = useCallback(
     (updates: Partial<UserPresenceExtended>) => {
       if (!enabled || !userId) return;
@@ -205,28 +169,22 @@ export function usePresence(
     [userId, canvasId, enabled]
   );
 
-  /**
-   * Compute derived state: online users list
-   */
   const onlineUsers: OnlineUser[] = Object.values(presenceMap)
-    .filter((user) => user.online && user.userId !== userId) // Exclude current user
+    .filter((user) => user.online && user.userId !== userId)
     .map((user) => ({
       userId: user.userId,
       name: user.name,
       color: user.color,
       lastSeen: user.lastSeen,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+    .sort((a, b) => a.name.localeCompare(b.name));
 
-  /**
-   * Compute derived state: cursor data for rendering
-   */
   const cursors: CursorData[] = Object.values(presenceMap)
     .filter(
       (user) =>
-        user.online && // User is online
-        user.userId !== userId && // Not current user
-        user.cursor !== undefined && // Has cursor data
+        user.online &&
+        user.userId !== userId &&
+        user.cursor !== undefined &&
         user.cursor !== null
     )
     .map((user) => ({
@@ -237,13 +195,10 @@ export function usePresence(
     }));
 
   return {
-    // State
     presenceMap,
     onlineUsers,
     cursors,
     isInitialized,
-
-    // Actions
     updateCursor,
     removeCursor,
     updatePresence,

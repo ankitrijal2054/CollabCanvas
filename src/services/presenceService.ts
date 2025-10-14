@@ -25,6 +25,52 @@ import type {
  */
 export const presenceService = {
   /**
+   * Begin a presence session that auto-handles disconnects/reconnects
+   * Uses /.info/connected to detect connectivity and (re)register presence
+   */
+  startPresenceSession: (
+    userId: string,
+    userName: string,
+    canvasId: string = DEFAULT_CANVAS_ID
+  ): (() => void) => {
+    const connectedRef = ref(database, "/.info/connected");
+    const presenceRef = ref(database, `/presence/${canvasId}/${userId}`);
+
+    const handleConnected = async (snap: any) => {
+      const connected = !!snap.val();
+      if (!connected) return;
+
+      try {
+        // Set onDisconnect first to avoid race conditions
+        const disconnectRef = onDisconnect(presenceRef);
+        await disconnectRef.update({
+          online: false,
+          cursor: null,
+          lastSeen: serverTimestamp(),
+        });
+
+        // Now set online state
+        await set(presenceRef, {
+          name: userName,
+          online: true,
+          lastSeen: Date.now(),
+        } as Partial<UserPresence>);
+
+        console.log(`Presence session (re)started for ${userName}`);
+      } catch (error) {
+        console.error("Error starting presence session:", error);
+      }
+    };
+
+    onValue(connectedRef, handleConnected);
+
+    // Return unsubscribe/cleanup function
+    return () => {
+      off(connectedRef, "value", handleConnected);
+    };
+  },
+
+  /**
    * Update cursor position for a user
    * @param userId - Firebase user ID
    * @param position - Cursor position in canvas coordinates

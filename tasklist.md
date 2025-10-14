@@ -226,7 +226,7 @@ collabcanvas/
   - Create: Canvas route/page component
   - Add: Header with user info and logout
 
-- [ ] **Task 3.9: Test pan/zoom performance**
+- [x] **Task 3.9: Test pan/zoom performance**
 
   - Manual testing: Smooth 60 FPS, responsive controls
 
@@ -245,42 +245,42 @@ collabcanvas/
 
 **Goal:** Add ability to create and move rectangles on canvas
 
-- [ ] **Task 4.1: Update canvas types for shapes**
+- [x] **Task 4.1: Update canvas types for shapes**
 
   - Files to update: `src/types/canvas.types.ts`
   - Add: `Rectangle` interface, shape properties
 
-- [ ] **Task 4.2: Create CanvasObject component**
+- [x] **Task 4.2: Create CanvasObject component**
 
   - Files to create: `src/components/canvas/CanvasObject.tsx`
   - Implement: Render rectangle using Konva.Rect
   - Add: Basic styling (fill color, stroke)
 
-- [ ] **Task 4.3: Add shape creation logic**
+- [x] **Task 4.3: Add shape creation logic**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Implement: `createRectangle()` function
   - Add: Shape ID generation, default size (150x100), default color (#3B82F6)
 
-- [ ] **Task 4.4: Implement toolbar button rectangle creation**
+- [x] **Task 4.4: Implement toolbar button rectangle creation**
 
   - Files to update: `src/components/canvas/CanvasControls.tsx`
   - Add: "Add Rectangle" button in toolbar
   - Create: Rectangle at canvas center with default size on button click
 
-- [ ] **Task 4.5: Add drag functionality to shapes**
+- [x] **Task 4.5: Add drag functionality to shapes**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Implement: Konva drag events (`onDragStart`, `onDragMove`, `onDragEnd`)
   - Update: Shape position in state on drag
 
-- [ ] **Task 4.6: Add shape selection**
+- [x] **Task 4.6: Add shape selection**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Implement: Click to select shape, visual indicator (highlight/border)
   - Update: Selected shape state in context
 
-- [ ] **Task 4.7: Add resize functionality**
+- [x] **Task 4.7: Add resize functionality**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Add: Resize handles on selected rectangles (corner and edge handles)
@@ -288,7 +288,7 @@ collabcanvas/
   - Update: Object width/height in state on resize
   - Add: Visual feedback during resize
 
-- [ ] **Task 4.8: Add delete functionality**
+- [x] **Task 4.8: Add delete functionality**
 
   - Files to update: `src/contexts/CanvasContext.tsx`, `src/components/canvas/Canvas.tsx`
   - Implement: `deleteObject()` function in context
@@ -297,7 +297,7 @@ collabcanvas/
   - Update: Remove from local state
   - Test: Delete selected object
 
-- [ ] **Task 4.9: Test shape creation, movement, resize, and delete**
+- [x] **Task 4.9: Test shape creation, movement, resize, and delete**
   - Manual testing: Create multiple shapes, drag them, resize them, delete them
   - Test: Smooth performance with all interactions
 
@@ -309,7 +309,7 @@ collabcanvas/
 
 **Goal:** Set up database schema and basic sync infrastructure
 
-- [ ] **Task 5.1: Design database structure**
+- [x] **Task 5.1: Design database structure**
 
   - Files to create: `DATABASE_SCHEMA.md` (documentation)
   - Document structure:
@@ -357,24 +357,24 @@ collabcanvas/
   - Note: Use `DEFAULT_CANVAS_ID = "default"` from `src/constants/canvas.ts`
   - Note: Structure supports multiple canvases post-MVP without migration
 
-- [ ] **Task 5.2: Set up Firebase Realtime Database rules**
+- [x] **Task 5.2: Set up Firebase Realtime Database rules**
 
   - Files to update: `firebase.json`
   - Add: Database rules for read/write permissions
   - Deploy rules to Firebase
 
-- [ ] **Task 5.3: Create canvas service**
+- [x] **Task 5.3: Create canvas service**
 
   - Files to create: `src/services/canvasService.ts`
   - Implement: `saveObject()`, `updateObject()`, `deleteObject()`, `getCanvasState()`
   - Use: `DEFAULT_CANVAS_ID` for all database paths (e.g., `/canvases/default/objects/`)
 
-- [ ] **Task 5.4: Create sync helpers**
+- [x] **Task 5.4: Create sync helpers**
 
   - Files to create: `src/utils/syncHelpers.ts`
   - Implement: Debouncing, throttling for sync operations
 
-- [ ] **Task 5.5: Test database connection**
+- [x] **Task 5.5: Test database connection**
   - Manual testing: Write to database, read from console
 
 **PR Title:** `feat: set up Firebase Realtime Database structure`
@@ -385,55 +385,55 @@ collabcanvas/
 
 **Goal:** Sync canvas objects across all users in real-time
 
-- [ ] **Task 6.1: Create realtime sync hook**
+- [x] **Task 6.1: Create realtime sync hook**
 
   - Files to create: `src/hooks/useRealtimeSync.ts`
   - Implement: Firebase listeners for object changes
   - Add: Subscribe/unsubscribe logic
 
-- [ ] **Task 6.2: Integrate sync with Canvas Context**
+- [x] **Task 6.2: Integrate sync with Canvas Context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: Real-time listeners for object updates
   - Implement: Merge remote changes with local state
 
-- [ ] **Task 6.3: Sync object creation**
+- [x] **Task 6.3: Sync object creation**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Update: `createRectangle()` to save to Firebase at `/canvases/default/objects/`
   - Listen: New objects from other users
 
-- [ ] **Task 6.4: Sync object movement**
+- [x] **Task 6.4: Sync object movement**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Update: `onDragEnd` to save position to Firebase at `/canvases/default/objects/{objectId}`
   - Throttle: Updates during drag for performance
 
-- [ ] **Task 6.5: Handle concurrent edits**
+- [x] **Task 6.5: Handle concurrent edits**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Implement: Last-write-wins strategy
   - Add: Timestamp tracking
 
-- [ ] **Task 6.6: Add loading states**
+- [x] **Task 6.6: Add loading states**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Loading indicator while syncing initial state
 
-- [ ] **Task 6.7: Test multi-user object sync**
+- [x] **Task 6.7: Test multi-user object sync**
 
   - Manual testing: Open 2+ browser windows
   - Test: Create shapes in one, see in others
   - Test: Move shapes, verify sync speed (<100ms)
 
-- [ ] **Task 6.8: Sync object resize**
+- [x] **Task 6.8: Sync object resize**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Update: Save width/height to Firebase on resize end
   - Listen: Resize updates from other users
   - Test: Resize sync across multiple windows
 
-- [ ] **Task 6.9: Sync object deletion**
+- [x] **Task 6.9: Sync object deletion**
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Update: `deleteObject()` to remove from Firebase
   - Listen: Deletion events from other users
@@ -448,48 +448,48 @@ collabcanvas/
 
 **Goal:** Display real-time cursor positions with user names
 
-- [ ] **Task 7.1: Create collaboration types**
+- [x] **Task 7.1: Create collaboration types**
 
   - Files to create: `src/types/collaboration.types.ts`
   - Define: `CursorPosition`, `UserPresence` interfaces
 
-- [ ] **Task 7.2: Create presence service**
+- [x] **Task 7.2: Create presence service**
 
   - Files to create: `src/services/presenceService.ts`
   - Implement: `updateCursorPosition()`, `subscribeToCursors()`, `setUserOnline()`
   - Use: `/presence/default/{userId}` path (DEFAULT_CANVAS_ID)
 
-- [ ] **Task 7.3: Create presence hook**
+- [x] **Task 7.3: Create presence hook**
 
   - Files to create: `src/hooks/usePresence.ts`
   - Implement: Cursor position tracking, online users management
 
-- [ ] **Task 7.4: Create Cursor component**
+- [x] **Task 7.4: Create Cursor component**
 
   - Files to create: `src/components/collaboration/Cursor.tsx`
   - Implement: SVG cursor with user name label
   - Add: User-specific color generation
 
-- [ ] **Task 7.5: Create CursorLayer component**
+- [x] **Task 7.5: Create CursorLayer component**
 
   - Files to create: `src/components/collaboration/CursorLayer.tsx`
   - Implement: Render all active user cursors
   - Add: Filter out current user's cursor
 
-- [ ] **Task 7.6: Track local cursor movement**
+- [x] **Task 7.6: Track local cursor movement**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Mouse move listener
   - Throttle: Cursor updates (16ms for 60 FPS)
   - Send: Position to Firebase at `/presence/default/{userId}/cursor`
 
-- [ ] **Task 7.7: Integrate cursor layer into canvas**
+- [x] **Task 7.7: Integrate cursor layer into canvas**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: CursorLayer as overlay on canvas
   - Transform: Cursor positions based on zoom/pan
 
-- [ ] **Task 7.8: Test cursor synchronization**
+- [x] **Task 7.8: Test cursor synchronization**
   - Manual testing: Open 2+ windows, verify cursor updates
   - Test: Sync speed (<50ms), smooth movement
 
@@ -501,36 +501,36 @@ collabcanvas/
 
 **Goal:** Show who's online and handle disconnections
 
-- [ ] **Task 8.1: Create PresenceList component**
+- [x] **Task 8.1: Create PresenceList component**
 
   - Files to create: `src/components/collaboration/PresenceList.tsx`
   - Implement: Display list of online users with colored indicators
 
-- [ ] **Task 8.2: Implement online/offline detection**
+- [x] **Task 8.2: Implement online/offline detection**
 
   - Files to update: `src/services/presenceService.ts`
   - Add: Firebase presence using `.onDisconnect()` at `/presence/default/{userId}`
   - Implement: User goes offline when browser closes
 
-- [ ] **Task 8.3: Track user session state**
+- [x] **Task 8.3: Track user session state**
 
   - Files to update: `src/hooks/usePresence.ts`
   - Add: User joins/leaves events
   - Implement: Cleanup on disconnect
 
-- [ ] **Task 8.4: Add presence to app layout**
+- [x] **Task 8.4: Add presence to app layout**
 
   - Files to create: `src/components/layout/Sidebar.tsx`
   - Add: PresenceList component in sidebar showing online users
   - Display: User count and colored user indicators
 
-- [ ] **Task 8.5: Handle reconnection**
+- [x] **Task 8.5: Handle reconnection**
 
   - Files to update: `src/contexts/CanvasContext.tsx`, `src/hooks/usePresence.ts`
   - Implement: Reconnect logic when network restored
   - Re-sync: Canvas state on reconnection
 
-- [ ] **Task 8.6: Test presence system**
+- [x] **Task 8.6: Test presence system**
   - Manual testing: Join with multiple users
   - Test: Close browser, verify user goes offline
   - Test: Reconnect, verify state restoration

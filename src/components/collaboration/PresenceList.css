@@ -1,0 +1,65 @@
+/* PresenceList styles */
+
+.presence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.presence-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  color: #111827;
+}
+
+.presence-title {
+  font-size: 14px;
+}
+
+.presence-count {
+  font-size: 12px;
+  background: #111827;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.presence-loading,
+.presence-empty {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.presence-users {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.presence-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presence-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+
+.presence-name {
+  font-size: 13px;
+  color: #111827;
+}

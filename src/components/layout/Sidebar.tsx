@@ -1,4 +1,14 @@
-// Sidebar component - to be implemented in PR #8
+// Sidebar component - shows presence and future panels
+import React from "react";
+import PresenceList from "../collaboration/PresenceList";
+import "./Sidebar.css";
+
 export default function Sidebar() {
-  return <aside>Sidebar</aside>;
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-section">
+        <PresenceList />
+      </div>
+    </aside>
+  );
 }

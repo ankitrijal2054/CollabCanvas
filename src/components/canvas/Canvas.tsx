@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
+import Sidebar from "../layout/Sidebar";
 import CanvasToolbar from "./CanvasToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
@@ -25,6 +26,7 @@ export default function Canvas() {
     selectedObjectId,
     selectObject,
     deleteObject,
+    loading,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -291,10 +293,38 @@ export default function Canvas() {
           }
         }}
       >
+        <Sidebar />
         <CanvasToolbar />
         <CanvasControls />
 
         <div id="canvas-container" className="canvas-container">
+          {loading && (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(255,255,255,0.6)",
+                zIndex: 1002,
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              <div
+                style={{
+                  padding: "8px 12px",
+                  background: "#111827",
+                  color: "white",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                }}
+              >
+                Loading canvas…
+              </div>
+            </div>
+          )}
           <Stage
             ref={stageRef}
             width={stageSize.width}
