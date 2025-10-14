@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
+import Sidebar from "../layout/Sidebar";
 import CanvasToolbar from "./CanvasToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
@@ -291,6 +292,7 @@ export default function Canvas() {
           }
         }}
       >
+        <Sidebar />
         <CanvasToolbar />
         <CanvasControls />
 

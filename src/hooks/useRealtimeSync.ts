@@ -1,6 +1,8 @@
 // useRealtimeSync hook - Manages real-time synchronization with Firebase
 import { useEffect, useCallback, useRef } from "react";
 import { canvasService } from "../services/canvasService";
+import { ref, onValue, off } from "firebase/database";
+import { database } from "../services/firebase";
 import type { CanvasObject } from "../types/canvas.types";
 import { syncHelpers } from "../utils/syncHelpers";
 
@@ -102,6 +104,44 @@ export const useRealtimeSync = ({
       unsubscribe();
     };
   }, [enabled, subscribe, unsubscribe]);
+
+  /**
+   * Reconnection handling: when /.info/connected becomes true, re-subscribe
+   * and refresh the latest canvas state to avoid any missed updates.
+   */
+  useEffect(() => {
+    if (!enabled) return;
+
+    const connectedRef = ref(database, "/.info/connected");
+
+    const handleConnected = (snap: any) => {
+      const isConnected = !!snap.val();
+      if (!isConnected) return;
+
+      console.log(
+        "🌐 Network reconnected - resubscribing and refreshing state"
+      );
+      // Ensure a fresh subscription
+      unsubscribe();
+      subscribe();
+
+      // Fetch current state explicitly to resync
+      canvasService
+        .getCanvasState()
+        .then((objects) => {
+          onObjectsUpdate(objects);
+        })
+        .catch((err) => {
+          console.error("Failed to refresh canvas state after reconnect:", err);
+        });
+    };
+
+    onValue(connectedRef, handleConnected);
+
+    return () => {
+      off(connectedRef, "value", handleConnected);
+    };
+  }, [enabled, subscribe, unsubscribe, onObjectsUpdate]);
 
   return {
     subscribe,
