@@ -2,25 +2,91 @@
   "rules": {
     ".read": "auth != null",
     ".write": "auth != null",
+
     "canvases": {
       "$canvasId": {
+        "metadata": {
+          ".validate": "newData.hasChildren(['name', 'createdAt', 'createdBy'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "createdBy": {
+            ".validate": "newData.isString()"
+          }
+        },
         "objects": {
           "$objectId": {
-            ".validate": "newData.hasChildren(['id', 'x', 'y', 'width', 'height', 'color', 'createdBy', 'timestamp'])"
+            ".validate": "newData.hasChildren(['id', 'x', 'y', 'width', 'height', 'color', 'createdBy', 'timestamp'])",
+            "id": {
+              ".validate": "newData.isString() && newData.val() === $objectId"
+            },
+            "x": {
+              ".validate": "newData.isNumber()"
+            },
+            "y": {
+              ".validate": "newData.isNumber()"
+            },
+            "width": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+            "height": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+            "color": {
+              ".validate": "newData.isString()"
+            },
+            "createdBy": {
+              ".validate": "newData.isString()"
+            },
+            "timestamp": {
+              ".validate": "newData.isNumber()"
+            }
           }
         }
       }
     },
+
     "presence": {
       "$canvasId": {
         "$userId": {
-          ".validate": "newData.hasChildren(['name', 'online', 'lastSeen'])"
+          ".validate": "newData.hasChildren(['name', 'online', 'lastSeen'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0"
+          },
+          "online": {
+            ".validate": "newData.isBoolean()"
+          },
+          "cursor": {
+            ".validate": "newData.hasChildren(['x', 'y'])",
+            "x": {
+              ".validate": "newData.isNumber()"
+            },
+            "y": {
+              ".validate": "newData.isNumber()"
+            }
+          },
+          "lastSeen": {
+            ".validate": "newData.isNumber()"
+          }
         }
       }
     },
+
     "users": {
       "$userId": {
-        ".validate": "newData.hasChildren(['name', 'email'])"
+        ".validate": "newData.hasChildren(['name', 'email'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length > 0"
+        },
+        "email": {
+          ".validate": "newData.isString() && newData.val().matches(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i)"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        }
       }
     }
   }
