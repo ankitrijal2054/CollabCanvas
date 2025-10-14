@@ -1,5 +1,4 @@
 // PresenceList component - displays online users with colored indicators
-import React from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
 import type { OnlineUser } from "../../types/collaboration.types";

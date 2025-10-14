@@ -1,5 +1,4 @@
 // Sidebar component - shows presence and future panels
-import React from "react";
 import PresenceList from "../collaboration/PresenceList";
 import "./Sidebar.css";
 
