@@ -169,25 +169,28 @@
   - Hide: Tooltip when mouse leaves object
   - Calculate: Relative time (e.g., "5 minutes ago", "2 hours ago")
 
-- [ ] **Task 14.5: Create stress test suite**
+- [ ] **Task 14.5: Create stress test suite** ⏸️ DEFERRED
 
   - Files to create: `tests/stress/multi-user-stress.test.ts`
   - Implement: 5 simulated users, 500+ objects, 100+ edits/min
   - Run: 1-hour continuous test
   - Monitor: FPS (target: 60), sync latency (<100ms), failures (target: 0)
+  - **Note:** Will be completed after Phase 2 is done
 
-- [ ] **Task 14.6: Enhance performance monitoring utility**
+- [ ] **Task 14.6: Enhance performance monitoring utility** ⏸️ DEFERRED
 
   - Files to update: `src/utils/performanceMonitor.ts` (already exists from MVP)
   - Add: Operation success rate tracking
   - Add: Failure logging and categorization
   - Verify: FPS counter and sync latency tracking are working
+  - **Note:** Will be completed after Phase 2 is done
 
-- [ ] **Task 14.7: Run and validate stress test**
+- [ ] **Task 14.7: Run and validate stress test** ⏸️ DEFERRED
   - Execute: 1-hour stress test
   - Verify: Zero data loss, zero sync failures
   - Profile: Memory usage, identify bottlenecks
   - Document: Results and any optimizations made
+  - **Note:** Will be completed after Phase 2 is done
 
 **PR Title:** `feat: add last edit attribution and validate production readiness`
 
