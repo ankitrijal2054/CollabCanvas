@@ -40,6 +40,8 @@ interface CanvasContextType extends CanvasState {
   selectObject: (id: string | null) => void;
   createRectangle: () => Promise<void>;
   isCanvasDisabled: boolean;
+  pauseSync: () => void;
+  resumeSync: () => void;
 }
 
 // Create the context with undefined default value
@@ -82,25 +84,39 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   // Track canvas disabled state (when offline timeout exceeded)
   const [isCanvasDisabled, setIsCanvasDisabled] = useState(false);
 
+  // Track if we should pause real-time sync (during queue processing)
+  const [isSyncPaused, setIsSyncPaused] = useState(false);
+
   /**
    * Handle incoming objects from Firebase
    * Merges remote changes with local state using Last-Write-Wins
    */
-  const handleObjectsUpdate = useCallback((remoteObjects: CanvasObject[]) => {
-    setCanvasState((prev) => {
-      // Merge local and remote objects with conflict resolution
-      const mergedObjects = syncHelpers.mergeObjects(
-        prev.objects,
-        remoteObjects
-      );
+  const handleObjectsUpdate = useCallback(
+    (remoteObjects: CanvasObject[]) => {
+      // Skip updates if sync is paused (e.g., during queue processing)
+      if (isSyncPaused) {
+        console.log(
+          "🚫 Real-time update skipped: sync is paused during queue processing"
+        );
+        return;
+      }
 
-      return {
-        ...prev,
-        objects: mergedObjects,
-        loading: false, // Data loaded
-      };
-    });
-  }, []);
+      setCanvasState((prev) => {
+        // Merge local and remote objects with conflict resolution
+        const mergedObjects = syncHelpers.mergeObjects(
+          prev.objects,
+          remoteObjects
+        );
+
+        return {
+          ...prev,
+          objects: mergedObjects,
+          loading: false, // Data loaded
+        };
+      });
+    },
+    [isSyncPaused]
+  );
 
   /**
    * Initialize canvas and load initial state
@@ -152,62 +168,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       }));
     }
   }, [user]);
-
-  /**
-   * Setup offline queue integration
-   * Registers operation executor and timeout callback
-   */
-  useEffect(() => {
-    // Register executor function that processes queued operations
-    offlineQueue.setOperationExecutor(
-      async (operation: QueuedOperation): Promise<void> => {
-        console.log(
-          `⚙️ Executing queued operation: ${operation.type} for ${operation.objectId}`
-        );
-
-        switch (operation.type) {
-          case "create":
-            await syncOps.saveObject(operation.payload);
-            break;
-          case "update":
-            await syncOps.updateObject(operation.objectId, operation.payload);
-            break;
-          case "delete":
-            await syncOps.deleteObject(operation.objectId);
-            break;
-          default:
-            console.warn(`Unknown operation type: ${operation.type}`);
-        }
-      }
-    );
-
-    // Register timeout callback - disables canvas after 10 minutes offline
-    offlineQueue.onTimeout(() => {
-      console.error(
-        "🚫 Canvas disabled: offline timeout exceeded (10 minutes)"
-      );
-      setIsCanvasDisabled(true);
-    });
-
-    // Re-enable canvas when back online
-    const checkOnlineStatus = async () => {
-      if (navigator.onLine) {
-        console.log("🔓 Canvas re-enabled: back online");
-        setIsCanvasDisabled(false);
-
-        // Clear any old queue data when back online
-        if (offlineQueue.getQueueCount() === 0) {
-          await offlineQueue.clearQueue();
-        }
-      }
-    };
-
-    window.addEventListener("online", checkOnlineStatus);
-
-    return () => {
-      window.removeEventListener("online", checkOnlineStatus);
-    };
-  }, [syncOps]);
 
   /**
    * Set the entire viewport (position + scale)
@@ -327,6 +287,81 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   };
 
   /**
+   * Pause real-time sync (used during queue processing to prevent race conditions)
+   */
+  const pauseSync = useCallback(() => {
+    console.log("⏸️ Real-time sync paused");
+    setIsSyncPaused(true);
+  }, []);
+
+  /**
+   * Resume real-time sync after queue processing is complete
+   */
+  const resumeSync = useCallback(() => {
+    console.log("▶️ Real-time sync resumed");
+    setIsSyncPaused(false);
+  }, []);
+
+  /**
+   * Setup offline queue integration
+   * Registers operation executor, sync callbacks, and timeout callback
+   */
+  useEffect(() => {
+    // Register executor function that processes queued operations
+    offlineQueue.setOperationExecutor(
+      async (operation: QueuedOperation): Promise<void> => {
+        console.log(
+          `⚙️ Executing queued operation: ${operation.type} for ${operation.objectId}`
+        );
+
+        switch (operation.type) {
+          case "create":
+            await syncOps.saveObject(operation.payload);
+            break;
+          case "update":
+            await syncOps.updateObject(operation.objectId, operation.payload);
+            break;
+          case "delete":
+            await syncOps.deleteObject(operation.objectId);
+            break;
+          default:
+            console.warn(`Unknown operation type: ${operation.type}`);
+        }
+      }
+    );
+
+    // Register sync pause/resume callbacks to prevent race conditions
+    offlineQueue.setSyncCallbacks(pauseSync, resumeSync);
+
+    // Register timeout callback - disables canvas after 10 minutes offline
+    offlineQueue.onTimeout(() => {
+      console.error(
+        "🚫 Canvas disabled: offline timeout exceeded (10 minutes)"
+      );
+      setIsCanvasDisabled(true);
+    });
+
+    // Re-enable canvas when back online
+    const checkOnlineStatus = async () => {
+      if (navigator.onLine) {
+        console.log("🔓 Canvas re-enabled: back online");
+        setIsCanvasDisabled(false);
+
+        // Clear any old queue data when back online
+        if (offlineQueue.getQueueCount() === 0) {
+          await offlineQueue.clearQueue();
+        }
+      }
+    };
+
+    window.addEventListener("online", checkOnlineStatus);
+
+    return () => {
+      window.removeEventListener("online", checkOnlineStatus);
+    };
+  }, [syncOps, pauseSync, resumeSync]);
+
+  /**
    * Create a new rectangle at canvas center with default size and color
    * Saves to Firebase for real-time sync (or queues if offline)
    */
@@ -411,6 +446,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     selectObject,
     createRectangle,
     isCanvasDisabled,
+    pauseSync,
+    resumeSync,
   };
 
   return (

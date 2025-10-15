@@ -110,16 +110,31 @@ export const useConnectionStatus = (): ConnectionStatus => {
 
       try {
         await offlineQueue.processQueue();
-        console.log("useConnectionStatus: All operations synced successfully");
 
-        // Clear queue and IndexedDB after successful sync
-        await offlineQueue.clearQueue();
-        console.log("useConnectionStatus: Queue and IndexedDB cleared");
+        // Check if queue is actually empty after processing
+        const remainingCount = offlineQueue.getQueueCount();
+        if (remainingCount === 0) {
+          console.log(
+            "useConnectionStatus: All operations synced successfully"
+          );
 
-        // Update queue count to 0
-        setQueuedOperationsCount(0);
+          // Only clear if queue is empty (all operations succeeded)
+          await offlineQueue.clearQueue();
+          console.log("useConnectionStatus: Queue and IndexedDB cleared");
+
+          // Update queue count to 0
+          setQueuedOperationsCount(0);
+        } else {
+          console.warn(
+            `useConnectionStatus: ${remainingCount} operations still in queue after processing. Will retry later.`
+          );
+          setQueuedOperationsCount(remainingCount);
+        }
       } catch (error) {
         console.error("useConnectionStatus: Error processing queue", error);
+        // Don't clear queue on error - keep operations for retry
+        const remainingCount = offlineQueue.getQueueCount();
+        setQueuedOperationsCount(remainingCount);
       } finally {
         setIsSyncing(false);
       }
@@ -179,16 +194,29 @@ export const useConnectionStatus = (): ConnectionStatus => {
       setIsSyncing(true);
       try {
         await offlineQueue.processQueue();
-        console.log("useConnectionStatus: Manual retry successful");
 
-        // Clear queue and IndexedDB after successful sync
-        await offlineQueue.clearQueue();
-        console.log("useConnectionStatus: Queue and IndexedDB cleared");
+        // Check if queue is actually empty after processing
+        const remainingCount = offlineQueue.getQueueCount();
+        if (remainingCount === 0) {
+          console.log("useConnectionStatus: Manual retry successful");
 
-        // Update queue count to 0
-        setQueuedOperationsCount(0);
+          // Only clear if queue is empty (all operations succeeded)
+          await offlineQueue.clearQueue();
+          console.log("useConnectionStatus: Queue and IndexedDB cleared");
+
+          // Update queue count to 0
+          setQueuedOperationsCount(0);
+        } else {
+          console.warn(
+            `useConnectionStatus: Manual retry incomplete - ${remainingCount} operations still in queue`
+          );
+          setQueuedOperationsCount(remainingCount);
+        }
       } catch (error) {
         console.error("useConnectionStatus: Manual retry failed", error);
+        // Don't clear queue on error - keep operations for retry
+        const remainingCount = offlineQueue.getQueueCount();
+        setQueuedOperationsCount(remainingCount);
       } finally {
         setIsSyncing(false);
       }

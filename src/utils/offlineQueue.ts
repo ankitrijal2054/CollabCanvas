@@ -33,6 +33,8 @@ export class OfflineQueue {
   private onTimeoutCallback?: () => void;
   private onQueueUpdateCallback?: (count: number) => void;
   private operationExecutor?: OperationExecutor;
+  private onPauseSyncCallback?: () => void;
+  private onResumeSyncCallback?: () => void;
 
   // Configuration with defaults
   private readonly MAX_OFFLINE_DURATION: number;
@@ -68,6 +70,15 @@ export class OfflineQueue {
    */
   public setOperationExecutor(executor: OperationExecutor): void {
     this.operationExecutor = executor;
+  }
+
+  /**
+   * Set callbacks to pause/resume real-time sync during queue processing
+   * This prevents race conditions where Firebase updates overwrite local changes
+   */
+  public setSyncCallbacks(pauseSync: () => void, resumeSync: () => void): void {
+    this.onPauseSyncCallback = pauseSync;
+    this.onResumeSyncCallback = resumeSync;
   }
 
   /**
@@ -147,6 +158,11 @@ export class OfflineQueue {
       return;
     }
 
+    // Pause real-time sync to prevent race conditions
+    if (this.onPauseSyncCallback) {
+      this.onPauseSyncCallback();
+    }
+
     this.isProcessing = true;
     console.log(`OfflineQueue: Processing ${this.queue.length} operations`);
 
@@ -212,9 +228,27 @@ export class OfflineQueue {
 
     this.isProcessing = false;
 
-    // If queue is now empty, log success
+    // Resume real-time sync after queue processing is complete
+    if (this.onResumeSyncCallback) {
+      this.onResumeSyncCallback();
+    }
+
+    // Log final queue status
     if (this.queue.length === 0) {
-      console.log("OfflineQueue: All operations processed successfully");
+      console.log("OfflineQueue: All operations processed successfully ✅");
+    } else {
+      console.warn(
+        `OfflineQueue: Processing stopped with ${this.queue.length} operations remaining ⚠️`
+      );
+      console.warn(
+        "OfflineQueue: Remaining operations:",
+        this.queue.map((op) => ({
+          id: op.id,
+          type: op.type,
+          objectId: op.objectId,
+          retryCount: op.retryCount,
+        }))
+      );
     }
   }
 
