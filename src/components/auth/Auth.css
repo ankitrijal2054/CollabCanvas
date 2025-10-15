@@ -40,7 +40,7 @@
 
 .auth-header {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .auth-header h1 {
@@ -57,13 +57,13 @@
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 .form-group label {
@@ -91,7 +91,7 @@
 }
 
 .btn-primary {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   padding: 0.875rem;
   background-color: var(--primary-color);
   color: white;
@@ -123,7 +123,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  margin: 1.25rem 0;
+  margin: 1rem 0;
   color: var(--text-secondary);
 }
 
@@ -179,8 +179,8 @@
 
 .auth-footer {
   text-align: center;
-  margin-top: 1.25rem;
-  padding-top: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--border-color);
 }
 
@@ -197,6 +197,40 @@
 
 .auth-footer a:hover {
   text-decoration: underline;
+}
+
+/* Auth page title container above the card */
+.auth-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 20px 14px;
+}
+
+.auth-page-title {
+  text-align: center;
+  color: #fff;
+  user-select: none;
+}
+
+.auth-page-title h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  background: linear-gradient(90deg, #ffffff, #e0e7ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.auth-page-title p {
+  margin-top: 4px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Error message specific to auth forms */
@@ -253,5 +287,14 @@
   .auth-footer {
     margin-top: 1rem;
     padding-top: 1rem;
+  }
+
+  .auth-content {
+    padding: 20px 12px;
+    gap: 10px;
+  }
+
+  .auth-page-title h1 {
+    font-size: 1.75rem;
   }
 }
