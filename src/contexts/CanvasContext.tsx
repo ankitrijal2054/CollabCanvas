@@ -95,9 +95,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     (remoteObjects: CanvasObject[]) => {
       // Skip updates if sync is paused (e.g., during queue processing)
       if (isSyncPaused) {
-        console.log(
-          "🚫 Real-time update skipped: sync is paused during queue processing"
-        );
         return;
       }
 
@@ -265,10 +262,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           timestamp: Date.now(),
           retryCount: 0,
         });
-        console.log("📦 Delete operation queued:", id);
       } else {
         await syncOps.deleteObject(id);
-        console.log("✅ Object deleted from Firebase:", id);
       }
     } catch (error) {
       console.error("❌ Failed to delete object:", error);
@@ -290,7 +285,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
    * Pause real-time sync (used during queue processing to prevent race conditions)
    */
   const pauseSync = useCallback(() => {
-    console.log("⏸️ Real-time sync paused");
     setIsSyncPaused(true);
   }, []);
 
@@ -298,7 +292,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
    * Resume real-time sync after queue processing is complete
    */
   const resumeSync = useCallback(() => {
-    console.log("▶️ Real-time sync resumed");
     setIsSyncPaused(false);
   }, []);
 
@@ -310,10 +303,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Register executor function that processes queued operations
     offlineQueue.setOperationExecutor(
       async (operation: QueuedOperation): Promise<void> => {
-        console.log(
-          `⚙️ Executing queued operation: ${operation.type} for ${operation.objectId}`
-        );
-
         switch (operation.type) {
           case "create":
             await syncOps.saveObject(operation.payload);
@@ -344,7 +333,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Re-enable canvas when back online
     const checkOnlineStatus = async () => {
       if (navigator.onLine) {
-        console.log("🔓 Canvas re-enabled: back online");
         setIsCanvasDisabled(false);
 
         // Clear any old queue data when back online
@@ -422,10 +410,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           timestamp: Date.now(),
           retryCount: 0,
         });
-        console.log("📦 Create operation queued:", id);
       } else {
         await syncOps.saveObject(newRectangle);
-        console.log("✅ Rectangle saved to Firebase:", id);
       }
     } catch (error) {
       console.error("❌ Failed to save rectangle:", error);

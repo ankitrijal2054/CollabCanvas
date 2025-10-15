@@ -82,7 +82,6 @@ export const useConnectionStatus = (): ConnectionStatus => {
    * Handle online event
    */
   const handleOnline = useCallback(async () => {
-    console.log("useConnectionStatus: Browser is online");
     setIsOnline(true);
     setIsReconnecting(true);
 
@@ -103,9 +102,6 @@ export const useConnectionStatus = (): ConnectionStatus => {
     // If we have queued operations, sync them
     const queueCount = offlineQueue.getQueueCount();
     if (queueCount > 0) {
-      console.log(
-        `useConnectionStatus: Syncing ${queueCount} queued operations`
-      );
       setIsSyncing(true);
 
       try {
@@ -114,13 +110,8 @@ export const useConnectionStatus = (): ConnectionStatus => {
         // Check if queue is actually empty after processing
         const remainingCount = offlineQueue.getQueueCount();
         if (remainingCount === 0) {
-          console.log(
-            "useConnectionStatus: All operations synced successfully"
-          );
-
           // Only clear if queue is empty (all operations succeeded)
           await offlineQueue.clearQueue();
-          console.log("useConnectionStatus: Queue and IndexedDB cleared");
 
           // Update queue count to 0
           setQueuedOperationsCount(0);
@@ -155,7 +146,6 @@ export const useConnectionStatus = (): ConnectionStatus => {
    * Handle offline event
    */
   const handleOffline = useCallback(() => {
-    console.log("useConnectionStatus: Browser is offline");
     setIsOnline(false);
     setIsReconnecting(false);
     setIsSyncing(false);
@@ -170,8 +160,6 @@ export const useConnectionStatus = (): ConnectionStatus => {
    * Manual retry connection
    */
   const retryConnection = useCallback(async () => {
-    console.log("useConnectionStatus: Manual retry connection triggered");
-
     if (!navigator.onLine) {
       console.warn("useConnectionStatus: Browser still offline, cannot retry");
       return;
@@ -198,11 +186,8 @@ export const useConnectionStatus = (): ConnectionStatus => {
         // Check if queue is actually empty after processing
         const remainingCount = offlineQueue.getQueueCount();
         if (remainingCount === 0) {
-          console.log("useConnectionStatus: Manual retry successful");
-
           // Only clear if queue is empty (all operations succeeded)
           await offlineQueue.clearQueue();
-          console.log("useConnectionStatus: Queue and IndexedDB cleared");
 
           // Update queue count to 0
           setQueuedOperationsCount(0);
@@ -265,14 +250,10 @@ export const useConnectionStatus = (): ConnectionStatus => {
       setFirebaseConnected(connected);
 
       if (connected) {
-        console.log("useConnectionStatus: Firebase connected");
-
         // If browser is also online and we have queued ops, trigger sync
         if (navigator.onLine && offlineQueue.getQueueCount() > 0) {
           handleOnline();
         }
-      } else {
-        console.log("useConnectionStatus: Firebase disconnected");
       }
     });
 

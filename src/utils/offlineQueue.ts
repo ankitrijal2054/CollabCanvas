@@ -88,9 +88,6 @@ export class OfflineQueue {
     try {
       const operations = await getAllOperations();
       this.queue = operations;
-      console.log(
-        `OfflineQueue: Loaded ${operations.length} operations from IndexedDB`
-      );
 
       // Notify queue update
       this.notifyQueueUpdate();
@@ -122,8 +119,6 @@ export class OfflineQueue {
 
       // Persist to IndexedDB
       await addToIndexedDB(operation);
-
-      console.log(`OfflineQueue: Operation ${operation.id} enqueued`);
 
       // Notify queue update
       this.notifyQueueUpdate();
@@ -164,7 +159,6 @@ export class OfflineQueue {
     }
 
     this.isProcessing = true;
-    console.log(`OfflineQueue: Processing ${this.queue.length} operations`);
 
     while (this.queue.length > 0) {
       const operation = this.queue[0];
@@ -177,10 +171,6 @@ export class OfflineQueue {
         this.queue.shift();
         await removeFromIndexedDB(operation.id);
 
-        console.log(
-          `OfflineQueue: Operation ${operation.id} processed successfully`
-        );
-
         // Notify queue update
         this.notifyQueueUpdate();
       } catch (error) {
@@ -191,9 +181,6 @@ export class OfflineQueue {
 
         if (this.isNetworkError(error)) {
           // Network error - stop processing and wait for reconnection
-          console.log(
-            "OfflineQueue: Network error detected, pausing queue processing"
-          );
           break;
         }
 
@@ -217,9 +204,6 @@ export class OfflineQueue {
           const delay =
             this.RETRY_DELAYS[operation.retryCount - 1] ||
             this.RETRY_DELAYS[this.RETRY_DELAYS.length - 1];
-          console.log(
-            `OfflineQueue: Retrying operation ${operation.id} in ${delay}ms (attempt ${operation.retryCount}/${this.MAX_RETRIES})`
-          );
 
           await this.delay(delay);
         }
@@ -234,9 +218,7 @@ export class OfflineQueue {
     }
 
     // Log final queue status
-    if (this.queue.length === 0) {
-      console.log("OfflineQueue: All operations processed successfully ✅");
-    } else {
+    if (this.queue.length > 0) {
       console.warn(
         `OfflineQueue: Processing stopped with ${this.queue.length} operations remaining ⚠️`
       );
@@ -282,7 +264,6 @@ export class OfflineQueue {
    */
   private triggerTimeout(): void {
     if (this.onTimeoutCallback) {
-      console.log("OfflineQueue: Triggering timeout callback");
       this.onTimeoutCallback();
     }
   }
@@ -362,7 +343,6 @@ export class OfflineQueue {
     try {
       this.queue = [];
       await clearAllOperations();
-      console.log("OfflineQueue: Queue cleared");
 
       // Notify queue update
       this.notifyQueueUpdate();

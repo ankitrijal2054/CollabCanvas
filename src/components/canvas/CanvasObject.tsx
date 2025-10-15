@@ -63,10 +63,8 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           timestamp: Date.now(),
           retryCount: 0,
         });
-        console.log("📦 Update operation queued:", object.id);
       } else {
         await syncOps.updateObject(object.id, updates);
-        console.log("✅ Object position synced:", object.id);
       }
     } catch (error) {
       console.error("❌ Failed to sync object position:", error);
@@ -116,10 +114,8 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           timestamp: Date.now(),
           retryCount: 0,
         });
-        console.log("📦 Update operation queued:", object.id);
       } else {
         await syncOps.updateObject(object.id, updates);
-        console.log("✅ Object resize synced:", object.id);
       }
     } catch (error) {
       console.error("❌ Failed to sync object resize:", error);

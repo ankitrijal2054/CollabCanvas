@@ -51,8 +51,6 @@ export const initDB = (): Promise<IDBDatabase> => {
 
         // Create index on timestamp for sorting
         objectStore.createIndex("timestamp", "timestamp", { unique: false });
-
-        console.log("IndexedDB: Object store created");
       }
     };
   });
@@ -73,7 +71,6 @@ export const addOperation = async (
       const request = store.add(operation);
 
       request.onsuccess = () => {
-        console.log(`IndexedDB: Operation ${operation.id} added to queue`);
         resolve();
       };
 
@@ -147,7 +144,6 @@ export const removeOperation = async (operationId: string): Promise<void> => {
       const request = store.delete(operationId);
 
       request.onsuccess = () => {
-        console.log(`IndexedDB: Operation ${operationId} removed from queue`);
         resolve();
       };
 
@@ -180,7 +176,6 @@ export const clearAllOperations = async (): Promise<void> => {
       const request = store.clear();
 
       request.onsuccess = () => {
-        console.log("IndexedDB: All operations cleared from queue");
         resolve();
       };
 
@@ -264,9 +259,6 @@ export const updateOperationRetryCount = async (
           const updateRequest = store.put(operation);
 
           updateRequest.onsuccess = () => {
-            console.log(
-              `IndexedDB: Operation ${operationId} retry count updated to ${retryCount}`
-            );
             resolve();
           };
 
