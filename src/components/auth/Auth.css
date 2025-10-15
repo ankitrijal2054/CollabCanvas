@@ -216,21 +216,67 @@
 }
 
 .auth-page-title h1 {
-  font-size: 2rem;
+  font-size: 2.25rem;
   font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.1;
   margin: 0;
-  background: linear-gradient(90deg, #ffffff, #e0e7ff);
+  background: linear-gradient(90deg, #93c5fd, #c4b5fd, #93c5fd);
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  text-shadow: 0 2px 12px rgba(147, 197, 253, 0.25);
+  animation: title-sheen 12s ease infinite;
 }
 
 .auth-page-title p {
   margin-top: 4px;
   font-size: 0.95rem;
   color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes title-sheen {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Modernize in-card heading */
+.auth-header h1 {
+  background: linear-gradient(90deg, #111827, #4f46e5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.auth-header::after {
+  content: "";
+  display: block;
+  height: 2px;
+  width: 100%;
+  margin: 12px auto 0;
+  background: linear-gradient(
+    90deg,
+    rgba(79, 70, 229, 0.35),
+    rgba(59, 130, 246, 0.35)
+  );
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-page-title h1 {
+    animation: none;
+    background-size: auto;
+  }
 }
 
 /* Error message specific to auth forms */
