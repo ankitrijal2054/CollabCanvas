@@ -140,52 +140,57 @@
 
 ### PR #14: Last Edit Attribution & Stress Testing
 
-**Goal:** Show edit attribution and validate production readiness
+**Goal:** Show edit attribution on hover and validate production readiness
 
-- [ ] **Task 14.1: Update canvas types with attribution**
+- [x] **Task 14.1: Update canvas types with attribution**
 
   - Files to update: `src/types/canvas.types.ts`
-  - Add: `lastEditedBy`, `lastEditedByName`, `lastEditedAt` to `BaseObject`
+  - Add: `lastEditedBy`, `lastEditedByName`, `lastEditedAt` to `CanvasObject`
 
-- [ ] **Task 14.2: Update canvas service to save attribution**
+- [x] **Task 14.2: Update canvas service to save attribution**
 
-  - Files to update: `src/services/canvasService.ts`
+  - Files to update: `src/services/canvasService.ts`, `src/services/transactionService.ts`
   - Add: Attribution fields to all create/update operations
   - Use: Current user ID and name from auth context
 
-- [ ] **Task 14.3: Create edit attribution badge component**
+- [x] **Task 14.3: Create hover tooltip component**
 
-  - Files to create: `src/components/canvas/EditAttributionBadge.tsx`
-  - Implement: Small avatar badge (16x16px) on selected object
-  - Add: Tooltip with "Last edited by [Name], [time] ago"
-  - Style: Smooth fade in/out (200ms), non-intrusive positioning
+  - Files to create: `src/components/canvas/EditAttributionTooltip.tsx`, `src/components/canvas/EditAttributionTooltip.css`
+  - Implement: HTML tooltip positioned near cursor
+  - Display: "Last edited by [Name], [time] ago"
+  - Style: Smooth fade in/out (200ms), dark background with white text
+  - Handle: Deleted users (show "Unknown User")
 
-- [ ] **Task 14.4: Integrate badge with canvas object**
+- [x] **Task 14.4: Integrate tooltip with canvas object**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
-  - Render: Attribution badge when object is selected
-  - Handle: Deleted users (show "Unknown User")
-  - Make: Keyboard-accessible (tab navigation)
+  - Add: `onMouseEnter`/`onMouseLeave` event handlers
+  - Show: Tooltip on hover with attribution data
+  - Hide: Tooltip when mouse leaves object
+  - Calculate: Relative time (e.g., "5 minutes ago", "2 hours ago")
 
-- [ ] **Task 14.5: Create stress test suite**
+- [ ] **Task 14.5: Create stress test suite** ⏸️ DEFERRED
 
   - Files to create: `tests/stress/multi-user-stress.test.ts`
   - Implement: 5 simulated users, 500+ objects, 100+ edits/min
   - Run: 1-hour continuous test
   - Monitor: FPS (target: 60), sync latency (<100ms), failures (target: 0)
+  - **Note:** Will be completed after Phase 2 is done
 
-- [ ] **Task 14.6: Create performance monitoring utility**
+- [ ] **Task 14.6: Enhance performance monitoring utility** ⏸️ DEFERRED
 
-  - Files to create: `src/utils/performanceMonitor.ts`
-  - Add: FPS counter (development only)
-  - Track: Sync latency, operation success rate
-  - Log: Performance metrics to console
+  - Files to update: `src/utils/performanceMonitor.ts` (already exists from MVP)
+  - Add: Operation success rate tracking
+  - Add: Failure logging and categorization
+  - Verify: FPS counter and sync latency tracking are working
+  - **Note:** Will be completed after Phase 2 is done
 
-- [ ] **Task 14.7: Run and validate stress test**
+- [ ] **Task 14.7: Run and validate stress test** ⏸️ DEFERRED
   - Execute: 1-hour stress test
   - Verify: Zero data loss, zero sync failures
   - Profile: Memory usage, identify bottlenecks
   - Document: Results and any optimizations made
+  - **Note:** Will be completed after Phase 2 is done
 
 **PR Title:** `feat: add last edit attribution and validate production readiness`
 

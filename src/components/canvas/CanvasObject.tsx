@@ -15,6 +15,11 @@ interface CanvasObjectProps {
   object: CanvasObjectType;
   isSelected: boolean;
   onSelect: () => void;
+  onHoverChange?: (
+    hovering: boolean,
+    object: CanvasObjectType | null,
+    position: { x: number; y: number }
+  ) => void;
 }
 
 /**
@@ -22,7 +27,12 @@ interface CanvasObjectProps {
  * Renders a single canvas object (rectangle) with selection, drag, and resize capabilities
  * Now with Firebase sync for all operations!
  */
-function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
+function CanvasObject({
+  object,
+  isSelected,
+  onSelect,
+  onHoverChange,
+}: CanvasObjectProps) {
   const shapeRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const { updateObject, canvasSize, isCanvasDisabled } = useCanvas();
@@ -52,8 +62,9 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
       x: node.x(),
       y: node.y(),
       timestamp: Date.now(),
-      userId: user?.id,
     };
+
+    const userName = user?.name || user?.email || "Unknown User";
 
     // Update local state immediately (optimistic update)
     updateObject(object.id, updates);
@@ -71,7 +82,12 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           retryCount: 0,
         });
       } else {
-        const result = await syncOps.updateObject(object.id, updates, user?.id);
+        const result = await syncOps.updateObject(
+          object.id,
+          updates,
+          user?.id,
+          userName
+        );
 
         if (!result.success) {
           // Handle transaction failure
@@ -116,8 +132,9 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
       width: Math.max(5, node.width() * scaleX), // Minimum width of 5px
       height: Math.max(5, node.height() * scaleY), // Minimum height of 5px
       timestamp: Date.now(),
-      userId: user?.id,
     };
+
+    const userName = user?.name || user?.email || "Unknown User";
 
     // Update local state immediately (optimistic update)
     updateObject(object.id, updates);
@@ -135,7 +152,12 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           retryCount: 0,
         });
       } else {
-        const result = await syncOps.updateObject(object.id, updates, user?.id);
+        const result = await syncOps.updateObject(
+          object.id,
+          updates,
+          user?.id,
+          userName
+        );
 
         if (!result.success) {
           // Handle transaction failure
@@ -151,6 +173,44 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
       }
     } catch (error) {
       console.error("❌ Failed to sync object resize:", error);
+    }
+  };
+
+  /**
+   * Handle mouse enter - notify parent to show tooltip
+   */
+  const handleMouseEnter = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const stage = e.target.getStage();
+    const pointerPos = stage?.getPointerPosition();
+
+    if (
+      pointerPos &&
+      object.lastEditedByName &&
+      object.lastEditedAt &&
+      onHoverChange
+    ) {
+      onHoverChange(true, object, pointerPos);
+    }
+  };
+
+  /**
+   * Handle mouse move - update tooltip position
+   */
+  const handleMouseMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
+    const stage = e.target.getStage();
+    const pointerPos = stage?.getPointerPosition();
+
+    if (pointerPos && onHoverChange) {
+      onHoverChange(true, object, pointerPos);
+    }
+  };
+
+  /**
+   * Handle mouse leave - hide tooltip
+   */
+  const handleMouseLeave = () => {
+    if (onHoverChange) {
+      onHoverChange(false, null, { x: 0, y: 0 });
     }
   };
 
@@ -186,6 +246,9 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
         onTap={onSelect}
         onDragEnd={handleDragEnd}
         onTransformEnd={handleTransformEnd}
+        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       />
       {isSelected && (
         <Transformer

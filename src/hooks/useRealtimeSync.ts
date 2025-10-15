@@ -247,7 +247,16 @@ export const useSyncOperations = () => {
     try {
       if (ids.length === 1) {
         const id = ids[0];
-        await canvasService.updateObject(id, pending[id]);
+        const updates = pending[id];
+
+        // Extract attribution metadata (stored with __ prefix)
+        const userId = (updates as any).__userId;
+        const userName = (updates as any).__userName;
+
+        // Remove metadata from actual updates
+        const { __userId, __userName, ...cleanUpdates } = updates as any;
+
+        await canvasService.updateObject(id, cleanUpdates, userId, userName);
       } else {
         await canvasService.batchUpdateObjects(pending);
       }
@@ -294,13 +303,18 @@ export const useSyncOperations = () => {
     async (
       objectId: string,
       updates: Partial<CanvasObject>,
-      userId?: string
+      userId?: string,
+      userName?: string
     ): Promise<TransactionResult> => {
-      // Include userId in updates if provided
-      const updatesWithUser = userId ? { ...updates, userId } : updates;
+      // Include userId and userName in updates if provided (will be used for attribution)
+      const updatesWithAttribution = {
+        ...updates,
+        ...(userId && { __userId: userId }),
+        ...(userName && { __userName: userName }),
+      };
 
       await syncHelpers.retryOperation(
-        async () => enqueueUpdate(objectId, updatesWithUser),
+        async () => enqueueUpdate(objectId, updatesWithAttribution),
         3,
         100
       );

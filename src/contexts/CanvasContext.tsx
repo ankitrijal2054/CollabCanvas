@@ -442,6 +442,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     const x = centerPos.x - DEFAULT_RECTANGLE.width / 2;
     const y = centerPos.y - DEFAULT_RECTANGLE.height / 2;
 
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
     const newRectangle: CanvasObject = {
       id,
       x,
@@ -450,7 +453,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       height: DEFAULT_RECTANGLE.height,
       color: DEFAULT_RECTANGLE.color,
       createdBy: user?.id || "anonymous",
-      timestamp: Date.now(),
+      timestamp: now,
+      // Attribution for new objects
+      lastEditedBy: user?.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
     };
 
     // Add to local state immediately (optimistic update)

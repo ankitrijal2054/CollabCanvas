@@ -48,12 +48,14 @@ export interface TransactionResult {
  * @param objectId - ID of the object to update
  * @param updates - Partial updates to apply
  * @param userId - Optional user ID making the update (for attribution)
+ * @param userName - Optional user name for attribution
  * @returns Transaction result with success status and error details
  */
 export async function updateObjectTransaction(
   objectId: string,
   updates: Partial<CanvasObject>,
-  userId?: string
+  userId?: string,
+  userName?: string
 ): Promise<TransactionResult> {
   const objectRef = ref(
     database,
@@ -93,6 +95,8 @@ export async function updateObjectTransaction(
       // Add attribution if userId provided
       if (userId) {
         updatedObject.lastEditedBy = userId;
+        updatedObject.lastEditedByName = userName || "Unknown User";
+        updatedObject.lastEditedAt = updateTimestamp;
       }
 
       return updatedObject;

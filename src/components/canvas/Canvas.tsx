@@ -2,6 +2,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import type Konva from "konva";
+import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
@@ -13,6 +14,7 @@ import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
+import { EditAttributionTooltip } from "./EditAttributionTooltip";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -46,10 +48,43 @@ export default function Canvas() {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Tooltip state for edit attribution
+  const [hoveredObject, setHoveredObject] = useState<CanvasObjectType | null>(
+    null
+  );
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
   const [devPerf, setDevPerf] = useState<{
     fps: number;
     latencyMs: number;
   } | null>(null);
+
+  /**
+   * Handle object hover change for tooltip
+   */
+  const handleObjectHoverChange = (
+    hovering: boolean,
+    object: CanvasObjectType | null
+  ) => {
+    if (hovering && object && stageRef.current) {
+      const stage = stageRef.current;
+
+      // Convert from canvas to absolute screen coordinates
+      const containerRect = stage.container().getBoundingClientRect();
+      const pointer = stage.getPointerPosition();
+
+      if (pointer) {
+        const screenX = containerRect.left + pointer.x;
+        const screenY = containerRect.top + pointer.y;
+
+        setHoveredObject(object);
+        setTooltipPosition({ x: screenX, y: screenY });
+      }
+    } else {
+      setHoveredObject(null);
+    }
+  };
 
   /**
    * Handle window resize - update stage size
@@ -420,10 +455,19 @@ export default function Canvas() {
                   object={obj}
                   isSelected={obj.id === selectedObjectId}
                   onSelect={() => selectObject(obj.id)}
+                  onHoverChange={handleObjectHoverChange}
                 />
               ))}
             </Layer>
           </Stage>
+
+          {/* Edit Attribution Tooltip */}
+          <EditAttributionTooltip
+            userName={hoveredObject?.lastEditedByName}
+            editedAt={hoveredObject?.lastEditedAt}
+            position={tooltipPosition}
+            visible={hoveredObject !== null}
+          />
 
           {/* Multiplayer Cursors Overlay */}
           <CursorLayer

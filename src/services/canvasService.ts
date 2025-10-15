@@ -44,12 +44,14 @@ export const canvasService = {
    * @param objectId - ID of the object to update
    * @param updates - Partial object data to update
    * @param userId - Optional user ID for attribution
+   * @param userName - Optional user name for attribution
    * @returns Transaction result with success status and error details
    */
   updateObject: async (
     objectId: string,
     updates: Partial<CanvasObject>,
-    userId?: string
+    userId?: string,
+    userName?: string
   ): Promise<TransactionResult> => {
     try {
       // Ensure timestamp is included
@@ -61,7 +63,8 @@ export const canvasService = {
       const result = await updateObjectTransaction(
         objectId,
         updatesWithTimestamp,
-        userId
+        userId,
+        userName
       );
 
       if (!result.success) {
