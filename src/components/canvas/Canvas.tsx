@@ -42,11 +42,6 @@ export default function Canvas() {
     }
   );
 
-  // Debug: Log cursors array changes
-  useEffect(() => {
-    console.log("👥 Cursors updated:", cursors.length, cursors);
-  }, [cursors]);
-
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -157,10 +152,6 @@ export default function Canvas() {
     if (isInBounds) {
       // Update cursor position (throttled by usePresence hook)
       updateCursor(canvasPos);
-      // Debug: Log occasionally (every 60 frames = ~1 second)
-      if (Math.random() < 0.016) {
-        console.log("🖱️ Cursor update sent:", canvasPos);
-      }
     } else {
       // Remove cursor if outside canvas
       removeCursor();

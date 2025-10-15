@@ -20,7 +20,6 @@ export const canvasService = {
         `/canvases/${DEFAULT_CANVAS_ID}/objects/${objectData.id}`
       );
       await set(objectRef, objectData);
-      console.log("Object saved:", objectData.id);
     } catch (error) {
       console.error("Error saving object:", error);
       throw error;
@@ -45,7 +44,6 @@ export const canvasService = {
         ...updates,
         timestamp: Date.now(), // Always update timestamp on any change
       });
-      console.log("Object updated:", objectId);
     } catch (error) {
       console.error("Error updating object:", error);
       throw error;
@@ -63,7 +61,6 @@ export const canvasService = {
         `/canvases/${DEFAULT_CANVAS_ID}/objects/${objectId}`
       );
       await remove(objectRef);
-      console.log("Object deleted:", objectId);
     } catch (error) {
       console.error("Error deleting object:", error);
       throw error;
@@ -86,10 +83,8 @@ export const canvasService = {
         const objectsData = snapshot.val();
         // Convert object of objects to array
         const objectsArray = Object.values(objectsData) as CanvasObject[];
-        console.log("Canvas state loaded:", objectsArray.length, "objects");
         return objectsArray;
       } else {
-        console.log("No objects found in canvas");
         return [];
       }
     } catch (error) {
@@ -174,7 +169,6 @@ export const canvasService = {
           createdAt: Date.now(),
           createdBy: "system",
         });
-        console.log("Canvas initialized with metadata");
       }
     } catch (error) {
       console.error("Error initializing canvas:", error);
@@ -208,11 +202,6 @@ export const canvasService = {
 
       const rootRef = ref(database);
       await update(rootRef, batchUpdates);
-      console.log(
-        "Batch update completed:",
-        Object.keys(updates).length,
-        "objects"
-      );
     } catch (error) {
       console.error("Error in batch update:", error);
       throw error;
@@ -229,7 +218,6 @@ export const canvasService = {
         `/canvases/${DEFAULT_CANVAS_ID}/objects`
       );
       await remove(objectsRef);
-      console.log("Canvas cleared");
     } catch (error) {
       console.error("Error clearing canvas:", error);
       throw error;

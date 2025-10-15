@@ -1,0 +1,181 @@
+/* Connection Banner Styles */
+
+.connection-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid;
+  animation: connection-banner-slide-in 0.3s ease-out;
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.connection-banner-hide {
+  opacity: 0;
+  transform: translateY(-100%);
+}
+
+@keyframes connection-banner-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.connection-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.connection-banner-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+.connection-banner-message {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.connection-banner-retry {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+  border-radius: 4px;
+  border: 1px solid;
+  background-color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.connection-banner-retry:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.connection-banner-retry:active {
+  transform: translateY(0);
+}
+
+/* Offline state (orange) */
+.connection-banner-offline {
+  background-color: #fff7ed;
+  border-bottom-color: #fed7aa;
+  color: #9a3412;
+}
+
+.connection-banner-offline .connection-banner-retry {
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.connection-banner-offline .connection-banner-retry:hover {
+  background-color: #fff7ed;
+}
+
+/* Reconnecting state (blue) */
+.connection-banner-reconnecting {
+  background-color: #eff6ff;
+  border-bottom-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.connection-banner-reconnecting .connection-banner-retry {
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+
+.connection-banner-reconnecting .connection-banner-retry:hover {
+  background-color: #dbeafe;
+}
+
+/* Syncing state (blue) */
+.connection-banner-syncing {
+  background-color: #eff6ff;
+  border-bottom-color: #bfdbfe;
+  color: #1e40af;
+}
+
+/* Timeout state (red) */
+.connection-banner-timeout {
+  background-color: #fef2f2;
+  border-bottom-color: #fecaca;
+  color: #991b1b;
+}
+
+.connection-banner-timeout .connection-banner-retry {
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.connection-banner-timeout .connection-banner-retry:hover {
+  background-color: #fee2e2;
+}
+
+/* Spinner animation */
+.connection-banner-spinner {
+  animation: connection-banner-spin 1s linear infinite;
+}
+
+@keyframes connection-banner-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Focus styles for accessibility */
+.connection-banner-retry:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .connection-banner {
+    animation: none;
+    transition: none;
+  }
+
+  .connection-banner-spinner {
+    animation: none;
+  }
+
+  .connection-banner-hide {
+    display: none;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .connection-banner {
+    padding: 0.625rem 0.75rem;
+  }
+
+  .connection-banner-content {
+    gap: 0.5rem;
+  }
+
+  .connection-banner-message {
+    font-size: 0.8125rem;
+  }
+
+  .connection-banner-retry {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+}

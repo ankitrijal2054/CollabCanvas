@@ -49,13 +49,6 @@ export const useRealtimeSync = ({
       lastSyncTime.current = now;
       if (import.meta.env.DEV) setSyncLatency(latency);
 
-      // Log sync performance in development
-      if (import.meta.env.DEV) {
-        console.log(
-          `🔄 Sync update: ${objects.length} objects, latency: ${latency}ms`
-        );
-      }
-
       // Forward to callback
       onObjectsUpdate(objects);
     },
@@ -67,11 +60,9 @@ export const useRealtimeSync = ({
    */
   const subscribe = useCallback(() => {
     if (unsubscribeRef.current) {
-      console.warn("Already subscribed to real-time updates");
       return;
     }
 
-    console.log("📡 Subscribing to real-time object updates...");
     unsubscribeRef.current =
       canvasService.subscribeToObjects(handleObjectsUpdate);
   }, [handleObjectsUpdate]);
@@ -81,7 +72,6 @@ export const useRealtimeSync = ({
    */
   const unsubscribe = useCallback(() => {
     if (unsubscribeRef.current) {
-      console.log("📡 Unsubscribing from real-time updates...");
       unsubscribeRef.current();
       unsubscribeRef.current = null;
     }
@@ -120,9 +110,6 @@ export const useRealtimeSync = ({
       const isConnected = !!snap.val();
       if (!isConnected) return;
 
-      console.log(
-        "🌐 Network reconnected - resubscribing and refreshing state"
-      );
       // Ensure a fresh subscription
       unsubscribe();
       subscribe();
@@ -169,7 +156,6 @@ export const useObjectSync = (
       return;
     }
 
-    console.log(`📡 Subscribing to object: ${objectId}`);
     unsubscribeRef.current = canvasService.subscribeToObject(
       objectId,
       onObjectUpdate
@@ -177,7 +163,6 @@ export const useObjectSync = (
 
     return () => {
       if (unsubscribeRef.current) {
-        console.log(`📡 Unsubscribing from object: ${objectId}`);
         unsubscribeRef.current();
         unsubscribeRef.current = null;
       }
@@ -201,20 +186,17 @@ export const useCanvasInitialization = () => {
    */
   const initializeCanvas = useCallback(async (): Promise<CanvasObject[]> => {
     if (isInitialized.current || isInitializing.current) {
-      console.log("Canvas already initialized or initializing");
       return [];
     }
 
     try {
       isInitializing.current = true;
-      console.log("🚀 Initializing canvas...");
 
       // Initialize canvas metadata if needed
       await canvasService.initializeCanvas();
 
       // Load initial canvas state
       const objects = await canvasService.getCanvasState();
-      console.log(`✅ Canvas initialized with ${objects.length} objects`);
 
       isInitialized.current = true;
       return objects;

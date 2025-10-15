@@ -98,15 +98,15 @@ export function usePresence(
           Object.keys(newPresenceMap).filter((id) => id !== userId)
         );
 
+        // Users joined/left - silent tracking
         for (const id of nextIds) {
           if (!prevIds.has(id) && newPresenceMap[id]?.online) {
-            console.log(`➕ User joined: ${newPresenceMap[id].name}`);
+            // User joined
           }
         }
         for (const id of prevIds) {
           if (!nextIds.has(id) || newPresenceMap[id]?.online === false) {
-            const name = prev[id]?.name ?? id;
-            console.log(`➖ User left: ${name}`);
+            // User left
           }
         }
 

@@ -4,6 +4,7 @@ import type Konva from "konva";
 import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types";
 import { useCanvas } from "../../contexts/CanvasContext";
 import { useSyncOperations } from "../../hooks/useRealtimeSync";
+import { offlineQueue } from "../../utils/offlineQueue";
 
 interface CanvasObjectProps {
   object: CanvasObjectType;
@@ -19,7 +20,7 @@ interface CanvasObjectProps {
 function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
   const shapeRef = useRef<Konva.Rect>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const { updateObject, canvasSize } = useCanvas();
+  const { updateObject, canvasSize, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
 
   // Attach transformer to shape when selected
@@ -31,9 +32,15 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
   }, [isSelected]);
 
   /**
-   * Handle drag end - update object position in state and Firebase
+   * Handle drag end - update object position in state and Firebase (or queue if offline)
    */
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
+    // Don't allow updates if canvas is disabled
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot update objects");
+      return;
+    }
+
     const node = e.target;
     const updates = {
       x: node.x(),
@@ -44,19 +51,36 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
     // Update local state immediately (optimistic update)
     updateObject(object.id, updates);
 
-    // Sync to Firebase
+    // Sync to Firebase or queue if offline
     try {
-      await syncOps.updateObject(object.id, updates);
-      console.log("✅ Object position synced:", object.id);
+      if (!navigator.onLine) {
+        // Queue operation when offline
+        await offlineQueue.enqueue({
+          id: `op-update-${Date.now()}`,
+          type: "update",
+          objectId: object.id,
+          payload: updates,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        await syncOps.updateObject(object.id, updates);
+      }
     } catch (error) {
       console.error("❌ Failed to sync object position:", error);
     }
   };
 
   /**
-   * Handle transform end (resize) - update object dimensions in state and Firebase
+   * Handle transform end (resize) - update object dimensions in state and Firebase (or queue if offline)
    */
   const handleTransformEnd = async () => {
+    // Don't allow updates if canvas is disabled
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot update objects");
+      return;
+    }
+
     const node = shapeRef.current;
     if (!node) return;
 
@@ -78,10 +102,21 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
     // Update local state immediately (optimistic update)
     updateObject(object.id, updates);
 
-    // Sync to Firebase
+    // Sync to Firebase or queue if offline
     try {
-      await syncOps.updateObject(object.id, updates);
-      console.log("✅ Object resize synced:", object.id);
+      if (!navigator.onLine) {
+        // Queue operation when offline
+        await offlineQueue.enqueue({
+          id: `op-update-${Date.now()}`,
+          type: "update",
+          objectId: object.id,
+          payload: updates,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        await syncOps.updateObject(object.id, updates);
+      }
     } catch (error) {
       console.error("❌ Failed to sync object resize:", error);
     }

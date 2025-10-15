@@ -2,6 +2,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import type { User } from "../../types/user.types";
+import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import "./Header.css";
 
 interface HeaderProps {
@@ -34,6 +35,7 @@ export default function Header({ user }: HeaderProps) {
         <div className="header-right">
           {user && (
             <>
+              <ConnectionStatusDot />
               <div className="user-info">
                 {user.photoURL && (
                   <img
