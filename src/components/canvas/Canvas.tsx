@@ -190,15 +190,10 @@ export default function Canvas() {
   /**
    * Handle pan start (mouse down or touch start)
    */
-  const handlePanStart = (e: { target: unknown }) => {
+  const handlePanStart = () => {
     const stage = stageRef.current;
     if (!stage) return;
 
-    // Don't pan if clicking on an object
-    const clickedOnEmpty = e.target === stage;
-    if (!clickedOnEmpty) return;
-
-    // Get pointer position
     const pos = stage.getPointerPosition();
     if (!pos) return;
 
@@ -403,6 +398,7 @@ export default function Canvas() {
                 shadowColor="rgba(0, 0, 0, 0.1)"
                 shadowBlur={10}
                 shadowOffset={{ x: 0, y: 2 }}
+                listening={false}
               />
 
               {/* Grid pattern */}
@@ -421,6 +417,7 @@ export default function Canvas() {
                 stroke="#e5e7eb"
                 strokeWidth={2 / viewport.scale} // Scale-independent border
                 fill="transparent"
+                listening={false}
               />
             </Layer>
 

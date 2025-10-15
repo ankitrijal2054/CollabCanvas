@@ -21,6 +21,7 @@ import {
   useSyncOperations,
 } from "../hooks/useRealtimeSync";
 import { syncHelpers } from "../utils/syncHelpers";
+import { canvasHelpers } from "../utils/canvasHelpers";
 
 /**
  * Canvas Context Interface
@@ -264,17 +265,24 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Generate unique ID using timestamp + random string
     const id = syncHelpers.generateObjectId("rect");
 
-    // Calculate center position of the visible viewport
-    const centerX =
-      -canvasState.viewport.x +
-      window.innerWidth / 2 / canvasState.viewport.scale;
-    const centerY =
-      -canvasState.viewport.y +
-      window.innerHeight / 2 / canvasState.viewport.scale;
+    // Get canvas container size (fallback to window if not available)
+    const container = document.getElementById("canvas-container");
+    const stageWidth = container?.offsetWidth ?? window.innerWidth;
+    const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+    // Compute visible center in screen coords, convert to canvas coords
+    const screenCenterX = stageWidth / 2;
+    const screenCenterY = stageHeight / 2;
+    const centerPos = canvasHelpers.screenToCanvas(
+      screenCenterX,
+      screenCenterY,
+      canvasState.viewport.scale,
+      { x: canvasState.viewport.x, y: canvasState.viewport.y }
+    );
 
     // Position rectangle so its center is at viewport center
-    const x = centerX - DEFAULT_RECTANGLE.width / 2;
-    const y = centerY - DEFAULT_RECTANGLE.height / 2;
+    const x = centerPos.x - DEFAULT_RECTANGLE.width / 2;
+    const y = centerPos.y - DEFAULT_RECTANGLE.height / 2;
 
     const newRectangle: CanvasObject = {
       id,
