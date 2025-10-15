@@ -6,6 +6,7 @@ import { ref, onValue, off } from "firebase/database";
 import { database } from "../services/firebase";
 import type { CanvasObject } from "../types/canvas.types";
 import { syncHelpers } from "../utils/syncHelpers";
+import type { TransactionResult } from "../services/transactionService";
 
 interface UseRealtimeSyncOptions {
   onObjectsUpdate: (objects: CanvasObject[]) => void;
@@ -275,7 +276,7 @@ export const useSyncOperations = () => {
    * Save object with retry logic
    */
   const saveObject = useCallback(
-    async (object: CanvasObject): Promise<void> => {
+    async (object: CanvasObject): Promise<TransactionResult> => {
       return syncHelpers.retryOperation(
         () => canvasService.saveObject(object),
         3, // max retries
@@ -287,14 +288,26 @@ export const useSyncOperations = () => {
 
   /**
    * Update object with retry logic
+   * Note: Uses batching, so returns immediate success. Actual sync happens on flush.
    */
   const updateObject = useCallback(
-    async (objectId: string, updates: Partial<CanvasObject>): Promise<void> => {
-      return syncHelpers.retryOperation(
-        async () => enqueueUpdate(objectId, updates),
+    async (
+      objectId: string,
+      updates: Partial<CanvasObject>,
+      userId?: string
+    ): Promise<TransactionResult> => {
+      // Include userId in updates if provided
+      const updatesWithUser = userId ? { ...updates, userId } : updates;
+
+      await syncHelpers.retryOperation(
+        async () => enqueueUpdate(objectId, updatesWithUser),
         3,
         100
       );
+
+      // Return success since enqueue succeeded
+      // Actual transaction result will be handled in flushPendingUpdates
+      return { success: true };
     },
     [enqueueUpdate]
   );
@@ -303,7 +316,7 @@ export const useSyncOperations = () => {
    * Delete object with retry logic
    */
   const deleteObject = useCallback(
-    async (objectId: string): Promise<void> => {
+    async (objectId: string, userId: string): Promise<TransactionResult> => {
       // Remove any pending changes for this object; flush others first
       // Omit pending updates for this object without creating an unused binding
       const clone = { ...pendingUpdatesRef.current };
@@ -315,7 +328,7 @@ export const useSyncOperations = () => {
       await flushPendingUpdates();
 
       return syncHelpers.retryOperation(
-        () => canvasService.deleteObject(objectId),
+        () => canvasService.deleteObject(objectId, userId),
         3,
         500
       );

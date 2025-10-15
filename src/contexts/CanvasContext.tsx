@@ -24,6 +24,10 @@ import { syncHelpers } from "../utils/syncHelpers";
 import { canvasHelpers } from "../utils/canvasHelpers";
 import { offlineQueue } from "../utils/offlineQueue";
 import type { QueuedOperation } from "../utils/indexedDBManager";
+import {
+  TransactionErrorType,
+  getErrorMessage,
+} from "../services/transactionService";
 
 /**
  * Canvas Context Interface
@@ -242,6 +246,12 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       return;
     }
 
+    // Ensure user is authenticated
+    if (!user?.id) {
+      console.error("❌ Cannot delete object: User not authenticated");
+      return;
+    }
+
     // Update local state immediately (optimistic update)
     setCanvasState((prev) => ({
       ...prev,
@@ -258,12 +268,27 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           id: `op-delete-${Date.now()}`,
           type: "delete",
           objectId: id,
-          payload: {},
+          payload: { userId: user.id },
           timestamp: Date.now(),
           retryCount: 0,
         });
       } else {
-        await syncOps.deleteObject(id);
+        const result = await syncOps.deleteObject(id, user.id);
+
+        if (!result.success) {
+          // Handle transaction failure
+          if (result.error === TransactionErrorType.OBJECT_DELETED) {
+            // Object was already deleted, this is fine
+            console.warn("Object was already deleted");
+          } else {
+            // Show error to user
+            console.error("Failed to delete object:", result.errorMessage);
+            alert(getErrorMessage(result.error!, "rectangle"));
+
+            // Optionally restore object in local state
+            // (For now, keep it deleted locally as it's likely gone from server)
+          }
+        }
       }
     } catch (error) {
       console.error("❌ Failed to delete object:", error);
@@ -303,15 +328,50 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Register executor function that processes queued operations
     offlineQueue.setOperationExecutor(
       async (operation: QueuedOperation): Promise<void> => {
+        let result;
+
         switch (operation.type) {
           case "create":
-            await syncOps.saveObject(operation.payload);
+            result = await syncOps.saveObject(operation.payload);
+            if (!result.success) {
+              throw new Error(result.errorMessage || "Failed to create object");
+            }
             break;
           case "update":
-            await syncOps.updateObject(operation.objectId, operation.payload);
+            result = await syncOps.updateObject(
+              operation.objectId,
+              operation.payload,
+              operation.payload.userId
+            );
+            if (!result.success) {
+              // If object was deleted, don't throw - just skip
+              if (result.error === TransactionErrorType.OBJECT_DELETED) {
+                console.warn(
+                  `Object ${operation.objectId} was deleted, skipping update`
+                );
+              } else {
+                throw new Error(
+                  result.errorMessage || "Failed to update object"
+                );
+              }
+            }
             break;
           case "delete":
-            await syncOps.deleteObject(operation.objectId);
+            // Extract userId from payload
+            const userId = operation.payload?.userId || user?.id || "unknown";
+            result = await syncOps.deleteObject(operation.objectId, userId);
+            if (!result.success) {
+              // If already deleted, don't throw - it's the desired state
+              if (result.error === TransactionErrorType.OBJECT_DELETED) {
+                console.warn(
+                  `Object ${operation.objectId} was already deleted`
+                );
+              } else {
+                throw new Error(
+                  result.errorMessage || "Failed to delete object"
+                );
+              }
+            }
             break;
           default:
             console.warn(`Unknown operation type: ${operation.type}`);
@@ -411,12 +471,29 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           retryCount: 0,
         });
       } else {
-        await syncOps.saveObject(newRectangle);
+        const result = await syncOps.saveObject(newRectangle);
+
+        if (!result.success) {
+          // Handle transaction failure
+          console.error("Failed to save rectangle:", result.errorMessage);
+          alert(getErrorMessage(result.error!, "rectangle"));
+
+          // Remove from local state since save failed
+          setCanvasState((prev) => ({
+            ...prev,
+            objects: prev.objects.filter((obj) => obj.id !== id),
+            selectedObjectId: null,
+          }));
+        }
       }
     } catch (error) {
       console.error("❌ Failed to save rectangle:", error);
-      // Optionally: Remove from local state if save fails
-      // deleteObject(id);
+      // Remove from local state if save fails
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: prev.objects.filter((obj) => obj.id !== id),
+        selectedObjectId: null,
+      }));
     }
   };
 

@@ -5,6 +5,11 @@ import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types"
 import { useCanvas } from "../../contexts/CanvasContext";
 import { useSyncOperations } from "../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../utils/offlineQueue";
+import {
+  TransactionErrorType,
+  getErrorMessage,
+} from "../../services/transactionService";
+import { useAuth } from "../../hooks/useAuth";
 
 interface CanvasObjectProps {
   object: CanvasObjectType;
@@ -22,6 +27,7 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
   const transformerRef = useRef<Konva.Transformer>(null);
   const { updateObject, canvasSize, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
+  const { user } = useAuth();
 
   // Attach transformer to shape when selected
   useEffect(() => {
@@ -46,6 +52,7 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
       x: node.x(),
       y: node.y(),
       timestamp: Date.now(),
+      userId: user?.id,
     };
 
     // Update local state immediately (optimistic update)
@@ -64,7 +71,19 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           retryCount: 0,
         });
       } else {
-        await syncOps.updateObject(object.id, updates);
+        const result = await syncOps.updateObject(object.id, updates, user?.id);
+
+        if (!result.success) {
+          // Handle transaction failure
+          if (result.error === TransactionErrorType.OBJECT_DELETED) {
+            // Object was deleted by another user
+            alert("This object was deleted by another user");
+            // Local state will be updated by real-time listener
+          } else {
+            console.error("Failed to update object:", result.errorMessage);
+            alert(getErrorMessage(result.error!, "rectangle"));
+          }
+        }
       }
     } catch (error) {
       console.error("❌ Failed to sync object position:", error);
@@ -97,6 +116,7 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
       width: Math.max(5, node.width() * scaleX), // Minimum width of 5px
       height: Math.max(5, node.height() * scaleY), // Minimum height of 5px
       timestamp: Date.now(),
+      userId: user?.id,
     };
 
     // Update local state immediately (optimistic update)
@@ -115,7 +135,19 @@ function CanvasObject({ object, isSelected, onSelect }: CanvasObjectProps) {
           retryCount: 0,
         });
       } else {
-        await syncOps.updateObject(object.id, updates);
+        const result = await syncOps.updateObject(object.id, updates, user?.id);
+
+        if (!result.success) {
+          // Handle transaction failure
+          if (result.error === TransactionErrorType.OBJECT_DELETED) {
+            // Object was deleted by another user
+            alert("This object was deleted by another user");
+            // Local state will be updated by real-time listener
+          } else {
+            console.error("Failed to update object:", result.errorMessage);
+            alert(getErrorMessage(result.error!, "rectangle"));
+          }
+        }
       }
     } catch (error) {
       console.error("❌ Failed to sync object resize:", error);

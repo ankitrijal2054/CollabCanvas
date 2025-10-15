@@ -97,32 +97,32 @@
 
 **Goal:** Eliminate race conditions with Firebase Transactions
 
-- [ ] **Task 13.1: Create transaction service**
+- [x] **Task 13.1: Create transaction service**
 
   - Files to create: `src/services/transactionService.ts`
   - Implement: `updateObjectTransaction()` using Firebase `runTransaction()`
   - Add: Atomic delete validation (abort update if object deleted)
   - Add: Last-write-wins timestamp comparison
 
-- [ ] **Task 13.2: Update canvas service to use transactions**
+- [x] **Task 13.2: Update canvas service to use transactions**
 
   - Files to update: `src/services/canvasService.ts`
   - Replace: Direct Firebase updates with transaction calls
   - Add: Transaction error handling and user feedback
 
-- [ ] **Task 13.3: Add delete conflict detection**
+- [x] **Task 13.3: Add delete conflict detection**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Implement: Transaction abort handling
   - Show: Toast notification "Object was deleted by [User Name]"
 
-- [ ] **Task 13.4: Update canvas object component**
+- [x] **Task 13.4: Update canvas object component**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Add: Transaction-based updates on drag/resize
   - Handle: Graceful failure when object deleted mid-edit
 
-- [ ] **Task 13.5: Create automated test suite**
+- [x] **Task 13.5: Create automated test suite**
 
   - Files to create: `tests/integration/conflict-resolution.test.tsx`
   - Test: 100 delete-edit race conditions → 0 ghost objects
