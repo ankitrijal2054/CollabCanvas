@@ -65,12 +65,22 @@ export default function Canvas() {
    */
   const handleObjectHoverChange = (
     hovering: boolean,
-    object: CanvasObjectType | null,
-    position: { x: number; y: number }
+    object: CanvasObjectType | null
   ) => {
-    if (hovering && object) {
-      setHoveredObject(object);
-      setTooltipPosition(position);
+    if (hovering && object && stageRef.current) {
+      const stage = stageRef.current;
+
+      // Convert from canvas to absolute screen coordinates
+      const containerRect = stage.container().getBoundingClientRect();
+      const pointer = stage.getPointerPosition();
+
+      if (pointer) {
+        const screenX = containerRect.left + pointer.x;
+        const screenY = containerRect.top + pointer.y;
+
+        setHoveredObject(object);
+        setTooltipPosition({ x: screenX, y: screenY });
+      }
     } else {
       setHoveredObject(null);
     }

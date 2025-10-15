@@ -82,7 +82,7 @@ export const EditAttributionTooltip: React.FC<EditAttributionTooltipProps> = ({
       }}
     >
       <div className="tooltip-content">
-        Last edited by <strong>{displayName}</strong>, {relativeTime}
+        <strong>{displayName}</strong> · {relativeTime}
       </div>
     </div>
   );
