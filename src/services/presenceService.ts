@@ -55,8 +55,6 @@ export const presenceService = {
           online: true,
           lastSeen: Date.now(),
         } as Partial<UserPresence>);
-
-        console.log(`Presence session (re)started for ${userName}`);
       } catch (error) {
         console.error("Error starting presence session:", error);
       }
@@ -123,8 +121,6 @@ export const presenceService = {
         cursor: null,
         lastSeen: serverTimestamp(),
       });
-
-      console.log(`User ${userName} (${userId}) set online`);
     } catch (error) {
       console.error("Error setting user online:", error);
       throw error;
@@ -147,7 +143,6 @@ export const presenceService = {
         cursor: null,
         lastSeen: Date.now(),
       });
-      console.log(`User ${userId} set offline`);
     } catch (error) {
       console.error("Error setting user offline:", error);
       throw error;
@@ -337,9 +332,6 @@ export const presenceService = {
 
       if (Object.keys(updates).length > 0) {
         await update(presenceRef, updates);
-        console.log(
-          `Cleaned up ${Object.keys(updates).length} stale presence entries`
-        );
       }
     } catch (error) {
       console.error("Error cleaning up stale presence:", error);

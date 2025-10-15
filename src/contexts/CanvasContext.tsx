@@ -94,13 +94,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         remoteObjects
       );
 
-      // Log sync info in development
-      if (import.meta.env.DEV) {
-        console.log(
-          `🔄 Objects synced: ${mergedObjects.length} total (${prev.objects.length} local, ${remoteObjects.length} remote)`
-        );
-      }
-
       return {
         ...prev,
         objects: mergedObjects,
@@ -115,7 +108,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   useEffect(() => {
     const loadInitialState = async () => {
       try {
-        console.log("🚀 Loading initial canvas state...");
         const initialObjects = await initializeCanvas();
 
         setCanvasState((prev) => ({
@@ -123,10 +115,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           objects: initialObjects,
           loading: false,
         }));
-
-        console.log(
-          `✅ Initial state loaded: ${initialObjects.length} objects`
-        );
       } catch (error) {
         console.error("❌ Failed to load initial state:", error);
         setCanvasState((prev) => ({ ...prev, loading: false }));

@@ -5,7 +5,7 @@
  * - Tracks browser online/offline events
  * - Monitors Firebase Realtime Database connection
  * - Tracks queued operations count
- * - Detects 10-minute offline timeout
+ * - Detects 5-minute offline timeout
  * - Triggers canvas disable when timeout exceeded
  */
 

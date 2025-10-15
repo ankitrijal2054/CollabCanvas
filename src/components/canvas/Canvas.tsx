@@ -152,10 +152,6 @@ export default function Canvas() {
     if (isInBounds) {
       // Update cursor position (throttled by usePresence hook)
       updateCursor(canvasPos);
-      // Debug: Log occasionally (every 60 frames = ~1 second)
-      if (Math.random() < 0.016) {
-        console.log("🖱️ Cursor update sent:", canvasPos);
-      }
     } else {
       // Remove cursor if outside canvas
       removeCursor();
