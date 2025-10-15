@@ -11,6 +11,7 @@ import Canvas from "./components/canvas/Canvas.tsx";
 import AuthGuard from "./components/auth/AuthGuard";
 import { CanvasProvider } from "./contexts/CanvasContext";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { ConnectionBanner } from "./components/layout/ConnectionBanner";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <AuthGuard>
               <ErrorBoundary>
                 <CanvasProvider>
+                  <ConnectionBanner />
                   <Canvas />
                 </CanvasProvider>
               </ErrorBoundary>

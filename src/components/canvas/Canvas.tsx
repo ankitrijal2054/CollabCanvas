@@ -42,11 +42,6 @@ export default function Canvas() {
     }
   );
 
-  // Debug: Log cursors array changes
-  useEffect(() => {
-    console.log("👥 Cursors updated:", cursors.length, cursors);
-  }, [cursors]);
-
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);

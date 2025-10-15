@@ -1,0 +1,78 @@
+/* Connection Status Dot Styles */
+
+.connection-status-dot-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.connection-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+/* Online state (green) */
+.connection-status-dot-online {
+  background-color: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.1);
+}
+
+/* Offline state (gray) */
+.connection-status-dot-offline {
+  background-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.1);
+}
+
+/* Syncing state (pulse animation) */
+.connection-status-dot-syncing {
+  animation: connection-status-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes connection-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .connection-status-dot {
+    transition: none;
+  }
+
+  .connection-status-dot-syncing {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* Hover effect for better visibility */
+.connection-status-dot-container:hover .connection-status-dot-online {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.connection-status-dot-container:hover .connection-status-dot-offline {
+  box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.2);
+}

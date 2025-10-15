@@ -22,6 +22,8 @@ import {
 } from "../hooks/useRealtimeSync";
 import { syncHelpers } from "../utils/syncHelpers";
 import { canvasHelpers } from "../utils/canvasHelpers";
+import { offlineQueue } from "../utils/offlineQueue";
+import type { QueuedOperation } from "../utils/indexedDBManager";
 
 /**
  * Canvas Context Interface
@@ -37,6 +39,7 @@ interface CanvasContextType extends CanvasState {
   deleteObject: (id: string) => Promise<void>;
   selectObject: (id: string | null) => void;
   createRectangle: () => Promise<void>;
+  isCanvasDisabled: boolean;
 }
 
 // Create the context with undefined default value
@@ -75,6 +78,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     isDragging: false,
     isResizing: false,
   });
+
+  // Track canvas disabled state (when offline timeout exceeded)
+  const [isCanvasDisabled, setIsCanvasDisabled] = useState(false);
 
   /**
    * Handle incoming objects from Firebase
@@ -160,6 +166,62 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   }, [user]);
 
   /**
+   * Setup offline queue integration
+   * Registers operation executor and timeout callback
+   */
+  useEffect(() => {
+    // Register executor function that processes queued operations
+    offlineQueue.setOperationExecutor(
+      async (operation: QueuedOperation): Promise<void> => {
+        console.log(
+          `⚙️ Executing queued operation: ${operation.type} for ${operation.objectId}`
+        );
+
+        switch (operation.type) {
+          case "create":
+            await syncOps.saveObject(operation.payload);
+            break;
+          case "update":
+            await syncOps.updateObject(operation.objectId, operation.payload);
+            break;
+          case "delete":
+            await syncOps.deleteObject(operation.objectId);
+            break;
+          default:
+            console.warn(`Unknown operation type: ${operation.type}`);
+        }
+      }
+    );
+
+    // Register timeout callback - disables canvas after 10 minutes offline
+    offlineQueue.onTimeout(() => {
+      console.error(
+        "🚫 Canvas disabled: offline timeout exceeded (10 minutes)"
+      );
+      setIsCanvasDisabled(true);
+    });
+
+    // Re-enable canvas when back online
+    const checkOnlineStatus = async () => {
+      if (navigator.onLine) {
+        console.log("🔓 Canvas re-enabled: back online");
+        setIsCanvasDisabled(false);
+
+        // Clear any old queue data when back online
+        if (offlineQueue.getQueueCount() === 0) {
+          await offlineQueue.clearQueue();
+        }
+      }
+    };
+
+    window.addEventListener("online", checkOnlineStatus);
+
+    return () => {
+      window.removeEventListener("online", checkOnlineStatus);
+    };
+  }, [syncOps]);
+
+  /**
    * Set the entire viewport (position + scale)
    */
   const setViewport = (viewport: Viewport) => {
@@ -226,9 +288,15 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
   /**
    * Delete an object from the canvas
-   * Updates local state and syncs to Firebase
+   * Updates local state and syncs to Firebase (or queues if offline)
    */
   const deleteObject = async (id: string) => {
+    // Don't allow deletions if canvas is disabled
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot delete objects");
+      return;
+    }
+
     // Update local state immediately (optimistic update)
     setCanvasState((prev) => ({
       ...prev,
@@ -237,12 +305,25 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         prev.selectedObjectId === id ? null : prev.selectedObjectId,
     }));
 
-    // Sync deletion to Firebase
+    // Sync deletion to Firebase or queue if offline
     try {
-      await syncOps.deleteObject(id);
-      console.log("✅ Object deleted from Firebase:", id);
+      if (!navigator.onLine) {
+        // Queue operation when offline
+        await offlineQueue.enqueue({
+          id: `op-delete-${Date.now()}`,
+          type: "delete",
+          objectId: id,
+          payload: {},
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+        console.log("📦 Delete operation queued:", id);
+      } else {
+        await syncOps.deleteObject(id);
+        console.log("✅ Object deleted from Firebase:", id);
+      }
     } catch (error) {
-      console.error("❌ Failed to delete object from Firebase:", error);
+      console.error("❌ Failed to delete object:", error);
       // Optionally: Restore object in local state if deletion fails
     }
   };
@@ -259,9 +340,15 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
   /**
    * Create a new rectangle at canvas center with default size and color
-   * Saves to Firebase for real-time sync
+   * Saves to Firebase for real-time sync (or queues if offline)
    */
   const createRectangle = async () => {
+    // Don't allow creation if canvas is disabled
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot create objects");
+      return;
+    }
+
     // Generate unique ID using timestamp + random string
     const id = syncHelpers.generateObjectId("rect");
 
@@ -300,12 +387,25 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Auto-select the newly created object
     selectObject(id);
 
-    // Save to Firebase for real-time sync
+    // Save to Firebase for real-time sync or queue if offline
     try {
-      await syncOps.saveObject(newRectangle);
-      console.log("✅ Rectangle saved to Firebase:", id);
+      if (!navigator.onLine) {
+        // Queue operation when offline
+        await offlineQueue.enqueue({
+          id: `op-create-${Date.now()}`,
+          type: "create",
+          objectId: id,
+          payload: newRectangle,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+        console.log("📦 Create operation queued:", id);
+      } else {
+        await syncOps.saveObject(newRectangle);
+        console.log("✅ Rectangle saved to Firebase:", id);
+      }
     } catch (error) {
-      console.error("❌ Failed to save rectangle to Firebase:", error);
+      console.error("❌ Failed to save rectangle:", error);
       // Optionally: Remove from local state if save fails
       // deleteObject(id);
     }
@@ -322,6 +422,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     deleteObject,
     selectObject,
     createRectangle,
+    isCanvasDisabled,
   };
 
   return (
