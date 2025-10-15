@@ -45,6 +45,10 @@ export interface CanvasObject {
   color: string;
   createdBy: string;
   timestamp: number;
+  // Last edit attribution (for hover tooltip)
+  lastEditedBy?: string; // User ID who last edited this object
+  lastEditedByName?: string; // Display name of the last editor
+  lastEditedAt?: number; // Timestamp of the last edit
 }
 
 /**

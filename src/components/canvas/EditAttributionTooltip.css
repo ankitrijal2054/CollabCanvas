@@ -1,0 +1,50 @@
+/* Edit Attribution Tooltip Styles */
+
+.edit-attribution-tooltip {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+
+  /* Smooth fade in/out animation */
+  opacity: 0;
+  transition: opacity 200ms ease-in-out;
+
+  /* Offset from cursor */
+  transform: translate(12px, 12px);
+}
+
+.edit-attribution-tooltip.visible {
+  opacity: 1;
+}
+
+.tooltip-content {
+  background-color: rgba(30, 30, 30, 0.95);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.tooltip-content strong {
+  font-weight: 600;
+  color: #60a5fa; /* Light blue for emphasis */
+}
+
+/* Responsive font sizing */
+@media (max-width: 768px) {
+  .tooltip-content {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .edit-attribution-tooltip {
+    transition: none;
+  }
+}
