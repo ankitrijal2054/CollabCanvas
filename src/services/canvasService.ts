@@ -3,6 +3,12 @@ import { ref, set, update, remove, get, onValue, off } from "firebase/database";
 import { database } from "./firebase";
 import { DEFAULT_CANVAS_ID } from "../constants/canvas";
 import type { CanvasObject } from "../types/canvas.types";
+import {
+  updateObjectTransaction,
+  deleteObjectTransaction,
+  createObjectTransaction,
+  type TransactionResult,
+} from "./transactionService";
 
 /**
  * Canvas Service
@@ -10,60 +16,93 @@ import type { CanvasObject } from "../types/canvas.types";
  */
 export const canvasService = {
   /**
-   * Save a new object to the canvas
+   * Save a new object to the canvas using atomic transaction
    * @param objectData - Complete object data to save
+   * @returns Transaction result with success status
    */
-  saveObject: async (objectData: CanvasObject): Promise<void> => {
+  saveObject: async (objectData: CanvasObject): Promise<TransactionResult> => {
     try {
-      const objectRef = ref(
-        database,
-        `/canvases/${DEFAULT_CANVAS_ID}/objects/${objectData.id}`
-      );
-      await set(objectRef, objectData);
+      const result = await createObjectTransaction(objectData);
+
+      if (!result.success) {
+        console.error("Failed to save object:", result.errorMessage);
+      }
+
+      return result;
     } catch (error) {
       console.error("Error saving object:", error);
-      throw error;
+      return {
+        success: false,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   },
 
   /**
-   * Update an existing object with partial data
+   * Update an existing object with partial data using atomic transaction
+   * Prevents ghost objects and stale updates
    * @param objectId - ID of the object to update
    * @param updates - Partial object data to update
+   * @param userId - Optional user ID for attribution
+   * @returns Transaction result with success status and error details
    */
   updateObject: async (
     objectId: string,
-    updates: Partial<CanvasObject>
-  ): Promise<void> => {
+    updates: Partial<CanvasObject>,
+    userId?: string
+  ): Promise<TransactionResult> => {
     try {
-      const objectRef = ref(
-        database,
-        `/canvases/${DEFAULT_CANVAS_ID}/objects/${objectId}`
-      );
-      await update(objectRef, {
+      // Ensure timestamp is included
+      const updatesWithTimestamp = {
         ...updates,
-        timestamp: Date.now(), // Always update timestamp on any change
-      });
+        timestamp: updates.timestamp || Date.now(),
+      };
+
+      const result = await updateObjectTransaction(
+        objectId,
+        updatesWithTimestamp,
+        userId
+      );
+
+      if (!result.success) {
+        console.error("Failed to update object:", result.errorMessage);
+      }
+
+      return result;
     } catch (error) {
       console.error("Error updating object:", error);
-      throw error;
+      return {
+        success: false,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   },
 
   /**
-   * Delete an object from the canvas
+   * Delete an object from the canvas using atomic transaction
+   * Prevents double-delete errors
    * @param objectId - ID of the object to delete
+   * @param userId - User ID performing the deletion
+   * @returns Transaction result with success status
    */
-  deleteObject: async (objectId: string): Promise<void> => {
+  deleteObject: async (
+    objectId: string,
+    userId: string
+  ): Promise<TransactionResult> => {
     try {
-      const objectRef = ref(
-        database,
-        `/canvases/${DEFAULT_CANVAS_ID}/objects/${objectId}`
-      );
-      await remove(objectRef);
+      const result = await deleteObjectTransaction(objectId, userId);
+
+      if (!result.success) {
+        console.error("Failed to delete object:", result.errorMessage);
+      }
+
+      return result;
     } catch (error) {
       console.error("Error deleting object:", error);
-      throw error;
+      return {
+        success: false,
+        errorMessage: error instanceof Error ? error.message : "Unknown error",
+      };
     }
   },
 
