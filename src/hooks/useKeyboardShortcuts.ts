@@ -149,8 +149,8 @@ export const useKeyboardShortcuts = ({
         }
       }
 
-      // Layer ordering with Shift (Cmd/Ctrl + Shift + key)
-      if (isModifier && isShift) {
+      // Layer ordering with Alt (Cmd/Ctrl + Alt + key) - avoids browser tab switching shortcuts
+      if (isModifier && event.altKey && !isShift) {
         switch (event.key) {
           case "[":
           case "{":
@@ -163,7 +163,12 @@ export const useKeyboardShortcuts = ({
             event.preventDefault();
             handlers.onBringToFront?.();
             return;
+        }
+      }
 
+      // Alignment shortcuts with Shift (Cmd/Ctrl + Shift + key)
+      if (isModifier && isShift && !event.altKey) {
+        switch (event.key) {
           // Alignment shortcuts (for PR #20)
           case "L":
             event.preventDefault();
@@ -346,12 +351,12 @@ export const getKeyboardShortcuts = () => {
     },
     {
       category: "Layer Order",
-      keys: `${modKey}+Shift+]`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+]`,
       description: "Bring to front",
     },
     {
       category: "Layer Order",
-      keys: `${modKey}+Shift+[`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+[`,
       description: "Send to back",
     },
 

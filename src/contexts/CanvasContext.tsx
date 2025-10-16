@@ -413,7 +413,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             result = await syncOps.updateObject(
               operation.objectId,
               operation.payload,
-              operation.payload.userId
+              operation.payload.userId,
+              operation.payload.lastEditedByName
             );
             if (!result.success) {
               // If object was deleted, don't throw - just skip
@@ -531,6 +532,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_RECTANGLE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       // Attribution for new objects
       lastEditedBy: user?.id,
       lastEditedByName: userName,
@@ -627,6 +629,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_CIRCLE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -715,6 +718,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_STAR.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -804,6 +808,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_LINE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -892,6 +897,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       // Note: stroke and strokeWidth are omitted for text objects (Firebase doesn't accept undefined)
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -1282,7 +1288,12 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             retryCount: 0,
           });
         } else {
-          const result = await syncOps.updateObject(id, updatePayload, user.id);
+          const result = await syncOps.updateObject(
+            id,
+            updatePayload,
+            user.id,
+            userName
+          );
           if (!result.success) {
             console.error(
               `Failed to update zIndex for ${id}:`,
@@ -1435,7 +1446,12 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             retryCount: 0,
           });
         } else {
-          const result = await syncOps.updateObject(id, updates, user.id);
+          const result = await syncOps.updateObject(
+            id,
+            updates,
+            user.id,
+            userName
+          );
           if (!result.success) {
             console.error(`Failed to nudge object ${id}:`, result.errorMessage);
           }

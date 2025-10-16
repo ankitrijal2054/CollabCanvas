@@ -615,27 +615,34 @@ export default function Canvas() {
 
             {/* Objects Layer - Canvas objects */}
             <Layer>
-              {objects.map((obj) => (
-                <CanvasObject
-                  key={obj.id}
-                  object={obj}
-                  isSelected={selectedIds.includes(obj.id)}
-                  selectedIds={selectedIds}
-                  allObjects={objects}
-                  onSelect={(e) => {
-                    // Shift+Click: Toggle selection (add/remove from multi-select)
-                    // Regular Click: Single select (clear others)
-                    const isShiftPressed =
-                      (e?.evt as MouseEvent)?.shiftKey ?? false;
-                    if (isShiftPressed) {
-                      toggleSelection(obj.id);
-                    } else {
-                      selectObject(obj.id);
-                    }
-                  }}
-                  onHoverChange={handleObjectHoverChange}
-                />
-              ))}
+              {/* Sort objects by zIndex (lower values render first/behind) */}
+              {[...objects]
+                .sort((a, b) => {
+                  const aZ = a.zIndex !== undefined ? a.zIndex : a.timestamp;
+                  const bZ = b.zIndex !== undefined ? b.zIndex : b.timestamp;
+                  return aZ - bZ;
+                })
+                .map((obj) => (
+                  <CanvasObject
+                    key={obj.id}
+                    object={obj}
+                    isSelected={selectedIds.includes(obj.id)}
+                    selectedIds={selectedIds}
+                    allObjects={objects}
+                    onSelect={(e) => {
+                      // Shift+Click: Toggle selection (add/remove from multi-select)
+                      // Regular Click: Single select (clear others)
+                      const isShiftPressed =
+                        (e?.evt as MouseEvent)?.shiftKey ?? false;
+                      if (isShiftPressed) {
+                        toggleSelection(obj.id);
+                      } else {
+                        selectObject(obj.id);
+                      }
+                    }}
+                    onHoverChange={handleObjectHoverChange}
+                  />
+                ))}
 
               {/* Selection Box - Unified bounding box for multi-select */}
               <SelectionBox
