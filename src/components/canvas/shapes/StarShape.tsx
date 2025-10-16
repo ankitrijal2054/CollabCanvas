@@ -53,6 +53,7 @@ function StarShape({
 
   /**
    * Handle drag end - update position
+   * Convert center position (Konva) back to top-left corner (storage)
    */
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
     if (isCanvasDisabled) {
@@ -61,9 +62,10 @@ function StarShape({
     }
 
     const node = e.target;
+    // Konva positions stars by center, but we store top-left corner
     const updates = {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - object.width / 2,
+      y: node.y() - object.height / 2,
       timestamp: Date.now(),
     };
 

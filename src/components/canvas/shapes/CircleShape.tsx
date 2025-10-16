@@ -51,6 +51,7 @@ function CircleShape({
 
   /**
    * Handle drag end - update position
+   * Convert center position (Konva) back to top-left corner (storage)
    */
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
     if (isCanvasDisabled) {
@@ -59,9 +60,10 @@ function CircleShape({
     }
 
     const node = e.target;
+    // Konva positions circles by center, but we store top-left corner
     const updates = {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - radius,
+      y: node.y() - radius,
       timestamp: Date.now(),
     };
 
