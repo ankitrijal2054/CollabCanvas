@@ -36,6 +36,18 @@
   flex-shrink: 0;
 }
 
+/* Active button (Selection Mode) */
+.toolbar-button-active {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.toolbar-button-active:hover {
+  background-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
 /* Primary button (Add Rectangle) */
 .toolbar-button-primary {
   background-color: #3b82f6;

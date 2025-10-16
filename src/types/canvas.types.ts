@@ -189,7 +189,7 @@ export const DEFAULT_TEXT = {
  */
 export interface CanvasState {
   objects: CanvasObject[]; // All objects on the canvas
-  selectedObjectId: string | null; // Currently selected object
+  selectedIds: string[]; // Array of selected object IDs (supports multi-select)
   viewport: Viewport; // Current viewport state
   canvasSize: Size; // Bounded canvas dimensions
   loading: boolean; // Loading state

@@ -4,6 +4,7 @@ import type {
   LineObject,
   TextObject,
 } from "../../types/canvas.types";
+import type Konva from "konva";
 import { useCanvas } from "../../hooks/useCanvas";
 import RectangleShape from "./shapes/RectangleShape";
 import CircleShape from "./shapes/CircleShape";
@@ -14,7 +15,7 @@ import TextShape from "./shapes/TextShape";
 interface CanvasObjectProps {
   object: CanvasObjectType;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
   onHoverChange?: (
     hovering: boolean,
     object: CanvasObjectType | null,

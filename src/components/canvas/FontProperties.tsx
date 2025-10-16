@@ -11,12 +11,12 @@ import "./FontProperties.css";
  * Floating panel for editing font properties of the selected text object
  */
 export const FontProperties: React.FC = () => {
-  const { objects, selectedObjectId, updateObject, isCanvasDisabled } =
-    useCanvas();
+  const { objects, selectedIds, updateObject, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
   const { user } = useAuth();
 
-  const selectedObject = objects.find((obj) => obj.id === selectedObjectId);
+  // Get the first selected object (properties panel only shows for single selection)
+  const selectedObject = objects.find((obj) => obj.id === selectedIds[0]);
 
   // Only show for text objects
   const isTextObject = selectedObject?.type === "text";

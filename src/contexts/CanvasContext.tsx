@@ -48,7 +48,10 @@ interface CanvasContextType extends CanvasState {
   addObject: (object: CanvasObject) => void;
   updateObject: (id: string, updates: Partial<CanvasObject>) => void;
   deleteObject: (id: string) => Promise<void>;
-  selectObject: (id: string | null) => void;
+  selectObject: (id: string | null) => void; // Single select (clears others)
+  toggleSelection: (id: string) => void; // Add/remove from selection
+  clearSelection: () => void; // Clear all selections
+  selectAll: () => void; // Select all objects
   createRectangle: () => Promise<void>;
   createCircle: () => Promise<void>;
   createStar: () => Promise<void>;
@@ -84,7 +87,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
   const [canvasState, setCanvasState] = useState<CanvasState>({
     objects: [],
-    selectedObjectId: null,
+    selectedIds: [], // Multi-select support
     viewport: {
       x: 0,
       y: 0,
@@ -176,7 +179,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: [],
-        selectedObjectId: null,
+        selectedIds: [], // Clear selections on logout
         loading: false,
         viewport: {
           x: 0,
@@ -273,8 +276,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     setCanvasState((prev) => ({
       ...prev,
       objects: prev.objects.filter((obj) => obj.id !== id),
-      selectedObjectId:
-        prev.selectedObjectId === id ? null : prev.selectedObjectId,
+      selectedIds: prev.selectedIds.filter((selectedId) => selectedId !== id), // Remove from selection if selected
     }));
 
     // Sync deletion to Firebase or queue if offline
@@ -316,10 +318,48 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   /**
    * Select an object (or deselect if id is null)
    */
+  /**
+   * Select a single object (clears all other selections)
+   * @param id - Object ID to select, or null to clear selection
+   */
   const selectObject = (id: string | null) => {
     setCanvasState((prev) => ({
       ...prev,
-      selectedObjectId: id,
+      selectedIds: id ? [id] : [], // Single select replaces all selections
+    }));
+  };
+
+  /**
+   * Toggle an object's selection (add if not selected, remove if selected)
+   * Used for Shift+Click multi-select
+   * @param id - Object ID to toggle
+   */
+  const toggleSelection = (id: string) => {
+    setCanvasState((prev) => ({
+      ...prev,
+      selectedIds: prev.selectedIds.includes(id)
+        ? prev.selectedIds.filter((selectedId) => selectedId !== id) // Remove if already selected
+        : [...prev.selectedIds, id], // Add if not selected
+    }));
+  };
+
+  /**
+   * Clear all selections
+   */
+  const clearSelection = () => {
+    setCanvasState((prev) => ({
+      ...prev,
+      selectedIds: [],
+    }));
+  };
+
+  /**
+   * Select all objects on the canvas
+   */
+  const selectAll = () => {
+    setCanvasState((prev) => ({
+      ...prev,
+      selectedIds: prev.objects.map((obj) => obj.id),
     }));
   };
 
@@ -511,7 +551,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           setCanvasState((prev) => ({
             ...prev,
             objects: prev.objects.filter((obj) => obj.id !== id),
-            selectedObjectId: null,
+            selectedIds: [],
           }));
         }
       }
@@ -521,7 +561,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: prev.objects.filter((obj) => obj.id !== id),
-        selectedObjectId: null,
+        selectedIds: [],
       }));
     }
   };
@@ -600,7 +640,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           setCanvasState((prev) => ({
             ...prev,
             objects: prev.objects.filter((obj) => obj.id !== id),
-            selectedObjectId: null,
+            selectedIds: [],
           }));
         }
       }
@@ -609,7 +649,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: prev.objects.filter((obj) => obj.id !== id),
-        selectedObjectId: null,
+        selectedIds: [],
       }));
     }
   };
@@ -688,7 +728,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           setCanvasState((prev) => ({
             ...prev,
             objects: prev.objects.filter((obj) => obj.id !== id),
-            selectedObjectId: null,
+            selectedIds: [],
           }));
         }
       }
@@ -697,7 +737,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: prev.objects.filter((obj) => obj.id !== id),
-        selectedObjectId: null,
+        selectedIds: [],
       }));
     }
   };
@@ -777,7 +817,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           setCanvasState((prev) => ({
             ...prev,
             objects: prev.objects.filter((obj) => obj.id !== id),
-            selectedObjectId: null,
+            selectedIds: [],
           }));
         }
       }
@@ -786,7 +826,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: prev.objects.filter((obj) => obj.id !== id),
-        selectedObjectId: null,
+        selectedIds: [],
       }));
     }
   };
@@ -875,7 +915,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           setCanvasState((prev) => ({
             ...prev,
             objects: prev.objects.filter((obj) => obj.id !== id),
-            selectedObjectId: null,
+            selectedIds: [],
           }));
           // Exit edit mode if save failed
           setEditingTextId(null);
@@ -886,7 +926,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       setCanvasState((prev) => ({
         ...prev,
         objects: prev.objects.filter((obj) => obj.id !== id),
-        selectedObjectId: null,
+        selectedIds: [],
       }));
       // Exit edit mode if save failed
       setEditingTextId(null);
@@ -903,6 +943,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     updateObject,
     deleteObject,
     selectObject,
+    toggleSelection,
+    clearSelection,
+    selectAll,
     createRectangle,
     createCircle,
     createStar,

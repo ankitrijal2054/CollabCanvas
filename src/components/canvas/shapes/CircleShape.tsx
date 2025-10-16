@@ -14,7 +14,7 @@ import { useAuth } from "../../../hooks/useAuth";
 interface CircleShapeProps {
   object: CircleObject;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
   onHoverChange?: (
     hovering: boolean,
     object: CircleObject | null,

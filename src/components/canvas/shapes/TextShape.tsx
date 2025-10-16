@@ -11,7 +11,7 @@ import { useAuth } from "../../../hooks/useAuth";
 interface TextShapeProps {
   object: TextObject;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
   onDoubleClick?: () => void; // For entering edit mode
   onHoverChange?: (
     hovering: boolean,

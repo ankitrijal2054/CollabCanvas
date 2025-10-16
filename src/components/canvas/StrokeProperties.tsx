@@ -10,12 +10,12 @@ import "./StrokeProperties.css";
  * Floating panel for editing stroke and fill properties of the selected object
  */
 export const StrokeProperties: React.FC = () => {
-  const { objects, selectedObjectId, updateObject, isCanvasDisabled } =
-    useCanvas();
+  const { objects, selectedIds, updateObject, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
   const { user } = useAuth();
 
-  const selectedObject = objects.find((obj) => obj.id === selectedObjectId);
+  // Get the first selected object (properties panel only shows for single selection)
+  const selectedObject = objects.find((obj) => obj.id === selectedIds[0]);
 
   // Local state for real-time UI updates (before debounced sync)
   const [fillColor, setFillColor] = useState(
