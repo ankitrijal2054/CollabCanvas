@@ -171,8 +171,31 @@ function LineShape({
               // Stars are positioned by center
               otherNode.x(pos.x + otherObj.width / 2);
               otherNode.y(pos.y + otherObj.height / 2);
+            } else if (otherObj?.type === "line") {
+              // Lines use top-left position
+              otherNode.x(pos.x);
+              otherNode.y(pos.y);
+
+              // IMPORTANT: Also update the line's anchor points if they exist
+              // Anchors are positioned relative to the line's x,y position
+              const lineObj = otherObj as any;
+              const linePoints = lineObj.points || [0, 0, 100, 0];
+
+              // Find and update start anchor
+              const startAnchor = stage.findOne(`#${objId}-start-anchor`);
+              if (startAnchor) {
+                startAnchor.x(pos.x + linePoints[0] - 4);
+                startAnchor.y(pos.y + linePoints[1] - 4);
+              }
+
+              // Find and update end anchor
+              const endAnchor = stage.findOne(`#${objId}-end-anchor`);
+              if (endAnchor) {
+                endAnchor.x(pos.x + linePoints[2] - 4);
+                endAnchor.y(pos.y + linePoints[3] - 4);
+              }
             } else {
-              // Rectangles, Lines, Text use top-left position
+              // Rectangles, Text use top-left position
               otherNode.x(pos.x);
               otherNode.y(pos.y);
             }
@@ -180,8 +203,25 @@ function LineShape({
         }
       });
 
+      // Also update THIS line's own anchors (the one being dragged)
+      if (startAnchorRef.current && endAnchorRef.current) {
+        startAnchorRef.current.x(newPosition.x + startX - 4);
+        startAnchorRef.current.y(newPosition.y + startY - 4);
+        endAnchorRef.current.x(newPosition.x + endX - 4);
+        endAnchorRef.current.y(newPosition.y + endY - 4);
+      }
+
       // Redraw the layer
       node.getLayer()?.batchDraw();
+    } else {
+      // Single line drag - also update anchors for smooth movement
+      if (startAnchorRef.current && endAnchorRef.current) {
+        startAnchorRef.current.x(newPosition.x + startX - 4);
+        startAnchorRef.current.y(newPosition.y + startY - 4);
+        endAnchorRef.current.x(newPosition.x + endX - 4);
+        endAnchorRef.current.y(newPosition.y + endY - 4);
+        node.getLayer()?.batchDraw();
+      }
     }
 
     // Update local state in real-time for smooth dragging
@@ -471,6 +511,7 @@ function LineShape({
           {/* Start anchor */}
           <Rect
             ref={startAnchorRef}
+            id={`${object.id}-start-anchor`}
             x={object.x + startX - 4}
             y={object.y + startY - 4}
             width={8}
@@ -493,6 +534,7 @@ function LineShape({
           {/* End anchor */}
           <Rect
             ref={endAnchorRef}
+            id={`${object.id}-end-anchor`}
             x={object.x + endX - 4}
             y={object.y + endY - 4}
             width={8}

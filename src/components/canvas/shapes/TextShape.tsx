@@ -1,7 +1,11 @@
 import React, { useRef, useEffect } from "react";
 import { Text, Transformer } from "react-konva";
 import type Konva from "konva";
-import type { TextObject } from "../../../types/canvas.types";
+import type {
+  TextObject,
+  CircleObject,
+  LineObject,
+} from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
 import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
@@ -99,16 +103,38 @@ function TextShape({
             const otherObj = allObjects.find((o) => o.id === objId);
             if (otherObj?.type === "circle") {
               // Circles are positioned by center
-              const circleRadius =
-                (otherObj as any).radius || otherObj.width / 2;
+              const circleObj = otherObj as CircleObject;
+              const circleRadius = circleObj.radius || otherObj.width / 2;
               otherNode.x(pos.x + circleRadius);
               otherNode.y(pos.y + circleRadius);
             } else if (otherObj?.type === "star") {
               // Stars are positioned by center
               otherNode.x(pos.x + otherObj.width / 2);
               otherNode.y(pos.y + otherObj.height / 2);
+            } else if (otherObj?.type === "line") {
+              // Lines use top-left position
+              otherNode.x(pos.x);
+              otherNode.y(pos.y);
+
+              // IMPORTANT: Also update the line's anchor points if they exist
+              const lineObj = otherObj as LineObject;
+              const linePoints = lineObj.points || [0, 0, 100, 0];
+
+              // Find and update start anchor
+              const startAnchor = stage.findOne(`#${objId}-start-anchor`);
+              if (startAnchor) {
+                startAnchor.x(pos.x + linePoints[0] - 4);
+                startAnchor.y(pos.y + linePoints[1] - 4);
+              }
+
+              // Find and update end anchor
+              const endAnchor = stage.findOne(`#${objId}-end-anchor`);
+              if (endAnchor) {
+                endAnchor.x(pos.x + linePoints[2] - 4);
+                endAnchor.y(pos.y + linePoints[3] - 4);
+              }
             } else {
-              // Rectangles, Lines, Text use top-left position
+              // Rectangles, Text use top-left position
               otherNode.x(pos.x);
               otherNode.y(pos.y);
             }
