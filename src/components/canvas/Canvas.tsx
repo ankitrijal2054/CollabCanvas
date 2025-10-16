@@ -24,6 +24,7 @@ import { FontProperties } from "./FontProperties";
 import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
 import ShortcutHelp from "../layout/ShortcutHelp";
+import { ContextMenu } from "./ContextMenu";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -136,6 +137,114 @@ export default function Canvas() {
 
   // Help modal state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    visible: boolean;
+  } | null>(null);
+
+  // Detect platform for keyboard shortcut display
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const modKey = isMac ? "⌘" : "Ctrl";
+
+  /**
+   * Build context menu options based on current selection state
+   */
+  const getContextMenuOptions = () => {
+    const hasSelection = selectedIds.length > 0;
+
+    return [
+      {
+        label: "Copy",
+        shortcut: `${modKey}+C`,
+        action: copySelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Cut",
+        shortcut: `${modKey}+X`,
+        action: cutSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Paste",
+        shortcut: `${modKey}+V`,
+        action: pasteObjects,
+        disabled: false,
+      },
+      {
+        label: "Duplicate",
+        shortcut: `${modKey}+D`,
+        action: duplicateSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Delete",
+        shortcut: "Del",
+        action: deleteSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Bring to Front",
+        shortcut: `${modKey}+${isMac ? "⌥" : "Alt"}+]`,
+        action: bringToFront,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Bring Forward",
+        shortcut: `${modKey}+]`,
+        action: bringForward,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Send Backward",
+        shortcut: `${modKey}+[`,
+        action: sendBackward,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Send to Back",
+        shortcut: `${modKey}+${isMac ? "⌥" : "Alt"}+[`,
+        action: sendToBack,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Select All",
+        shortcut: `${modKey}+A`,
+        action: selectAll,
+        disabled: false,
+      },
+    ];
+  };
+
+  /**
+   * Handle right-click context menu
+   */
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      visible: true,
+    });
+  };
 
   /**
    * Handle object hover change for tooltip
@@ -508,6 +617,7 @@ export default function Canvas() {
         <div
           id="canvas-container"
           className={`canvas-container ${!loading ? "loaded" : ""}`}
+          onContextMenu={handleContextMenu}
         >
           {import.meta.env.DEV && devPerf && (
             <div
@@ -721,6 +831,16 @@ export default function Canvas() {
           isOpen={isHelpOpen}
           onClose={() => setIsHelpOpen(false)}
         />
+
+        {/* Context Menu */}
+        {contextMenu?.visible && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            options={getContextMenuOptions()}
+            onClose={() => setContextMenu(null)}
+          />
+        )}
       </div>
     </div>
   );
