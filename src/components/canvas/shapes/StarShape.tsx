@@ -15,6 +15,8 @@ interface StarShapeProps {
   object: StarObject;
   isSelected: boolean;
   onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
+  selectedIds: string[];
+  allObjects: import("../../../types/canvas.types").CanvasObject[];
   onHoverChange?: (
     hovering: boolean,
     object: StarObject | null,
@@ -30,6 +32,8 @@ function StarShape({
   object,
   isSelected,
   onSelect,
+  selectedIds,
+  allObjects,
   onHoverChange,
 }: StarShapeProps) {
   const shapeRef = useRef<Konva.Star>(null);

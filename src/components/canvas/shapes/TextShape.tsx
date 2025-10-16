@@ -12,6 +12,8 @@ interface TextShapeProps {
   object: TextObject;
   isSelected: boolean;
   onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
+  selectedIds: string[];
+  allObjects: import("../../../types/canvas.types").CanvasObject[];
   onDoubleClick?: () => void; // For entering edit mode
   onHoverChange?: (
     hovering: boolean,
@@ -28,6 +30,8 @@ function TextShape({
   object,
   isSelected,
   onSelect,
+  selectedIds,
+  allObjects,
   onDoubleClick,
   onHoverChange,
 }: TextShapeProps) {

@@ -65,53 +65,9 @@ export const SelectionBox: React.FC<SelectionBoxProps> = ({
     }
   }, [selectedObjects.length, boundingBox]);
 
-  // Don't render if less than 2 objects selected (single selection uses individual transformers)
-  if (selectedObjects.length < 2) {
-    return null;
-  }
-
-  return (
-    <>
-      {/* Selection box visual indicator */}
-      <Group ref={groupRef}>
-        <Rect
-          x={boundingBox.x}
-          y={boundingBox.y}
-          width={boundingBox.width}
-          height={boundingBox.height}
-          stroke="#0066FF"
-          strokeWidth={2}
-          dash={[6, 3]} // Dashed line to differentiate from individual selection
-          fill="rgba(0, 102, 255, 0.05)" // Very light blue fill
-          listening={false} // Don't intercept clicks, let objects handle them
-        />
-      </Group>
-
-      {/* Transformer for group operations */}
-      <Transformer
-        ref={transformerRef}
-        rotateEnabled={false} // Disable rotation for now (will add in later tasks)
-        enabledAnchors={[
-          "top-left",
-          "top-center",
-          "top-right",
-          "middle-left",
-          "middle-right",
-          "bottom-left",
-          "bottom-center",
-          "bottom-right",
-        ]}
-        keepRatio={false} // Allow independent width/height adjustment
-        borderStroke="#0066FF"
-        borderStrokeWidth={2}
-        anchorStroke="#0066FF"
-        anchorFill="#FFFFFF"
-        anchorSize={8}
-        anchorCornerRadius={2}
-        // TODO: Task 17.10 - Add handlers for group transformations
-        // onTransformEnd={handleGroupTransform}
-        // onDragEnd={handleGroupDrag}
-      />
-    </>
-  );
+  // Don't render unified selection box - just show individual object selections
+  // The unified box creates visual clutter when multiple objects are selected
+  // Individual selection boxes are cleaner and sufficient for now
+  // TODO: Task 17.10 - Re-enable for group transformation operations
+  return null;
 };

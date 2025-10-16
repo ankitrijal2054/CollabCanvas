@@ -15,6 +15,8 @@ interface LineShapeProps {
   object: LineObject;
   isSelected: boolean;
   onSelect: (e?: Konva.KonvaEventObject<Event>) => void;
+  selectedIds: string[];
+  allObjects: import("../../../types/canvas.types").CanvasObject[];
   onHoverChange?: (
     hovering: boolean,
     object: LineObject | null,
@@ -30,6 +32,8 @@ function LineShape({
   object,
   isSelected,
   onSelect,
+  selectedIds,
+  allObjects,
   onHoverChange,
 }: LineShapeProps) {
   const shapeRef = useRef<Konva.Line>(null);

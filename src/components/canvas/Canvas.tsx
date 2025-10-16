@@ -562,10 +562,13 @@ export default function Canvas() {
                   key={obj.id}
                   object={obj}
                   isSelected={selectedIds.includes(obj.id)}
+                  selectedIds={selectedIds}
+                  allObjects={objects}
                   onSelect={(e) => {
                     // Shift+Click: Toggle selection (add/remove from multi-select)
                     // Regular Click: Single select (clear others)
-                    const isShiftPressed = e?.evt?.shiftKey ?? false;
+                    const isShiftPressed =
+                      (e?.evt as MouseEvent)?.shiftKey ?? false;
                     if (isShiftPressed) {
                       toggleSelection(obj.id);
                     } else {
