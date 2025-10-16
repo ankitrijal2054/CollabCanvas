@@ -152,12 +152,14 @@ export const useKeyboardShortcuts = ({
       // Layer ordering with Alt (Cmd/Ctrl + Alt + key) - avoids browser tab switching shortcuts
       if (isModifier && event.altKey && !isShift) {
         switch (event.key) {
+          case "“":
           case "[":
           case "{":
             event.preventDefault();
             handlers.onSendToBack?.();
             return;
 
+          case "‘":
           case "]":
           case "}":
             event.preventDefault();
