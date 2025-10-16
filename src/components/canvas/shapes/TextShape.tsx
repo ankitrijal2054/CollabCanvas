@@ -5,10 +5,7 @@ import type { TextObject } from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
 import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
-import {
-  TransactionErrorType,
-  getErrorMessage,
-} from "../../../services/transactionService";
+import { TransactionErrorType } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
 
 interface TextShapeProps {
@@ -87,7 +84,7 @@ function TextShape({
         });
         console.log("📦 Queued text position update (offline)");
       } else {
-        await syncOps.syncUpdate(object.id, updates);
+        await syncOps.updateObject(object.id, updates, user?.id, userName);
       }
     } catch (error: unknown) {
       if (error && typeof error === "object") {
@@ -152,7 +149,7 @@ function TextShape({
         });
         console.log("📦 Queued text resize (offline)");
       } else {
-        await syncOps.syncUpdate(object.id, updates);
+        await syncOps.updateObject(object.id, updates, user?.id, userName);
       }
     } catch (error: unknown) {
       if (error && typeof error === "object") {
@@ -216,11 +213,6 @@ function TextShape({
     }
   };
 
-  // Build font string for Konva.Text (e.g., "bold italic 16px Arial")
-  const fontStyle = `${object.fontWeight || "normal"} ${
-    object.fontStyle || "normal"
-  } ${object.fontSize || 16}px ${object.fontFamily || "Arial"}`;
-
   return (
     <>
       <Text
@@ -229,9 +221,12 @@ function TextShape({
         x={object.x}
         y={object.y}
         text={object.text || ""}
-        fontSize={object.fontSize || 16}
+        // Font properties - combine into CSS font string for Konva
         fontFamily={object.fontFamily || "Arial"}
-        fontStyle={fontStyle}
+        fontSize={object.fontSize || 16}
+        fontStyle={`${object.fontStyle || "normal"} ${
+          object.fontWeight || "normal"
+        }`}
         fill={object.color || "#000000"}
         align={object.textAlign || "left"}
         width={object.width || 200}
