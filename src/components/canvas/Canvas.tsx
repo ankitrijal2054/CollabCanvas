@@ -15,6 +15,7 @@ import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
 import { EditAttributionTooltip } from "./EditAttributionTooltip";
+import { StrokeProperties } from "./StrokeProperties";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -477,6 +478,9 @@ export default function Canvas() {
             offsetY={viewport.y}
           />
         </div>
+
+        {/* Stroke Properties Panel */}
+        <StrokeProperties />
       </div>
     </div>
   );

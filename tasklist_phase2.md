@@ -200,35 +200,35 @@
 
 **Goal:** Expand from rectangles to 5 shape types with stroke controls
 
-- [ ] **Task 15.1: Update canvas types for new shapes**
+- [x] **Task 15.1: Update canvas types for new shapes**
 
   - Files to update: `src/types/canvas.types.ts`
   - Add: `CircleObject`, `StarObject`, `LineObject` interfaces
   - Add: `stroke`, `strokeWidth` to `BaseObject`
   - Create: Discriminated union type for `CanvasObject`
 
-- [ ] **Task 15.2: Create Circle shape component**
+- [x] **Task 15.2: Create Circle shape component**
 
   - Files to create: `src/components/canvas/shapes/CircleShape.tsx`
   - Implement: Konva.Circle rendering
   - Add: Proportional resize (aspect ratio lock)
   - Properties: radius (derived from width/2), fill, stroke
 
-- [ ] **Task 15.3: Create Star shape component**
+- [x] **Task 15.3: Create Star shape component**
 
   - Files to create: `src/components/canvas/shapes/StarShape.tsx`
   - Implement: Konva.Star rendering
   - Add: Configurable points (3-12, default: 5)
   - Add: Inner radius ratio (0.0-1.0, default: 0.5)
 
-- [ ] **Task 15.4: Create Line shape component**
+- [x] **Task 15.4: Create Line shape component**
 
   - Files to create: `src/components/canvas/shapes/LineShape.tsx`
   - Implement: Konva.Line rendering with arrow heads
   - Add: Click-drag creation interaction
   - Properties: start/end points, arrow options (none, start, end, both)
 
-- [ ] **Task 15.5: Create stroke properties panel**
+- [x] **Task 15.5: Create stroke properties panel**
 
   - Files to create: `src/components/canvas/StrokeProperties.tsx`
   - Add: Stroke width slider (0-20px)
@@ -236,21 +236,21 @@
   - Add: Fill color picker
   - Update: Real-time with debouncing (300ms)
 
-- [ ] **Task 15.6: Update canvas object to dispatch shapes**
+- [x] **Task 15.6: Update canvas object to dispatch shapes**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Add: Type-based rendering (switch on `object.type`)
   - Dispatch: To appropriate shape component (Rectangle, Circle, Star, Line)
 
-- [ ] **Task 15.7: Add shape creation to canvas context**
+- [x] **Task 15.7: Add shape creation to canvas context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: `createCircle()`, `createStar()`, `createLine()` functions
   - Set: Default properties (stroke: #000000, strokeWidth: 2)
 
-- [ ] **Task 15.8: Add shape buttons to toolbar**
+- [x] **Task 15.8: Add shape buttons to toolbar**
 
-  - Files to update: `src/components/canvas/CanvasControls.tsx`
+  - Files to update: `src/components/canvas/CanvasToolbar.tsx`
   - Add: Circle, Star, Line buttons
   - Update: Rectangle button styling for consistency
   - Add: Active state for line creation mode

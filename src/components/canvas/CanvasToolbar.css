@@ -77,6 +77,14 @@
   border: 1px solid #e5e7eb;
 }
 
+/* Toolbar divider */
+.toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background-color: #e5e7eb;
+  align-self: center;
+}
+
 /* Responsive design */
 @media (max-width: 640px) {
   .canvas-toolbar {

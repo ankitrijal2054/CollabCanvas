@@ -3,7 +3,14 @@ import { useCanvas } from "../../hooks/useCanvas";
 import "./CanvasToolbar.css";
 
 export default function CanvasToolbar() {
-  const { createRectangle, selectedObjectId, deleteObject } = useCanvas();
+  const {
+    createRectangle,
+    createCircle,
+    createStar,
+    createLine,
+    selectedObjectId,
+    deleteObject,
+  } = useCanvas();
 
   /**
    * Delete the selected object
@@ -35,6 +42,75 @@ export default function CanvasToolbar() {
         </svg>
         <span>Rectangle</span>
       </button>
+
+      {/* Add Circle Button */}
+      <button
+        className="toolbar-button toolbar-button-primary"
+        onClick={createCircle}
+        title="Add Circle (C)"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <circle cx="10" cy="10" r="7" strokeWidth="1.5" />
+          <path d="M10 7v6" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M7 10h6" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+        <span>Circle</span>
+      </button>
+
+      {/* Add Star Button */}
+      <button
+        className="toolbar-button toolbar-button-primary"
+        onClick={createStar}
+        title="Add Star (S)"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path
+            d="M10 2l2.5 5.5L18 8.5l-4.5 4 1 6-4.5-2.5L5.5 18.5l1-6-4.5-4 5.5-1L10 2z"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span>Star</span>
+      </button>
+
+      {/* Add Line Button */}
+      <button
+        className="toolbar-button toolbar-button-primary"
+        onClick={createLine}
+        title="Add Line (L)"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path d="M3 17l14-14" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M17 3l-2 2M5 15l-2 2"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span>Line</span>
+      </button>
+
+      {/* Divider */}
+      <div className="toolbar-divider"></div>
 
       {/* Delete Button */}
       <button

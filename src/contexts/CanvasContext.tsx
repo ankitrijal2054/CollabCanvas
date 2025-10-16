@@ -12,7 +12,12 @@ import type {
   CanvasState,
   Viewport,
 } from "../types/canvas.types";
-import { DEFAULT_RECTANGLE } from "../types/canvas.types";
+import {
+  DEFAULT_RECTANGLE,
+  DEFAULT_CIRCLE,
+  DEFAULT_STAR,
+  DEFAULT_LINE,
+} from "../types/canvas.types";
 import { CANVAS_CONFIG } from "../constants/canvas";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -43,6 +48,9 @@ interface CanvasContextType extends CanvasState {
   deleteObject: (id: string) => Promise<void>;
   selectObject: (id: string | null) => void;
   createRectangle: () => Promise<void>;
+  createCircle: () => Promise<void>;
+  createStar: () => Promise<void>;
+  createLine: () => Promise<void>;
   isCanvasDisabled: boolean;
   pauseSync: () => void;
   resumeSync: () => void;
@@ -357,19 +365,21 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             }
             break;
           case "delete":
-            // Extract userId from payload
-            const userId = operation.payload?.userId || user?.id || "unknown";
-            result = await syncOps.deleteObject(operation.objectId, userId);
-            if (!result.success) {
-              // If already deleted, don't throw - it's the desired state
-              if (result.error === TransactionErrorType.OBJECT_DELETED) {
-                console.warn(
-                  `Object ${operation.objectId} was already deleted`
-                );
-              } else {
-                throw new Error(
-                  result.errorMessage || "Failed to delete object"
-                );
+            {
+              // Extract userId from payload
+              const userId = operation.payload?.userId || user?.id || "unknown";
+              result = await syncOps.deleteObject(operation.objectId, userId);
+              if (!result.success) {
+                // If already deleted, don't throw - it's the desired state
+                if (result.error === TransactionErrorType.OBJECT_DELETED) {
+                  console.warn(
+                    `Object ${operation.objectId} was already deleted`
+                  );
+                } else {
+                  throw new Error(
+                    result.errorMessage || "Failed to delete object"
+                  );
+                }
               }
             }
             break;
@@ -447,11 +457,14 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     const newRectangle: CanvasObject = {
       id,
+      type: "rectangle",
       x,
       y,
       width: DEFAULT_RECTANGLE.width,
       height: DEFAULT_RECTANGLE.height,
       color: DEFAULT_RECTANGLE.color,
+      stroke: DEFAULT_RECTANGLE.stroke,
+      strokeWidth: DEFAULT_RECTANGLE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
       // Attribution for new objects
@@ -504,6 +517,271 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
   };
 
+  /**
+   * Create a new circle at canvas center with default size and color
+   * Saves to Firebase for real-time sync (or queues if offline)
+   */
+  const createCircle = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot create objects");
+      return;
+    }
+
+    const id = syncHelpers.generateObjectId("circle");
+
+    // Get canvas container size
+    const container = document.getElementById("canvas-container");
+    const stageWidth = container?.offsetWidth ?? window.innerWidth;
+    const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+    // Compute visible center in screen coords, convert to canvas coords
+    const screenCenterX = stageWidth / 2;
+    const screenCenterY = stageHeight / 2;
+    const centerPos = canvasHelpers.screenToCanvas(
+      screenCenterX,
+      screenCenterY,
+      canvasState.viewport.scale,
+      { x: canvasState.viewport.x, y: canvasState.viewport.y }
+    );
+
+    // Position circle so its center is at viewport center
+    const x = centerPos.x - DEFAULT_CIRCLE.width / 2;
+    const y = centerPos.y - DEFAULT_CIRCLE.height / 2;
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    const newCircle: CanvasObject = {
+      id,
+      type: "circle",
+      x,
+      y,
+      width: DEFAULT_CIRCLE.width,
+      height: DEFAULT_CIRCLE.height,
+      color: DEFAULT_CIRCLE.color,
+      stroke: DEFAULT_CIRCLE.stroke,
+      strokeWidth: DEFAULT_CIRCLE.strokeWidth,
+      createdBy: user?.id || "anonymous",
+      timestamp: now,
+      lastEditedBy: user?.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+    };
+
+    // Add to local state immediately
+    addObject(newCircle);
+    selectObject(id);
+
+    // Save to Firebase or queue if offline
+    try {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-create-${Date.now()}`,
+          type: "create",
+          objectId: id,
+          payload: newCircle,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.saveObject(newCircle);
+        if (!result.success) {
+          console.error("Failed to save circle:", result.errorMessage);
+          alert(getErrorMessage(result.error!, "circle"));
+          setCanvasState((prev) => ({
+            ...prev,
+            objects: prev.objects.filter((obj) => obj.id !== id),
+            selectedObjectId: null,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to save circle:", error);
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: prev.objects.filter((obj) => obj.id !== id),
+        selectedObjectId: null,
+      }));
+    }
+  };
+
+  /**
+   * Create a new star at canvas center with default size and color
+   * Saves to Firebase for real-time sync (or queues if offline)
+   */
+  const createStar = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot create objects");
+      return;
+    }
+
+    const id = syncHelpers.generateObjectId("star");
+
+    // Get canvas container size
+    const container = document.getElementById("canvas-container");
+    const stageWidth = container?.offsetWidth ?? window.innerWidth;
+    const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+    // Compute visible center in screen coords, convert to canvas coords
+    const screenCenterX = stageWidth / 2;
+    const screenCenterY = stageHeight / 2;
+    const centerPos = canvasHelpers.screenToCanvas(
+      screenCenterX,
+      screenCenterY,
+      canvasState.viewport.scale,
+      { x: canvasState.viewport.x, y: canvasState.viewport.y }
+    );
+
+    // Position star so its center is at viewport center
+    const x = centerPos.x - DEFAULT_STAR.width / 2;
+    const y = centerPos.y - DEFAULT_STAR.height / 2;
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    const newStar: CanvasObject = {
+      id,
+      type: "star",
+      x,
+      y,
+      width: DEFAULT_STAR.width,
+      height: DEFAULT_STAR.height,
+      color: DEFAULT_STAR.color,
+      stroke: DEFAULT_STAR.stroke,
+      strokeWidth: DEFAULT_STAR.strokeWidth,
+      createdBy: user?.id || "anonymous",
+      timestamp: now,
+      lastEditedBy: user?.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+    };
+
+    // Add to local state immediately
+    addObject(newStar);
+    selectObject(id);
+
+    // Save to Firebase or queue if offline
+    try {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-create-${Date.now()}`,
+          type: "create",
+          objectId: id,
+          payload: newStar,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.saveObject(newStar);
+        if (!result.success) {
+          console.error("Failed to save star:", result.errorMessage);
+          alert(getErrorMessage(result.error!, "star"));
+          setCanvasState((prev) => ({
+            ...prev,
+            objects: prev.objects.filter((obj) => obj.id !== id),
+            selectedObjectId: null,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to save star:", error);
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: prev.objects.filter((obj) => obj.id !== id),
+        selectedObjectId: null,
+      }));
+    }
+  };
+
+  /**
+   * Create a new line at canvas center with default length
+   * Saves to Firebase for real-time sync (or queues if offline)
+   */
+  const createLine = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot create objects");
+      return;
+    }
+
+    const id = syncHelpers.generateObjectId("line");
+
+    // Get canvas container size
+    const container = document.getElementById("canvas-container");
+    const stageWidth = container?.offsetWidth ?? window.innerWidth;
+    const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+    // Compute visible center in screen coords, convert to canvas coords
+    const screenCenterX = stageWidth / 2;
+    const screenCenterY = stageHeight / 2;
+    const centerPos = canvasHelpers.screenToCanvas(
+      screenCenterX,
+      screenCenterY,
+      canvasState.viewport.scale,
+      { x: canvasState.viewport.x, y: canvasState.viewport.y }
+    );
+
+    // Position line so its center is at viewport center
+    const lineWidth = DEFAULT_LINE.width || 100;
+    const x = centerPos.x - lineWidth / 2;
+    const y = centerPos.y;
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    const newLine: CanvasObject = {
+      id,
+      type: "line",
+      x,
+      y,
+      width: lineWidth,
+      height: DEFAULT_LINE.height,
+      color: DEFAULT_LINE.color,
+      stroke: DEFAULT_LINE.stroke,
+      strokeWidth: DEFAULT_LINE.strokeWidth,
+      createdBy: user?.id || "anonymous",
+      timestamp: now,
+      lastEditedBy: user?.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+    };
+
+    // Add to local state immediately
+    addObject(newLine);
+    selectObject(id);
+
+    // Save to Firebase or queue if offline
+    try {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-create-${Date.now()}`,
+          type: "create",
+          objectId: id,
+          payload: newLine,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.saveObject(newLine);
+        if (!result.success) {
+          console.error("Failed to save line:", result.errorMessage);
+          alert(getErrorMessage(result.error!, "line"));
+          setCanvasState((prev) => ({
+            ...prev,
+            objects: prev.objects.filter((obj) => obj.id !== id),
+            selectedObjectId: null,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to save line:", error);
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: prev.objects.filter((obj) => obj.id !== id),
+        selectedObjectId: null,
+      }));
+    }
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -515,6 +793,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     deleteObject,
     selectObject,
     createRectangle,
+    createCircle,
+    createStar,
+    createLine,
     isCanvasDisabled,
     pauseSync,
     resumeSync,
