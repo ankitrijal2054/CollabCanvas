@@ -76,7 +76,7 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
           });
           console.log("📦 Queued text update (offline)");
         } else {
-          await syncOps.syncUpdate(object.id, updates);
+          await syncOps.updateObject(object.id, updates, user?.id, userName);
         }
       } catch (error) {
         console.error("❌ Failed to sync text change:", error);
