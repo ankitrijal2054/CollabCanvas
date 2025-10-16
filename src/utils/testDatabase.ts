@@ -6,6 +6,15 @@ import { database } from "../services/firebase";
 import { canvasService } from "../services/canvasService";
 import type { CanvasObject } from "../types/canvas.types";
 
+// Test utilities interface
+interface TestDatabaseUtils {
+  runAll: () => Promise<void>;
+  connection: () => Promise<boolean>;
+  realtime: () => Promise<boolean>;
+  generate: (count?: number) => Promise<number>;
+  clear: () => Promise<void>;
+}
+
 /**
  * Test Firebase Realtime Database Connection
  */
@@ -53,6 +62,7 @@ export const testDatabaseConnection = async () => {
       color: "#3B82F6",
       createdBy: "test-user",
       timestamp: Date.now(),
+      type: "rectangle",
     };
 
     await canvasService.saveObject(testObject);
@@ -95,7 +105,7 @@ export const testDatabaseConnection = async () => {
     // Test 7: Delete test object
     console.log("Test 7: Delete Object");
     console.log("----------------------------");
-    await canvasService.deleteObject(testObject.id);
+    await canvasService.deleteObject(testObject.id, "test-user");
     console.log("✅ Object deleted");
     console.log("");
 
@@ -137,6 +147,7 @@ export const testRealtimeSync = async () => {
     for (let i = 0; i < 3; i++) {
       await canvasService.saveObject({
         id: `rect-sync-test-${i}-${Date.now()}`,
+        type: "rectangle",
         x: 100 * i,
         y: 100 * i,
         width: 150,
@@ -185,19 +196,6 @@ export const runAllDatabaseTests = async () => {
   console.log("=".repeat(50));
 };
 
-// Export for console testing
-if (typeof window !== "undefined") {
-  (window as any).testDatabase = {
-    runAll: runAllDatabaseTests,
-    connection: testDatabaseConnection,
-    realtime: testRealtimeSync,
-  };
-  console.log("💡 Database tests available in console:");
-  console.log("   testDatabase.runAll()");
-  console.log("   testDatabase.connection()");
-  console.log("   testDatabase.realtime()");
-}
-
 /**
  * Generate many test objects efficiently (for performance testing)
  * Creates objects in a grid using batch updates to minimize writes.
@@ -218,6 +216,7 @@ export const generateTestObjects = async (count: number = 500) => {
       const id = `rect-bulk-${now}-${created}`;
       updatesBatch[id] = {
         id,
+        type: "rectangle",
         x: j * (width + gap) + 20,
         y: i * (height + gap) + 20,
         width,
@@ -251,10 +250,21 @@ export const clearAllObjects = async () => {
   await canvasService.clearCanvas();
 };
 
-// Extend console helpers
+// Export for console testing (at the end so all functions are declared)
 if (typeof window !== "undefined") {
-  (window as any).testDatabase.generate = generateTestObjects;
-  (window as any).testDatabase.clear = clearAllObjects;
+  (
+    window as unknown as Window & { testDatabase: TestDatabaseUtils }
+  ).testDatabase = {
+    runAll: runAllDatabaseTests,
+    connection: testDatabaseConnection,
+    realtime: testRealtimeSync,
+    generate: generateTestObjects,
+    clear: clearAllObjects,
+  };
+  console.log("💡 Database tests available in console:");
+  console.log("   testDatabase.runAll()");
+  console.log("   testDatabase.connection()");
+  console.log("   testDatabase.realtime()");
   console.log("   testDatabase.generate(500)");
   console.log("   testDatabase.clear()");
 }
