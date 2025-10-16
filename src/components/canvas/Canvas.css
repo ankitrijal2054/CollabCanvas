@@ -38,8 +38,8 @@
   opacity: 1;
 }
 
-/* Konva stage container */
-.canvas-container > div {
+/* Konva stage container - only target the Konva wrapper, not other children like TextEditor */
+.canvas-container > div:not(.text-editor-container) {
   width: 100%;
   height: 100%;
 }

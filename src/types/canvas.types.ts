@@ -38,6 +38,7 @@ export interface Viewport {
  */
 export interface CanvasObject {
   id: string;
+  type: "rectangle" | "circle" | "star" | "line" | "text"; // Shape type discriminator
   x: number;
   y: number;
   width: number;
@@ -49,19 +50,74 @@ export interface CanvasObject {
   lastEditedBy?: string; // User ID who last edited this object
   lastEditedByName?: string; // Display name of the last editor
   lastEditedAt?: number; // Timestamp of the last edit
+  // Stroke properties (optional for backward compatibility)
+  stroke?: string; // Stroke color (e.g., "#000000")
+  strokeWidth?: number; // Stroke width in pixels (0-20)
 }
 
 /**
  * Rectangle object type
  */
-export interface Rectangle extends CanvasObject {
+export interface RectangleObject extends CanvasObject {
   type: "rectangle";
 }
 
 /**
- * Union type for all shape types (future-proof for circles, lines, etc.)
+ * Circle object type
  */
-export type ShapeObject = Rectangle;
+export interface CircleObject extends CanvasObject {
+  type: "circle";
+  radius?: number; // Can be derived from width/2 for circular shapes
+}
+
+/**
+ * Star object type
+ */
+export interface StarObject extends CanvasObject {
+  type: "star";
+  numPoints?: number; // Number of star points (3-12, default: 5)
+  innerRadius?: number; // Inner radius ratio (0.0-1.0, default: 0.5)
+}
+
+/**
+ * Line object type
+ */
+export interface LineObject extends CanvasObject {
+  type: "line";
+  points: number[]; // Array of points [x1, y1, x2, y2]
+  arrowStart?: boolean; // Show arrow at start point
+  arrowEnd?: boolean; // Show arrow at end point
+}
+
+/**
+ * Text object type
+ */
+export interface TextObject extends CanvasObject {
+  type: "text";
+  text: string; // Text content
+  fontFamily: string; // Font family (e.g., 'Arial', 'Helvetica')
+  fontSize: number; // Font size in pixels
+  fontWeight: "normal" | "bold"; // Font weight
+  fontStyle: "normal" | "italic"; // Font style
+  textAlign: "left" | "center" | "right"; // Text alignment
+  // color from base CanvasObject is used for text color
+  // width/height auto-calculated from text rendering
+}
+
+/**
+ * Union type for all shape types (discriminated union for type safety)
+ */
+export type ShapeObject =
+  | RectangleObject
+  | CircleObject
+  | StarObject
+  | LineObject
+  | TextObject;
+
+/**
+ * Alias for backward compatibility
+ */
+export type Rectangle = RectangleObject;
 
 /**
  * Default shape properties for new rectangles
@@ -70,6 +126,62 @@ export const DEFAULT_RECTANGLE = {
   width: 150,
   height: 100,
   color: "#3B82F6", // Blue color
+  stroke: "#000000", // Black stroke
+  strokeWidth: 2, // 2px stroke width
+} as const;
+
+/**
+ * Default shape properties for new circles
+ */
+export const DEFAULT_CIRCLE = {
+  width: 100, // Diameter
+  height: 100, // Diameter (always equal to width for circles)
+  radius: 50, // Radius
+  color: "#10B981", // Green color
+  stroke: "#000000", // Black stroke
+  strokeWidth: 2, // 2px stroke width
+} as const;
+
+/**
+ * Default shape properties for new stars
+ */
+export const DEFAULT_STAR = {
+  width: 100,
+  height: 100,
+  numPoints: 5, // 5-pointed star
+  innerRadius: 0.5, // 50% inner radius
+  color: "#F59E0B", // Orange color
+  stroke: "#000000", // Black stroke
+  strokeWidth: 2, // 2px stroke width
+} as const;
+
+/**
+ * Default shape properties for new lines
+ */
+export const DEFAULT_LINE = {
+  width: 100, // Line length (for initial creation)
+  height: 2, // Line thickness
+  color: "#000000", // Black line
+  stroke: "#000000", // Black stroke
+  strokeWidth: 2, // 2px stroke width
+  arrowStart: false, // No arrow at start
+  arrowEnd: true, // Arrow at end
+} as const;
+
+/**
+ * Default properties for new text objects
+ */
+export const DEFAULT_TEXT = {
+  text: "Double-click to edit", // Default placeholder text
+  fontFamily: "Arial", // Default font
+  fontSize: 16, // Default font size (px)
+  fontWeight: "normal" as const, // Default font weight
+  fontStyle: "normal" as const, // Default font style
+  textAlign: "left" as const, // Default text alignment
+  color: "#000000", // Black text color
+  width: 200, // Initial width (will auto-adjust based on content)
+  height: 24, // Initial height (will auto-adjust based on content)
+  // Note: stroke and strokeWidth are intentionally omitted for text objects
 } as const;
 
 /**

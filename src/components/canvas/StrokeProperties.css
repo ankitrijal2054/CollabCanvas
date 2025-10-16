@@ -1,0 +1,222 @@
+/* Stroke Properties Panel */
+.stroke-properties {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  width: 280px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
+}
+
+.stroke-properties-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stroke-properties-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.stroke-properties-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Property Group */
+.property-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.property-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.property-value {
+  font-size: 12px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Color Input Group */
+.color-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-picker {
+  width: 48px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 2px;
+  background: #ffffff;
+}
+
+.color-picker:hover {
+  border-color: #9ca3af;
+}
+
+.color-picker:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.color-hex-input {
+  flex: 1;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: "Courier New", monospace;
+  color: #1f2937;
+  background: #ffffff;
+  transition: border-color 0.15s ease;
+}
+
+.color-hex-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.color-hex-input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Stroke Width Slider */
+.stroke-width-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #e5e7eb 0%, #3b82f6 100%);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.stroke-width-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.stroke-width-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background: #2563eb;
+}
+
+.stroke-width-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.stroke-width-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  background: #2563eb;
+}
+
+.stroke-width-slider:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stroke-width-slider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+  background: #9ca3af;
+}
+
+.stroke-width-slider:disabled::-moz-range-thumb {
+  cursor: not-allowed;
+  background: #9ca3af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stroke-properties {
+    top: auto;
+    bottom: 80px;
+    right: 16px;
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .stroke-properties {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .stroke-properties-header {
+    border-bottom-color: #374151;
+  }
+
+  .stroke-properties-header h3 {
+    color: #f9fafb;
+  }
+
+  .property-group label {
+    color: #e5e7eb;
+  }
+
+  .property-value {
+    color: #9ca3af;
+  }
+
+  .color-picker {
+    border-color: #4b5563;
+    background: #111827;
+  }
+
+  .color-hex-input {
+    background: #111827;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+
+  .color-hex-input:focus {
+    border-color: #3b82f6;
+  }
+
+  .color-hex-input:disabled {
+    background: #374151;
+    color: #6b7280;
+  }
+}
