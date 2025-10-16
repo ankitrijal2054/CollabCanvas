@@ -397,7 +397,6 @@
   - Files to update: `src/components/canvas/SelectionBox.tsx`
   - Add: Group move (drag any selected object → all move)
   - Add: Group resize (scale all proportionally)
-  - Add: Group rotate (rotate around group center)
 
 - [ ] **Task 17.11: Update presence to sync selection**
 

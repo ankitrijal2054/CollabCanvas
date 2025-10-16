@@ -20,6 +20,7 @@ import CursorLayer from "../collaboration/CursorLayer";
 import { EditAttributionTooltip } from "./EditAttributionTooltip";
 import { StrokeProperties } from "./StrokeProperties";
 import { FontProperties } from "./FontProperties";
+import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
 import "./Canvas.css";
 import {
@@ -35,8 +36,9 @@ export default function Canvas() {
     setViewport,
     setPosition,
     objects,
-    selectedObjectId,
+    selectedIds,
     selectObject,
+    toggleSelection,
     deleteObject,
     loading,
     editingTextId,
@@ -56,6 +58,15 @@ export default function Canvas() {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
+  // Selection mode state
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectionRect, setSelectionRect] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Tooltip state for edit attribution
   const [hoveredObject, setHoveredObject] = useState<CanvasObjectType | null>(
@@ -147,21 +158,22 @@ export default function Canvas() {
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Delete or Backspace key - delete selected object
+      // Delete or Backspace key - delete selected object(s)
       if (
         (e.key === "Delete" || e.key === "Backspace") &&
-        selectedObjectId &&
+        selectedIds.length > 0 &&
         // Don't delete if user is typing in an input
         !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)
       ) {
         e.preventDefault();
-        deleteObject(selectedObjectId);
+        // Delete all selected objects
+        selectedIds.forEach((id) => deleteObject(id));
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedObjectId, deleteObject]);
+  }, [selectedIds, deleteObject]);
 
   // Calculate canvas bounds for boundary checking
   const canvasBounds = canvasHelpers.getCanvasBounds(
@@ -216,7 +228,7 @@ export default function Canvas() {
   }) => {
     // Check if we clicked on the stage background (not an object)
     const clickedOnEmpty = e.target === e.target.getStage();
-    if (clickedOnEmpty && selectedObjectId) {
+    if (clickedOnEmpty && selectedIds.length > 0) {
       selectObject(null);
     }
   };
@@ -224,15 +236,39 @@ export default function Canvas() {
   /**
    * Handle pan start (mouse down or touch start)
    */
-  const handlePanStart = () => {
+  const handlePanStart = (
+    e: Konva.KonvaEventObject<MouseEvent | TouchEvent>
+  ) => {
     const stage = stageRef.current;
     if (!stage) return;
 
     const pos = stage.getPointerPosition();
     if (!pos) return;
 
-    setIsPanning(true);
-    setPanStart({ x: pos.x, y: pos.y });
+    // Check if clicking on empty canvas (not an object)
+    const clickedOnEmpty = e.target === stage;
+
+    // If in selection mode and clicking on empty canvas, start selection rectangle
+    if (isSelectionMode && clickedOnEmpty) {
+      // Convert screen coordinates to canvas coordinates (accounting for viewport)
+      const canvasX = (pos.x - viewport.x) / viewport.scale;
+      const canvasY = (pos.y - viewport.y) / viewport.scale;
+
+      setSelectionRect({
+        x: canvasX,
+        y: canvasY,
+        width: 0,
+        height: 0,
+      });
+      setIsPanning(false); // Don't pan when in selection mode
+    } else if (!clickedOnEmpty) {
+      // Don't pan if clicking on an object
+      setIsPanning(false);
+    } else {
+      // Regular panning when not in selection mode
+      setIsPanning(true);
+      setPanStart({ x: pos.x, y: pos.y });
+    }
   };
 
   /**
@@ -242,14 +278,28 @@ export default function Canvas() {
     // Always track cursor movement for multiplayer presence
     handleCursorMove();
 
-    if (!isPanning) return;
-
     const stage = stageRef.current;
     if (!stage) return;
 
-    // Get current pointer position
     const pos = stage.getPointerPosition();
     if (!pos) return;
+
+    // If drawing selection rectangle, update its dimensions
+    if (selectionRect) {
+      // Convert screen coordinates to canvas coordinates
+      const canvasX = (pos.x - viewport.x) / viewport.scale;
+      const canvasY = (pos.y - viewport.y) / viewport.scale;
+
+      // Update rectangle dimensions (can be negative for dragging in any direction)
+      setSelectionRect({
+        ...selectionRect,
+        width: canvasX - selectionRect.x,
+        height: canvasY - selectionRect.y,
+      });
+      return; // Don't pan when drawing selection rectangle
+    }
+
+    if (!isPanning) return;
 
     // Calculate movement delta
     const dx = pos.x - panStart.x;
@@ -281,6 +331,53 @@ export default function Canvas() {
    */
   const handlePanEnd = () => {
     setIsPanning(false);
+
+    // If selection rectangle exists, select all objects within it
+    if (selectionRect) {
+      // Normalize rectangle (handle negative widths/heights from dragging in any direction)
+      const x =
+        selectionRect.width >= 0
+          ? selectionRect.x
+          : selectionRect.x + selectionRect.width;
+      const y =
+        selectionRect.height >= 0
+          ? selectionRect.y
+          : selectionRect.y + selectionRect.height;
+      const width = Math.abs(selectionRect.width);
+      const height = Math.abs(selectionRect.height);
+
+      // Find all objects that intersect with the selection rectangle
+      const selectedObjects = objects.filter((obj) => {
+        // Check if object's bounding box intersects with selection rectangle
+        const objRight = obj.x + (obj.width || 0);
+        const objBottom = obj.y + (obj.height || 0);
+        const rectRight = x + width;
+        const rectBottom = y + height;
+
+        return (
+          obj.x < rectRight &&
+          objRight > x &&
+          obj.y < rectBottom &&
+          objBottom > y
+        );
+      });
+
+      // Select all intersecting objects
+      if (selectedObjects.length > 0) {
+        // If holding shift, add to existing selection
+        // Otherwise, replace selection
+        const newSelectedIds = selectedObjects.map((obj) => obj.id);
+        selectObject(null); // Clear first
+        newSelectedIds.forEach((id) => toggleSelection(id)); // Then add all
+      } else {
+        // If no objects selected, clear selection
+        selectObject(null);
+      }
+
+      // Clear selection rectangle and exit selection mode (reduces clutter)
+      setSelectionRect(null);
+      setIsSelectionMode(false);
+    }
   };
 
   /**
@@ -338,13 +435,16 @@ export default function Canvas() {
         className="canvas-workspace"
         onClick={(e) => {
           // Deselect when clicking outside canvas container
-          if (e.target === e.currentTarget && selectedObjectId) {
+          if (e.target === e.currentTarget && selectedIds.length > 0) {
             selectObject(null);
           }
         }}
       >
         <Sidebar />
-        <CanvasToolbar />
+        <CanvasToolbar
+          isSelectionMode={isSelectionMode}
+          onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+        />
         <CanvasControls />
 
         <div
@@ -461,11 +561,53 @@ export default function Canvas() {
                 <CanvasObject
                   key={obj.id}
                   object={obj}
-                  isSelected={obj.id === selectedObjectId}
-                  onSelect={() => selectObject(obj.id)}
+                  isSelected={selectedIds.includes(obj.id)}
+                  selectedIds={selectedIds}
+                  allObjects={objects}
+                  onSelect={(e) => {
+                    // Shift+Click: Toggle selection (add/remove from multi-select)
+                    // Regular Click: Single select (clear others)
+                    const isShiftPressed =
+                      (e?.evt as MouseEvent)?.shiftKey ?? false;
+                    if (isShiftPressed) {
+                      toggleSelection(obj.id);
+                    } else {
+                      selectObject(obj.id);
+                    }
+                  }}
                   onHoverChange={handleObjectHoverChange}
                 />
               ))}
+
+              {/* Selection Box - Unified bounding box for multi-select */}
+              <SelectionBox
+                selectedObjects={objects.filter((obj) =>
+                  selectedIds.includes(obj.id)
+                )}
+              />
+
+              {/* Drag Selection Rectangle - Rubber-band visual feedback */}
+              {selectionRect && (
+                <Rect
+                  x={
+                    selectionRect.width >= 0
+                      ? selectionRect.x
+                      : selectionRect.x + selectionRect.width
+                  }
+                  y={
+                    selectionRect.height >= 0
+                      ? selectionRect.y
+                      : selectionRect.y + selectionRect.height
+                  }
+                  width={Math.abs(selectionRect.width)}
+                  height={Math.abs(selectionRect.height)}
+                  fill="rgba(0, 102, 255, 0.1)"
+                  stroke="#0066FF"
+                  strokeWidth={1}
+                  dash={[4, 4]}
+                  listening={false}
+                />
+              )}
             </Layer>
           </Stage>
 
@@ -498,9 +640,9 @@ export default function Canvas() {
         </div>
 
         {/* Properties Panels - conditional based on selected object type */}
-        {selectedObjectId && (
+        {selectedIds.length === 1 && (
           <>
-            {objects.find((obj) => obj.id === selectedObjectId)?.type ===
+            {objects.find((obj) => obj.id === selectedIds[0])?.type ===
             "text" ? (
               <FontProperties />
             ) : (

@@ -2,28 +2,66 @@
 import { useCanvas } from "../../hooks/useCanvas";
 import "./CanvasToolbar.css";
 
-export default function CanvasToolbar() {
+interface CanvasToolbarProps {
+  isSelectionMode: boolean;
+  onToggleSelectionMode: () => void;
+}
+
+export default function CanvasToolbar({
+  isSelectionMode,
+  onToggleSelectionMode,
+}: CanvasToolbarProps) {
   const {
     createRectangle,
     createCircle,
     createStar,
     createLine,
     createText,
-    selectedObjectId,
+    selectedIds,
     deleteObject,
   } = useCanvas();
 
   /**
-   * Delete the selected object
+   * Delete the selected object(s)
    */
   const handleDelete = () => {
-    if (selectedObjectId) {
-      deleteObject(selectedObjectId);
+    if (selectedIds.length > 0) {
+      selectedIds.forEach((id) => deleteObject(id));
     }
   };
 
   return (
     <div className="canvas-toolbar">
+      {/* Selection Mode Toggle Button */}
+      <button
+        className={`toolbar-button ${
+          isSelectionMode ? "toolbar-button-active" : ""
+        }`}
+        onClick={onToggleSelectionMode}
+        title={
+          isSelectionMode
+            ? "Selection Mode (Active) - Drag to select multiple objects"
+            : "Selection Mode (Inactive) - Click to enable drag-to-select"
+        }
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          {/* Mouse cursor with selection box */}
+          <path d="M 3 3 L 3 14 L 7 10 L 9 14 L 11 13 L 9 9 L 13 9 Z" />
+          <rect x="11" y="2" width="7" height="7" strokeDasharray="2 1" />
+        </svg>
+        <span>Select</span>
+      </button>
+
+      {/* Divider */}
+      <div className="toolbar-divider"></div>
+
       {/* Add Rectangle Button */}
       <button
         className="toolbar-button toolbar-button-primary"
@@ -146,10 +184,12 @@ export default function CanvasToolbar() {
       <button
         className="toolbar-button toolbar-button-danger"
         onClick={handleDelete}
-        disabled={!selectedObjectId}
+        disabled={selectedIds.length === 0}
         title={
-          selectedObjectId
-            ? "Delete Selected (Delete)"
+          selectedIds.length > 0
+            ? `Delete Selected (${selectedIds.length} object${
+                selectedIds.length > 1 ? "s" : ""
+              })`
             : "Select an object to delete"
         }
       >
