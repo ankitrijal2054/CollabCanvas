@@ -25,7 +25,7 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState(object.text || "");
   const [isSyncing, setIsSyncing] = useState(false);
-  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { updateObject, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
@@ -235,9 +235,6 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
           <span>Syncing...</span>
         </div>
       )}
-      <div className="text-editor-hint">
-        Press <kbd>Escape</kbd> or click outside to finish editing
-      </div>
     </div>
   );
 }
