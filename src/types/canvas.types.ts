@@ -38,7 +38,7 @@ export interface Viewport {
  */
 export interface CanvasObject {
   id: string;
-  type: "rectangle" | "circle" | "star" | "line"; // Shape type discriminator
+  type: "rectangle" | "circle" | "star" | "line" | "text"; // Shape type discriminator
   x: number;
   y: number;
   width: number;
@@ -90,13 +90,29 @@ export interface LineObject extends CanvasObject {
 }
 
 /**
+ * Text object type
+ */
+export interface TextObject extends CanvasObject {
+  type: "text";
+  text: string; // Text content
+  fontFamily: string; // Font family (e.g., 'Arial', 'Helvetica')
+  fontSize: number; // Font size in pixels
+  fontWeight: "normal" | "bold"; // Font weight
+  fontStyle: "normal" | "italic"; // Font style
+  textAlign: "left" | "center" | "right"; // Text alignment
+  // color from base CanvasObject is used for text color
+  // width/height auto-calculated from text rendering
+}
+
+/**
  * Union type for all shape types (discriminated union for type safety)
  */
 export type ShapeObject =
   | RectangleObject
   | CircleObject
   | StarObject
-  | LineObject;
+  | LineObject
+  | TextObject;
 
 /**
  * Alias for backward compatibility
@@ -150,6 +166,22 @@ export const DEFAULT_LINE = {
   strokeWidth: 2, // 2px stroke width
   arrowStart: false, // No arrow at start
   arrowEnd: true, // Arrow at end
+} as const;
+
+/**
+ * Default properties for new text objects
+ */
+export const DEFAULT_TEXT = {
+  text: "Double-click to edit", // Default placeholder text
+  fontFamily: "Arial", // Default font
+  fontSize: 16, // Default font size (px)
+  fontWeight: "normal" as const, // Default font weight
+  fontStyle: "normal" as const, // Default font style
+  textAlign: "left" as const, // Default text alignment
+  color: "#000000", // Black text color
+  width: 200, // Initial width (will auto-adjust based on content)
+  height: 24, // Initial height (will auto-adjust based on content)
+  // Note: stroke and strokeWidth are intentionally omitted for text objects
 } as const;
 
 /**

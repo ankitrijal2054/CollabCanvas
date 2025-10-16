@@ -2,11 +2,14 @@ import React from "react";
 import type {
   CanvasObject as CanvasObjectType,
   LineObject,
+  TextObject,
 } from "../../types/canvas.types";
+import { useCanvas } from "../../hooks/useCanvas";
 import RectangleShape from "./shapes/RectangleShape";
 import CircleShape from "./shapes/CircleShape";
 import StarShape from "./shapes/StarShape";
 import LineShape from "./shapes/LineShape";
+import TextShape from "./shapes/TextShape";
 
 interface CanvasObjectProps {
   object: CanvasObjectType;
@@ -29,6 +32,8 @@ function CanvasObject({
   onSelect,
   onHoverChange,
 }: CanvasObjectProps) {
+  const { setEditingTextId } = useCanvas();
+
   // Route to the appropriate shape component based on type
   // Default to rectangle for backward compatibility with objects that don't have a type
   const type = object.type || "rectangle";
@@ -75,6 +80,19 @@ function CanvasObject({
           }}
           isSelected={isSelected}
           onSelect={onSelect}
+          onHoverChange={onHoverChange}
+        />
+      );
+    }
+
+    case "text": {
+      const textObj = object as TextObject;
+      return (
+        <TextShape
+          object={textObj}
+          isSelected={isSelected}
+          onSelect={onSelect}
+          onDoubleClick={() => setEditingTextId(textObj.id)}
           onHoverChange={onHoverChange}
         />
       );

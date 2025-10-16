@@ -8,6 +8,7 @@ export default function CanvasToolbar() {
     createCircle,
     createStar,
     createLine,
+    createText,
     selectedObjectId,
     deleteObject,
   } = useCanvas();
@@ -107,6 +108,35 @@ export default function CanvasToolbar() {
           />
         </svg>
         <span>Line</span>
+      </button>
+
+      {/* Add Text Button */}
+      <button
+        className="toolbar-button toolbar-button-primary"
+        onClick={createText}
+        title="Add Text (T)"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+        >
+          <path
+            d="M4 4h12M10 4v12"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M7 16h6"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span>Text</span>
       </button>
 
       {/* Divider */}

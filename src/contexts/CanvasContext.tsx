@@ -11,12 +11,14 @@ import type {
   CanvasObject,
   CanvasState,
   Viewport,
+  TextObject,
 } from "../types/canvas.types";
 import {
   DEFAULT_RECTANGLE,
   DEFAULT_CIRCLE,
   DEFAULT_STAR,
   DEFAULT_LINE,
+  DEFAULT_TEXT,
 } from "../types/canvas.types";
 import { CANVAS_CONFIG } from "../constants/canvas";
 import { useAuth } from "../hooks/useAuth";
@@ -51,9 +53,13 @@ interface CanvasContextType extends CanvasState {
   createCircle: () => Promise<void>;
   createStar: () => Promise<void>;
   createLine: () => Promise<void>;
+  createText: () => Promise<void>;
   isCanvasDisabled: boolean;
   pauseSync: () => void;
   resumeSync: () => void;
+  // Text editing state management
+  editingTextId: string | null;
+  setEditingTextId: (id: string | null) => void;
 }
 
 // Create the context with undefined default value
@@ -98,6 +104,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
   // Track if we should pause real-time sync (during queue processing)
   const [isSyncPaused, setIsSyncPaused] = useState(false);
+
+  // Track text editing state
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
 
   /**
    * Handle incoming objects from Firebase
@@ -782,6 +791,108 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
   };
 
+  /**
+   * Create a new text object at canvas center with default properties
+   * Saves to Firebase for real-time sync (or queues if offline)
+   * Automatically enters edit mode after creation
+   */
+  const createText = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot create objects");
+      return;
+    }
+
+    const id = syncHelpers.generateObjectId("text");
+
+    // Get canvas container size
+    const container = document.getElementById("canvas-container");
+    const stageWidth = container?.offsetWidth ?? window.innerWidth;
+    const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+    // Compute visible center in screen coords, convert to canvas coords
+    const screenCenterX = stageWidth / 2;
+    const screenCenterY = stageHeight / 2;
+    const centerPos = canvasHelpers.screenToCanvas(
+      screenCenterX,
+      screenCenterY,
+      canvasState.viewport.scale,
+      { x: canvasState.viewport.x, y: canvasState.viewport.y }
+    );
+
+    // Position text so its center is at viewport center
+    const x = centerPos.x - DEFAULT_TEXT.width / 2;
+    const y = centerPos.y - DEFAULT_TEXT.height / 2;
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    const newText: TextObject = {
+      id,
+      type: "text",
+      x,
+      y,
+      width: DEFAULT_TEXT.width,
+      height: DEFAULT_TEXT.height,
+      color: DEFAULT_TEXT.color,
+      // Note: stroke and strokeWidth are omitted for text objects (Firebase doesn't accept undefined)
+      createdBy: user?.id || "anonymous",
+      timestamp: now,
+      lastEditedBy: user?.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+      // Text-specific properties
+      text: DEFAULT_TEXT.text,
+      fontFamily: DEFAULT_TEXT.fontFamily,
+      fontSize: DEFAULT_TEXT.fontSize,
+      fontWeight: DEFAULT_TEXT.fontWeight,
+      fontStyle: DEFAULT_TEXT.fontStyle,
+      textAlign: DEFAULT_TEXT.textAlign,
+    };
+
+    // Add to local state immediately
+    addObject(newText);
+    selectObject(id);
+
+    // Enter edit mode immediately after creation
+    setEditingTextId(id);
+
+    // Save to Firebase or queue if offline
+    try {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-create-${Date.now()}`,
+          type: "create",
+          objectId: id,
+          payload: newText,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.saveObject(newText);
+        if (!result.success) {
+          console.error("Failed to save text:", result.errorMessage);
+          alert(getErrorMessage(result.error!, "text"));
+          setCanvasState((prev) => ({
+            ...prev,
+            objects: prev.objects.filter((obj) => obj.id !== id),
+            selectedObjectId: null,
+          }));
+          // Exit edit mode if save failed
+          setEditingTextId(null);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to save text:", error);
+      setCanvasState((prev) => ({
+        ...prev,
+        objects: prev.objects.filter((obj) => obj.id !== id),
+        selectedObjectId: null,
+      }));
+      // Exit edit mode if save failed
+      setEditingTextId(null);
+    }
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -796,9 +907,12 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     createCircle,
     createStar,
     createLine,
+    createText,
     isCanvasDisabled,
     pauseSync,
     resumeSync,
+    editingTextId,
+    setEditingTextId,
   };
 
   return (

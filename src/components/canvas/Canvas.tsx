@@ -2,7 +2,10 @@
 import { useRef, useEffect, useState } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import type Konva from "konva";
-import type { CanvasObject as CanvasObjectType } from "../../types/canvas.types";
+import type {
+  CanvasObject as CanvasObjectType,
+  TextObject,
+} from "../../types/canvas.types";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
@@ -16,6 +19,8 @@ import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
 import { EditAttributionTooltip } from "./EditAttributionTooltip";
 import { StrokeProperties } from "./StrokeProperties";
+import { FontProperties } from "./FontProperties";
+import TextEditor from "./TextEditor";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -34,6 +39,8 @@ export default function Canvas() {
     selectObject,
     deleteObject,
     loading,
+    editingTextId,
+    setEditingTextId,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -477,10 +484,30 @@ export default function Canvas() {
             offsetX={viewport.x}
             offsetY={viewport.y}
           />
+
+          {/* Text Editor Overlay - shows when editing text */}
+          {editingTextId && (
+            <TextEditor
+              object={
+                objects.find((obj) => obj.id === editingTextId) as TextObject
+              }
+              viewport={viewport}
+              onFinishEditing={() => setEditingTextId(null)}
+            />
+          )}
         </div>
 
-        {/* Stroke Properties Panel */}
-        <StrokeProperties />
+        {/* Properties Panels - conditional based on selected object type */}
+        {selectedObjectId && (
+          <>
+            {objects.find((obj) => obj.id === selectedObjectId)?.type ===
+            "text" ? (
+              <FontProperties />
+            ) : (
+              <StrokeProperties />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
