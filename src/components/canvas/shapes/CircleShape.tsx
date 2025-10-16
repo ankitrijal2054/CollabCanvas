@@ -132,9 +132,11 @@ function CircleShape({
     const newWidth = newRadius * 2;
     const newHeight = newRadius * 2;
 
+    // node.x() and node.y() are the CENTER position after transform
+    // Convert back to top-left corner for storage
     const updates = {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - newRadius,
+      y: node.y() - newRadius,
       width: newWidth,
       height: newHeight,
       radius: newRadius,

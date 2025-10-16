@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from "react";
-import { Line, Transformer } from "react-konva";
+import React, { useRef } from "react";
+import { Line, Rect } from "react-konva";
 import type Konva from "konva";
 import type { LineObject } from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
@@ -24,7 +24,7 @@ interface LineShapeProps {
 
 /**
  * LineShape Component
- * Renders a line with optional arrow heads at start/end
+ * Renders a line with two draggable anchor points (start and end)
  */
 function LineShape({
   object,
@@ -33,7 +33,8 @@ function LineShape({
   onHoverChange,
 }: LineShapeProps) {
   const shapeRef = useRef<Konva.Line>(null);
-  const transformerRef = useRef<Konva.Transformer>(null);
+  const startAnchorRef = useRef<Konva.Rect>(null);
+  const endAnchorRef = useRef<Konva.Rect>(null);
   const { updateObject, canvasSize, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
   const { user } = useAuth();
@@ -43,114 +44,28 @@ function LineShape({
   const points =
     object.points && object.points.length >= 4 ? object.points : defaultPoints;
 
-  // Attach transformer to shape when selected
-  useEffect(() => {
-    if (isSelected && transformerRef.current && shapeRef.current) {
-      transformerRef.current.nodes([shapeRef.current]);
-      transformerRef.current.getLayer()?.batchDraw();
-    }
-  }, [isSelected]);
+  // Extract start and end points
+  const startX = points[0];
+  const startY = points[1];
+  const endX = points[2];
+  const endY = points[3];
 
   /**
-   * Handle drag end - update position
+   * Sync line updates to Firebase
    */
-  const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
-    if (isCanvasDisabled) {
-      console.warn("🚫 Canvas is disabled - cannot update objects");
-      return;
-    }
-
-    const node = e.target;
-    const updates = {
-      x: node.x(),
-      y: node.y(),
-      timestamp: Date.now(),
-    };
-
-    const userName = user?.name || user?.email || "Unknown User";
-
-    // Update local state immediately (optimistic update)
-    updateObject(object.id, updates);
-
-    // Sync to Firebase or queue if offline
-    try {
-      if (!navigator.onLine) {
-        await offlineQueue.enqueue({
-          id: `op-update-${Date.now()}`,
-          type: "update",
-          objectId: object.id,
-          payload: updates,
-          timestamp: Date.now(),
-          retryCount: 0,
-        });
-      } else {
-        const result = await syncOps.updateObject(
-          object.id,
-          updates,
-          user?.id,
-          userName
-        );
-
-        if (!result.success) {
-          if (result.error === TransactionErrorType.OBJECT_DELETED) {
-            alert("This object was deleted by another user");
-          } else {
-            console.error("Failed to update object:", result.errorMessage);
-            alert(getErrorMessage(result.error!, "line"));
-          }
-        }
-      }
-    } catch (error) {
-      console.error("❌ Failed to sync line position:", error);
-    }
-  };
-
-  /**
-   * Handle transform end - update points based on scale/rotation
-   */
-  const handleTransformEnd = async () => {
-    if (isCanvasDisabled) {
-      console.warn("🚫 Canvas is disabled - cannot update objects");
-      return;
-    }
-
-    const node = shapeRef.current;
-    if (!node) return;
-
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-
-    // Reset scale to 1
-    node.scaleX(1);
-    node.scaleY(1);
-
-    // Scale the points array
-    const scaledPoints = points.map((coord, index) => {
-      if (index % 2 === 0) {
-        // X coordinate
-        return coord * scaleX;
-      } else {
-        // Y coordinate
-        return coord * scaleY;
-      }
-    });
-
-    // Calculate new bounding box for width/height
-    const xCoords = scaledPoints.filter((_, i) => i % 2 === 0);
-    const yCoords = scaledPoints.filter((_, i) => i % 2 === 1);
+  const syncLineUpdate = async (newPoints: number[]) => {
+    // Calculate new bounding box
+    const xCoords = [newPoints[0], newPoints[2]];
+    const yCoords = [newPoints[1], newPoints[3]];
     const minX = Math.min(...xCoords);
     const maxX = Math.max(...xCoords);
     const minY = Math.min(...yCoords);
     const maxY = Math.max(...yCoords);
-    const newWidth = maxX - minX;
-    const newHeight = maxY - minY;
 
     const updates = {
-      x: node.x(),
-      y: node.y(),
-      width: newWidth,
-      height: newHeight,
-      points: scaledPoints,
+      points: newPoints,
+      width: maxX - minX,
+      height: maxY - minY,
       timestamp: Date.now(),
     };
 
@@ -188,8 +103,160 @@ function LineShape({
         }
       }
     } catch (error) {
-      console.error("❌ Failed to sync line transform:", error);
+      console.error("❌ Failed to sync line:", error);
     }
+  };
+
+  /**
+   * Handle line drag move - update position in real-time (local only)
+   */
+  const handleLineDragMove = (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (isCanvasDisabled) return;
+
+    const node = e.target;
+    // Update local state in real-time for smooth dragging
+    updateObject(object.id, {
+      x: node.x(),
+      y: node.y(),
+    });
+  };
+
+  /**
+   * Handle line drag end - move both endpoints together
+   */
+  const handleLineDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (isCanvasDisabled) return;
+
+    const node = e.target;
+    // Simply update the line's position - points stay the same (relative to line position)
+    const updates = {
+      x: node.x(),
+      y: node.y(),
+      timestamp: Date.now(),
+    };
+
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Update local state immediately
+    updateObject(object.id, updates);
+
+    // Sync to Firebase or queue if offline
+    try {
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-update-${Date.now()}`,
+          type: "update",
+          objectId: object.id,
+          payload: updates,
+          timestamp: Date.now(),
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.updateObject(
+          object.id,
+          updates,
+          user?.id,
+          userName
+        );
+
+        if (!result.success) {
+          if (result.error === TransactionErrorType.OBJECT_DELETED) {
+            alert("This object was deleted by another user");
+          } else {
+            console.error("Failed to update object:", result.errorMessage);
+            alert(getErrorMessage(result.error!, "line"));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync line position:", error);
+    }
+  };
+
+  /**
+   * Handle start anchor drag move - update in real-time (local only)
+   */
+  const handleStartAnchorDragMove = () => {
+    if (isCanvasDisabled) return;
+
+    const anchor = startAnchorRef.current;
+    if (!anchor) return;
+
+    // Get anchor position and convert to relative coordinates
+    const anchorAbsX = anchor.x() + 4;
+    const anchorAbsY = anchor.y() + 4;
+    const newStartX = anchorAbsX - object.x;
+    const newStartY = anchorAbsY - object.y;
+
+    // Update local state in real-time
+    updateObject(object.id, {
+      points: [newStartX, newStartY, endX, endY],
+    } as Partial<LineObject>);
+  };
+
+  /**
+   * Handle start anchor drag end
+   */
+  const handleStartAnchorDragEnd = async () => {
+    if (isCanvasDisabled) return;
+
+    const anchor = startAnchorRef.current;
+    if (!anchor) return;
+
+    // Get anchor position (top-left corner of 8x8 rect)
+    // Add 4 to get center position
+    const anchorAbsX = anchor.x() + 4;
+    const anchorAbsY = anchor.y() + 4;
+
+    // Convert to relative coordinates (relative to line's x,y position)
+    const newStartX = anchorAbsX - object.x;
+    const newStartY = anchorAbsY - object.y;
+
+    const newPoints = [newStartX, newStartY, endX, endY];
+    await syncLineUpdate(newPoints);
+  };
+
+  /**
+   * Handle end anchor drag move - update in real-time (local only)
+   */
+  const handleEndAnchorDragMove = () => {
+    if (isCanvasDisabled) return;
+
+    const anchor = endAnchorRef.current;
+    if (!anchor) return;
+
+    // Get anchor position and convert to relative coordinates
+    const anchorAbsX = anchor.x() + 4;
+    const anchorAbsY = anchor.y() + 4;
+    const newEndX = anchorAbsX - object.x;
+    const newEndY = anchorAbsY - object.y;
+
+    // Update local state in real-time
+    updateObject(object.id, {
+      points: [startX, startY, newEndX, newEndY],
+    } as Partial<LineObject>);
+  };
+
+  /**
+   * Handle end anchor drag end
+   */
+  const handleEndAnchorDragEnd = async () => {
+    if (isCanvasDisabled) return;
+
+    const anchor = endAnchorRef.current;
+    if (!anchor) return;
+
+    // Get anchor position (top-left corner of 8x8 rect)
+    // Add 4 to get center position
+    const anchorAbsX = anchor.x() + 4;
+    const anchorAbsY = anchor.y() + 4;
+
+    // Convert to relative coordinates (relative to line's x,y position)
+    const newEndX = anchorAbsX - object.x;
+    const newEndY = anchorAbsY - object.y;
+
+    const newPoints = [startX, startY, newEndX, newEndY];
+    await syncLineUpdate(newPoints);
   };
 
   /**
@@ -232,6 +299,7 @@ function LineShape({
 
   return (
     <>
+      {/* Line */}
       <Line
         ref={shapeRef}
         id={object.id}
@@ -256,53 +324,60 @@ function LineShape({
         hitStrokeWidth={20} // Larger hit area for easier selection
         onClick={onSelect}
         onTap={onSelect}
-        onDragEnd={handleDragEnd}
-        onTransformEnd={handleTransformEnd}
+        onDragMove={handleLineDragMove}
+        onDragEnd={handleLineDragEnd}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       />
+
+      {/* Anchor points - only visible when selected */}
       {isSelected && (
-        <Transformer
-          ref={transformerRef}
-          boundBoxFunc={(oldBox, newBox) => {
-            // Limit resize to minimum 10 pixels
-            if (newBox.width < 10 || newBox.height < 10) {
-              return oldBox;
-            }
+        <>
+          {/* Start anchor */}
+          <Rect
+            ref={startAnchorRef}
+            x={object.x + startX - 4}
+            y={object.y + startY - 4}
+            width={8}
+            height={8}
+            fill="#0066FF"
+            stroke="#ffffff"
+            strokeWidth={2}
+            draggable
+            onDragMove={handleStartAnchorDragMove}
+            onDragEnd={handleStartAnchorDragEnd}
+            dragBoundFunc={(pos) => {
+              // Constrain within canvas bounds
+              return {
+                x: Math.max(-4, Math.min(pos.x, canvasSize.width - 4)),
+                y: Math.max(-4, Math.min(pos.y, canvasSize.height - 4)),
+              };
+            }}
+          />
 
-            // Constrain within canvas bounds
-            if (
-              newBox.x < 0 ||
-              newBox.y < 0 ||
-              newBox.x + newBox.width > canvasSize.width ||
-              newBox.y + newBox.height > canvasSize.height
-            ) {
-              return oldBox;
-            }
-
-            return newBox;
-          }}
-          // Styling for transformer
-          anchorFill="#0066FF"
-          anchorStroke="#0066FF"
-          anchorSize={8}
-          borderStroke="#0066FF"
-          borderStrokeWidth={2}
-          // Enable all anchors for line transformation
-          enabledAnchors={[
-            "top-left",
-            "top-center",
-            "top-right",
-            "middle-right",
-            "middle-left",
-            "bottom-left",
-            "bottom-center",
-            "bottom-right",
-          ]}
-          rotateEnabled={false}
-          keepRatio={false} // Allow free transformation
-        />
+          {/* End anchor */}
+          <Rect
+            ref={endAnchorRef}
+            x={object.x + endX - 4}
+            y={object.y + endY - 4}
+            width={8}
+            height={8}
+            fill="#0066FF"
+            stroke="#ffffff"
+            strokeWidth={2}
+            draggable
+            onDragMove={handleEndAnchorDragMove}
+            onDragEnd={handleEndAnchorDragEnd}
+            dragBoundFunc={(pos) => {
+              // Constrain within canvas bounds
+              return {
+                x: Math.max(-4, Math.min(pos.x, canvasSize.width - 4)),
+                y: Math.max(-4, Math.min(pos.y, canvasSize.height - 4)),
+              };
+            }}
+          />
+        </>
       )}
     </>
   );

@@ -29,7 +29,7 @@ export const StrokeProperties: React.FC = () => {
   );
 
   // Refs for debouncing
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<number | null>(null);
 
   // Update local state when selection changes
   useEffect(() => {
@@ -97,7 +97,7 @@ export const StrokeProperties: React.FC = () => {
       }
 
       // Set new timer
-      debounceTimerRef.current = setTimeout(() => {
+      debounceTimerRef.current = window.setTimeout(() => {
         syncChanges(updates);
       }, 300);
     },
@@ -147,6 +147,9 @@ export const StrokeProperties: React.FC = () => {
     return null;
   }
 
+  // Check if selected object is a line (lines don't have fill)
+  const isLine = selectedObject.type === "line";
+
   return (
     <div className="stroke-properties">
       <div className="stroke-properties-header">
@@ -154,41 +157,43 @@ export const StrokeProperties: React.FC = () => {
       </div>
 
       <div className="stroke-properties-content">
-        {/* Fill Color */}
-        <div className="property-group">
-          <label htmlFor="fill-color">Fill</label>
-          <div className="color-input-group">
-            <input
-              id="fill-color"
-              type="color"
-              value={fillColor}
-              onChange={handleFillColorChange}
-              disabled={isCanvasDisabled}
-              className="color-picker"
-            />
-            <input
-              type="text"
-              value={fillColor.toUpperCase()}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                  setFillColor(value);
-                  if (value.length === 7) {
-                    debouncedSync({ color: value });
+        {/* Fill Color - hide for lines */}
+        {!isLine && (
+          <div className="property-group">
+            <label htmlFor="fill-color">Fill</label>
+            <div className="color-input-group">
+              <input
+                id="fill-color"
+                type="color"
+                value={fillColor}
+                onChange={handleFillColorChange}
+                disabled={isCanvasDisabled}
+                className="color-picker"
+              />
+              <input
+                type="text"
+                value={fillColor.toUpperCase()}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+                    setFillColor(value);
+                    if (value.length === 7) {
+                      debouncedSync({ color: value });
+                    }
                   }
-                }
-              }}
-              disabled={isCanvasDisabled}
-              className="color-hex-input"
-              maxLength={7}
-              placeholder="#000000"
-            />
+                }}
+                disabled={isCanvasDisabled}
+                className="color-hex-input"
+                maxLength={7}
+                placeholder="#000000"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Stroke Color */}
+        {/* Stroke Color (or just "Color" for lines) */}
         <div className="property-group">
-          <label htmlFor="stroke-color">Stroke</label>
+          <label htmlFor="stroke-color">{isLine ? "Color" : "Stroke"}</label>
           <div className="color-input-group">
             <input
               id="stroke-color"
@@ -218,10 +223,10 @@ export const StrokeProperties: React.FC = () => {
           </div>
         </div>
 
-        {/* Stroke Width */}
+        {/* Stroke Width (or "Thickness" for lines) */}
         <div className="property-group">
           <label htmlFor="stroke-width">
-            Stroke Width
+            {isLine ? "Thickness" : "Stroke Width"}
             <span className="property-value">{strokeWidth}px</span>
           </label>
           <input

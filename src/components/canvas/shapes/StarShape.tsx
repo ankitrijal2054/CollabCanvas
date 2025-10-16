@@ -133,9 +133,11 @@ function StarShape({
     const newWidth = Math.max(20, object.width * avgScale);
     const newHeight = Math.max(20, object.height * avgScale);
 
+    // node.x() and node.y() are the CENTER position after transform
+    // Convert back to top-left corner for storage
     const updates = {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - newWidth / 2,
+      y: node.y() - newHeight / 2,
       width: newWidth,
       height: newHeight,
       timestamp: Date.now(),
