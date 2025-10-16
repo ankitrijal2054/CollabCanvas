@@ -208,6 +208,16 @@ function TextShape({
    * Handle double click - enter edit mode
    */
   const handleDoubleClick = () => {
+    const node = shapeRef.current;
+    if (!node) return;
+
+    // Measure and store the actual displayed size before editing
+    const width = node.width();
+    const height = node.height();
+
+    updateObject(object.id, { width, height });
+
+    // Enter edit mode
     if (onDoubleClick) {
       onDoubleClick();
     }

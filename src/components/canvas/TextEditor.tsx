@@ -32,9 +32,11 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
   const { user } = useAuth();
 
   // Calculate position on canvas with viewport transform
+  // Calculate position and dimensions with viewport scaling
   const canvasX = object.x * viewport.scale + viewport.x;
   const canvasY = object.y * viewport.scale + viewport.y;
-  const scaledWidth = object.width * viewport.scale;
+  const scaledWidth = (object.width || 200) * viewport.scale;
+  const scaledHeight = (object.height || 24) * viewport.scale;
   const scaledFontSize = (object.fontSize || 16) * viewport.scale;
 
   /**
@@ -204,8 +206,8 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
         onKeyDown={handleKeyDown}
         placeholder="Type your text here..."
         style={{
-          width: "100%",
-          minHeight: "24px",
+          width: `${scaledWidth}px`,
+          height: `${scaledHeight}px`,
           fontSize: `${scaledFontSize}px`,
           fontFamily: fontFamily,
           fontWeight: fontWeight,
@@ -220,16 +222,16 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
           overflow: "hidden",
           backgroundColor: "rgba(255, 255, 255, 0.95)",
           lineHeight: "1.2",
-          wordWrap: "break-word",
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
         }}
-        rows={1}
         onInput={(e) => {
-          // Auto-resize textarea height based on content
           const target = e.target as HTMLTextAreaElement;
           target.style.height = "auto";
           target.style.height = `${target.scrollHeight}px`;
         }}
       />
+
       {isSyncing && (
         <div className="text-editor-sync-indicator">
           <span>Syncing...</span>
