@@ -224,11 +224,8 @@ function LineShape({
       }
     }
 
-    // Update local state in real-time for smooth dragging
-    updateObject(object.id, {
-      x: newPosition.x,
-      y: newPosition.y,
-    });
+    // DON'T update state during drag - only update Konva nodes (prevents misalignment on subsequent drags)
+    // State will be updated in handleLineDragEnd
   };
 
   /**
