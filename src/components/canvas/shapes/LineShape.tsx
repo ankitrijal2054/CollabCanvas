@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
 import { Line, Rect } from "react-konva";
 import type Konva from "konva";
-import type { LineObject } from "../../../types/canvas.types";
+import type { LineObject, CircleObject } from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
 import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
@@ -163,8 +163,8 @@ function LineShape({
             const otherObj = allObjects.find((o) => o.id === objId);
             if (otherObj?.type === "circle") {
               // Circles are positioned by center
-              const circleRadius =
-                (otherObj as any).radius || otherObj.width / 2;
+              const circleObj = otherObj as CircleObject;
+              const circleRadius = circleObj.radius || otherObj.width / 2;
               otherNode.x(pos.x + circleRadius);
               otherNode.y(pos.y + circleRadius);
             } else if (otherObj?.type === "star") {
@@ -178,7 +178,7 @@ function LineShape({
 
               // IMPORTANT: Also update the line's anchor points if they exist
               // Anchors are positioned relative to the line's x,y position
-              const lineObj = otherObj as any;
+              const lineObj = otherObj as LineObject;
               const linePoints = lineObj.points || [0, 0, 100, 0];
 
               // Find and update start anchor

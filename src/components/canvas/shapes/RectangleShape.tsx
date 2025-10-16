@@ -1,7 +1,11 @@
 import React, { useRef, useEffect } from "react";
 import { Rect, Transformer } from "react-konva";
 import type Konva from "konva";
-import type { RectangleObject } from "../../../types/canvas.types";
+import type {
+  RectangleObject,
+  CircleObject,
+  LineObject,
+} from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
 import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
@@ -100,8 +104,8 @@ function RectangleShape({
             const otherObj = allObjects.find((o) => o.id === objId);
             if (otherObj?.type === "circle") {
               // Circles are positioned by center
-              const circleRadius =
-                (otherObj as any).radius || otherObj.width / 2;
+              const circleObj = otherObj as CircleObject;
+              const circleRadius = circleObj.radius || otherObj.width / 2;
               otherNode.x(pos.x + circleRadius);
               otherNode.y(pos.y + circleRadius);
             } else if (otherObj?.type === "star") {
@@ -114,7 +118,7 @@ function RectangleShape({
               otherNode.y(pos.y);
 
               // IMPORTANT: Also update the line's anchor points if they exist
-              const lineObj = otherObj as any;
+              const lineObj = otherObj as LineObject;
               const linePoints = lineObj.points || [0, 0, 100, 0];
 
               // Find and update start anchor

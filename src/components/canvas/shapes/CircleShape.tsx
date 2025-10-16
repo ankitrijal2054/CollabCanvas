@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Circle, Transformer } from "react-konva";
 import type Konva from "konva";
-import type { CircleObject } from "../../../types/canvas.types";
+import type { CircleObject, LineObject } from "../../../types/canvas.types";
 import { useCanvas } from "../../../contexts/CanvasContext";
 import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
@@ -100,16 +100,42 @@ function CircleShape({
           // Find the Konva node by ID and update its position directly
           const otherNode = stage.findOne(`#${objId}`);
           if (otherNode) {
-            // Check if it's a circle (positioned by center) or other shape (positioned by top-left)
+            // Check object type to handle positioning correctly
             const otherObj = allObjects.find((o) => o.id === objId);
             if (otherObj?.type === "circle") {
-              // For circles, add radius to get center position
+              // Circles are positioned by center
               const circleObj = otherObj as CircleObject;
               const otherRadius = circleObj.radius || circleObj.width / 2;
               otherNode.x(pos.x + otherRadius);
               otherNode.y(pos.y + otherRadius);
+            } else if (otherObj?.type === "star") {
+              // Stars are positioned by center
+              otherNode.x(pos.x + otherObj.width / 2);
+              otherNode.y(pos.y + otherObj.height / 2);
+            } else if (otherObj?.type === "line") {
+              // Lines use top-left position
+              otherNode.x(pos.x);
+              otherNode.y(pos.y);
+
+              // IMPORTANT: Also update the line's anchor points if they exist
+              const lineObj = otherObj as LineObject;
+              const linePoints = lineObj.points || [0, 0, 100, 0];
+
+              // Find and update start anchor
+              const startAnchor = stage.findOne(`#${objId}-start-anchor`);
+              if (startAnchor) {
+                startAnchor.x(pos.x + linePoints[0] - 4);
+                startAnchor.y(pos.y + linePoints[1] - 4);
+              }
+
+              // Find and update end anchor
+              const endAnchor = stage.findOne(`#${objId}-end-anchor`);
+              if (endAnchor) {
+                endAnchor.x(pos.x + linePoints[2] - 4);
+                endAnchor.y(pos.y + linePoints[3] - 4);
+              }
             } else {
-              // For other shapes, use top-left position directly
+              // Rectangles, Text use top-left position
               otherNode.x(pos.x);
               otherNode.y(pos.y);
             }
