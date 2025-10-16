@@ -9,6 +9,7 @@ import type {
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
 import Sidebar from "../layout/Sidebar";
@@ -22,6 +23,7 @@ import { StrokeProperties } from "./StrokeProperties";
 import { FontProperties } from "./FontProperties";
 import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
+import ShortcutHelp from "../layout/ShortcutHelp";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -39,10 +41,25 @@ export default function Canvas() {
     selectedIds,
     selectObject,
     toggleSelection,
+    clearSelection,
+    selectAll,
     deleteObject,
     loading,
     editingTextId,
     setEditingTextId,
+    // Clipboard operations
+    copySelectedObjects,
+    pasteObjects,
+    cutSelectedObjects,
+    duplicateSelectedObjects,
+    deleteSelectedObjects,
+    // Nudge operations
+    nudgeSelectedObjects,
+    // Layer ordering
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -53,6 +70,44 @@ export default function Canvas() {
       throttleMs: 16, // 60 FPS
     }
   );
+
+  // Integrate keyboard shortcuts
+  useKeyboardShortcuts({
+    enabled: !editingTextId, // Disable shortcuts when editing text
+    handlers: {
+      // Clipboard operations
+      onCopy: copySelectedObjects,
+      onPaste: pasteObjects,
+      onCut: cutSelectedObjects,
+      onDuplicate: duplicateSelectedObjects,
+
+      // Object manipulation
+      onDelete: deleteSelectedObjects,
+      onSelectAll: selectAll,
+      onDeselect: clearSelection,
+
+      // Nudge operations (1px)
+      onNudgeUp: () => nudgeSelectedObjects(0, -1),
+      onNudgeDown: () => nudgeSelectedObjects(0, 1),
+      onNudgeLeft: () => nudgeSelectedObjects(-1, 0),
+      onNudgeRight: () => nudgeSelectedObjects(1, 0),
+
+      // Nudge operations (10px with Shift)
+      onNudgeUpLarge: () => nudgeSelectedObjects(0, -10),
+      onNudgeDownLarge: () => nudgeSelectedObjects(0, 10),
+      onNudgeLeftLarge: () => nudgeSelectedObjects(-10, 0),
+      onNudgeRightLarge: () => nudgeSelectedObjects(10, 0),
+
+      // Layer ordering
+      onBringForward: bringForward,
+      onSendBackward: sendBackward,
+      onBringToFront: bringToFront,
+      onSendToBack: sendToBack,
+
+      // Help
+      onHelp: () => setIsHelpOpen(true),
+    },
+  });
 
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
@@ -78,6 +133,9 @@ export default function Canvas() {
     fps: number;
     latencyMs: number;
   } | null>(null);
+
+  // Help modal state
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   /**
    * Handle object hover change for tooltip
@@ -429,7 +487,7 @@ export default function Canvas() {
 
   return (
     <div className="canvas-page">
-      <Header user={user} />
+      <Header user={user} onHelpClick={() => setIsHelpOpen(true)} />
 
       <div
         className="canvas-workspace"
@@ -650,6 +708,12 @@ export default function Canvas() {
             )}
           </>
         )}
+
+        {/* Keyboard Shortcuts Help Modal */}
+        <ShortcutHelp
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+        />
       </div>
     </div>
   );
