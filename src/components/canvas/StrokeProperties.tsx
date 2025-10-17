@@ -193,10 +193,6 @@ export const StrokeProperties: React.FC = () => {
 
   return (
     <div className="stroke-properties">
-      <div className="stroke-properties-header">
-        <h3>Properties</h3>
-      </div>
-
       <div className="stroke-properties-content">
         {/* Fill Color - hide for lines */}
         {!isLine && (

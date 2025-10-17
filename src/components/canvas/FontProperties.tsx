@@ -214,10 +214,6 @@ export const FontProperties: React.FC = () => {
 
   return (
     <div className="font-properties">
-      <div className="font-properties-header">
-        <h3>Text Properties</h3>
-      </div>
-
       <div className="font-properties-content">
         {/* Font Family Dropdown */}
         <div className="property-group">

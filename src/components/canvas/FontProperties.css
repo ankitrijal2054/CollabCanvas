@@ -6,19 +6,6 @@
     sans-serif;
 }
 
-.font-properties-header {
-  padding: 12px 0;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 12px;
-}
-
-.font-properties-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
 .font-properties-content {
   display: flex;
   flex-direction: column;

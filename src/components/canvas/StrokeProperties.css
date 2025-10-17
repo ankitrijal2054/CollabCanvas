@@ -6,19 +6,6 @@
     sans-serif;
 }
 
-.stroke-properties-header {
-  padding: 12px 0;
-  border-bottom: 1px solid #e5e7eb;
-  margin-bottom: 12px;
-}
-
-.stroke-properties-header h3 {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2937;
-}
-
 .stroke-properties-content {
   display: flex;
   flex-direction: column;
