@@ -54,8 +54,14 @@
 
 .user-details {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+
+.user-name-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -66,13 +72,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.user-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
 }
 
 /* Center section: Title */

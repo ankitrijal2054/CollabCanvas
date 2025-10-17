@@ -34,7 +34,7 @@ export default function CanvasToolbar({
     <div className="canvas-toolbar">
       {/* Selection Mode Toggle Button */}
       <button
-        className={`toolbar-button ${
+        className={`toolbar-button toolbar-icon-only ${
           isSelectionMode ? "toolbar-button-active" : ""
         }`}
         onClick={onToggleSelectionMode}
@@ -45,8 +45,8 @@ export default function CanvasToolbar({
         }
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -56,7 +56,6 @@ export default function CanvasToolbar({
           <path d="M 3 3 L 3 14 L 7 10 L 9 14 L 11 13 L 9 9 L 13 9 Z" />
           <rect x="11" y="2" width="7" height="7" strokeDasharray="2 1" />
         </svg>
-        <span>Select</span>
       </button>
 
       {/* Divider */}
@@ -64,13 +63,13 @@ export default function CanvasToolbar({
 
       {/* Add Rectangle Button */}
       <button
-        className="toolbar-button toolbar-button-primary"
+        className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createRectangle}
         title="Add Rectangle (R)"
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -79,18 +78,17 @@ export default function CanvasToolbar({
           <path d="M10 6v8" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M6 10h8" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span>Rectangle</span>
       </button>
 
       {/* Add Circle Button */}
       <button
-        className="toolbar-button toolbar-button-primary"
+        className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createCircle}
         title="Add Circle (C)"
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -99,18 +97,17 @@ export default function CanvasToolbar({
           <path d="M10 7v6" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M7 10h6" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span>Circle</span>
       </button>
 
       {/* Add Star Button */}
       <button
-        className="toolbar-button toolbar-button-primary"
+        className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createStar}
         title="Add Star (S)"
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -122,18 +119,17 @@ export default function CanvasToolbar({
             strokeLinejoin="round"
           />
         </svg>
-        <span>Star</span>
       </button>
 
       {/* Add Line Button */}
       <button
-        className="toolbar-button toolbar-button-primary"
+        className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createLine}
         title="Add Line (L)"
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -145,18 +141,17 @@ export default function CanvasToolbar({
             strokeLinecap="round"
           />
         </svg>
-        <span>Line</span>
       </button>
 
       {/* Add Text Button */}
       <button
-        className="toolbar-button toolbar-button-primary"
+        className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createText}
         title="Add Text (T)"
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -174,7 +169,6 @@ export default function CanvasToolbar({
             strokeLinejoin="round"
           />
         </svg>
-        <span>Text</span>
       </button>
 
       {/* Divider */}
@@ -182,7 +176,7 @@ export default function CanvasToolbar({
 
       {/* Delete Button */}
       <button
-        className="toolbar-button toolbar-button-danger"
+        className="toolbar-button toolbar-icon-only toolbar-button-danger"
         onClick={handleDelete}
         disabled={selectedIds.length === 0}
         title={
@@ -194,8 +188,8 @@ export default function CanvasToolbar({
         }
       >
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 20 20"
           fill="none"
           stroke="currentColor"
@@ -216,7 +210,6 @@ export default function CanvasToolbar({
           <path d="M8 9v6" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M12 9v6" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span>Delete</span>
       </button>
     </div>
   );

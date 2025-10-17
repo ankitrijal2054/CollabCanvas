@@ -36,15 +36,51 @@
   flex-shrink: 0;
 }
 
-/* Active button (Selection Mode) */
+/* Icon-only buttons */
+.toolbar-icon-only {
+  padding: 0;
+  width: 40px;
+  min-width: 40px;
+}
+
+.toolbar-icon-only span {
+  display: none;
+}
+
+/* Active button (Selection Mode) - Strong visual indication */
 .toolbar-button-active {
   background-color: #3b82f6;
   color: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
+    0 4px 12px rgba(59, 130, 246, 0.4);
+  position: relative;
+}
+
+.toolbar-button-active::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid #3b82f6;
+  border-radius: 10px;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
 }
 
 .toolbar-button-active:hover {
   background-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3),
+    0 4px 16px rgba(59, 130, 246, 0.5);
   transform: translateY(-1px);
 }
 
@@ -108,24 +144,15 @@
 
   .toolbar-button {
     height: 36px;
-    padding: 0 0.75rem;
-    font-size: 0.8125rem;
+  }
+
+  .toolbar-icon-only {
+    width: 36px;
+    min-width: 36px;
   }
 
   .toolbar-button svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-/* Very small screens - hide text, show only icons */
-@media (max-width: 480px) {
-  .toolbar-button span {
-    display: none;
-  }
-
-  .toolbar-button {
-    padding: 0;
-    width: 36px;
+    width: 18px;
+    height: 18px;
   }
 }

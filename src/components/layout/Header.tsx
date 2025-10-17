@@ -37,8 +37,8 @@ export default function Header({ user }: HeaderProps) {
                 />
               )}
               <div className="user-details">
-                <span className="user-name">{user.name}</span>
-                <div className="user-status">
+                <div className="user-name-status">
+                  <span className="user-name">{user.name}</span>
                   <ConnectionStatusDot />
                 </div>
               </div>
