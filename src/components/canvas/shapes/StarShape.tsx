@@ -281,7 +281,7 @@ function StarShape({
   };
 
   /**
-   * Handle transform end - update size and maintain star shape
+   * Handle transform end - update size, rotation, and maintain star shape
    */
   const handleTransformEnd = async () => {
     if (isCanvasDisabled) {
@@ -313,6 +313,7 @@ function StarShape({
       y: node.y() - newHeight / 2,
       width: newWidth,
       height: newHeight,
+      rotation: node.rotation(),
       timestamp: Date.now(),
     };
 
@@ -408,6 +409,7 @@ function StarShape({
         strokeEnabled={!!object.stroke && (object.strokeWidth || 0) > 0}
         opacity={object.opacity ?? 1.0}
         globalCompositeOperation={object.blendMode ?? "source-over"}
+        rotation={object.rotation || 0}
         shadowColor={isSelected ? "rgba(0, 102, 255, 0.3)" : undefined}
         shadowBlur={isSelected ? 10 : 0}
         shadowOffset={isSelected ? { x: 0, y: 0 } : undefined}
@@ -460,7 +462,8 @@ function StarShape({
             "bottom-left",
             "bottom-right",
           ]}
-          rotateEnabled={false}
+          rotateEnabled={true}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           keepRatio={true} // Force proportional scaling
         />
       )}
@@ -486,6 +489,7 @@ export default React.memo(StarShape, (prevProps, nextProps) => {
   if (prev.color !== next.color) return false;
   if (prev.stroke !== next.stroke) return false;
   if (prev.strokeWidth !== next.strokeWidth) return false;
+  if (prev.rotation !== next.rotation) return false;
 
   return true; // No re-render needed
 });

@@ -601,6 +601,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       color: DEFAULT_RECTANGLE.color,
       stroke: DEFAULT_RECTANGLE.stroke,
       strokeWidth: DEFAULT_RECTANGLE.strokeWidth,
+      rotation: 0, // Default rotation (no rotation)
       createdBy: user?.id || "anonymous",
       timestamp: now,
       zIndex: now, // Use timestamp as initial zIndex
@@ -787,6 +788,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       color: DEFAULT_STAR.color,
       stroke: DEFAULT_STAR.stroke,
       strokeWidth: DEFAULT_STAR.strokeWidth,
+      rotation: 0, // Default rotation (no rotation)
       createdBy: user?.id || "anonymous",
       timestamp: now,
       zIndex: now, // Use timestamp as initial zIndex
@@ -965,6 +967,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       width: DEFAULT_TEXT.width,
       height: DEFAULT_TEXT.height,
       color: DEFAULT_TEXT.color,
+      rotation: 0, // Default rotation (no rotation)
       // Note: stroke and strokeWidth are omitted for text objects (Firebase doesn't accept undefined)
       createdBy: user?.id || "anonymous",
       timestamp: now,
