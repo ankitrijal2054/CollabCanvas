@@ -55,6 +55,8 @@ export interface CanvasObject {
   strokeWidth?: number; // Stroke width in pixels (0-20)
   // Layer ordering (z-index)
   zIndex?: number; // Layer order (higher = in front, default: auto-increment from timestamp)
+  // Custom layer name (optional, for layers panel)
+  name?: string; // User-defined layer name (e.g., "Logo", "Background")
 }
 
 /**

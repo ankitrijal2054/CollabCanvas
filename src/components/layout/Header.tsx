@@ -7,10 +7,9 @@ import "./Header.css";
 
 interface HeaderProps {
   user: User | null;
-  onHelpClick?: () => void;
 }
 
-export default function Header({ user, onHelpClick }: HeaderProps) {
+export default function Header({ user }: HeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -26,39 +25,41 @@ export default function Header({ user, onHelpClick }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="header-content">
+        {/* Left: User info with status */}
         <div className="header-left">
+          {user && (
+            <div className="user-section">
+              {user.photoURL && (
+                <img
+                  src={user.photoURL}
+                  alt={user.name}
+                  className="user-avatar"
+                />
+              )}
+              <div className="user-details">
+                <div className="user-name-status">
+                  <span className="user-name">{user.name}</span>
+                  <ConnectionStatusDot />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Center: Title */}
+        <div className="header-center">
           <h1 className="header-title">
             <span className="header-icon">🎨</span>
             CollabCanvas
           </h1>
         </div>
 
+        {/* Right: Logout button */}
         <div className="header-right">
           {user && (
-            <>
-              <ConnectionStatusDot />
-              <button
-                onClick={onHelpClick}
-                className="help-button"
-                title="Keyboard shortcuts (Press ? for help)"
-                aria-label="Show keyboard shortcuts"
-              >
-                ?
-              </button>
-              <div className="user-info">
-                {user.photoURL && (
-                  <img
-                    src={user.photoURL}
-                    alt={user.name}
-                    className="user-avatar"
-                  />
-                )}
-                <span className="user-name">{user.name}</span>
-              </div>
-              <button onClick={handleLogout} className="logout-button">
-                Logout
-              </button>
-            </>
+            <button onClick={handleLogout} className="logout-button">
+              Logout
+            </button>
           )}
         </div>
       </div>

@@ -1,25 +1,106 @@
-/* Sidebar styles */
+/* Left Sidebar styling */
 
 .sidebar {
   width: 260px;
-  height: 100%;
-  padding: 16px;
+  background-color: #fff;
+  border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebar-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  min-height: 0; /* Allow flex shrinking */
 }
 
+/* Online Users section (top) - flexible */
+.sidebar-online-users {
+  flex: 1;
+  min-height: 200px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Properties section (bottom) - flexible */
+.sidebar-properties {
+  flex: 1;
+  min-height: 200px;
+}
+
+.sidebar-section-title {
+  margin: 0;
+  padding: 14px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.sidebar-section-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  min-height: 0;
+}
+
+/* Custom scrollbar */
+.sidebar-section-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-section-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.sidebar-section-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.sidebar-section-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Empty state */
+.sidebar-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.sidebar-empty-state p {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
   .sidebar {
-    display: none; /* Hide on small screens for now */
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .sidebar-section-title {
+    font-size: 12px;
+    padding: 12px 14px;
+  }
+
+  .sidebar-section-content {
+    padding: 10px;
   }
 }
