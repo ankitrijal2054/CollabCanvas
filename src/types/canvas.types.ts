@@ -53,6 +53,8 @@ export interface CanvasObject {
   // Stroke properties (optional for backward compatibility)
   stroke?: string; // Stroke color (e.g., "#000000")
   strokeWidth?: number; // Stroke width in pixels (0-20)
+  // Layer ordering (z-index)
+  zIndex?: number; // Layer order (higher = in front, default: auto-increment from timestamp)
 }
 
 /**

@@ -1,5 +1,4 @@
-import React, { useRef, useEffect, useMemo } from "react";
-import { Rect, Transformer, Group } from "react-konva";
+import { useRef, useEffect, useMemo } from "react";
 import type Konva from "konva";
 import type { CanvasObject } from "../../types/canvas.types";
 
@@ -12,9 +11,7 @@ interface SelectionBoxProps {
  * Renders a unified bounding box around multiple selected objects
  * with transform handles for group operations
  */
-export const SelectionBox: React.FC<SelectionBoxProps> = ({
-  selectedObjects,
-}) => {
+export const SelectionBox = ({ selectedObjects }: SelectionBoxProps) => {
   const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 

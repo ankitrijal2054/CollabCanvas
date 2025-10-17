@@ -9,6 +9,7 @@ import type {
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
 import { usePresence } from "../../hooks/usePresence";
+import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
 import Sidebar from "../layout/Sidebar";
@@ -22,6 +23,8 @@ import { StrokeProperties } from "./StrokeProperties";
 import { FontProperties } from "./FontProperties";
 import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
+import ShortcutHelp from "../layout/ShortcutHelp";
+import { ContextMenu } from "./ContextMenu";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -39,10 +42,25 @@ export default function Canvas() {
     selectedIds,
     selectObject,
     toggleSelection,
+    clearSelection,
+    selectAll,
     deleteObject,
     loading,
     editingTextId,
     setEditingTextId,
+    // Clipboard operations
+    copySelectedObjects,
+    pasteObjects,
+    cutSelectedObjects,
+    duplicateSelectedObjects,
+    deleteSelectedObjects,
+    // Nudge operations
+    nudgeSelectedObjects,
+    // Layer ordering
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -53,6 +71,44 @@ export default function Canvas() {
       throttleMs: 16, // 60 FPS
     }
   );
+
+  // Integrate keyboard shortcuts
+  useKeyboardShortcuts({
+    enabled: !editingTextId, // Disable shortcuts when editing text
+    handlers: {
+      // Clipboard operations
+      onCopy: copySelectedObjects,
+      onPaste: pasteObjects,
+      onCut: cutSelectedObjects,
+      onDuplicate: duplicateSelectedObjects,
+
+      // Object manipulation
+      onDelete: deleteSelectedObjects,
+      onSelectAll: selectAll,
+      onDeselect: clearSelection,
+
+      // Nudge operations (1px)
+      onNudgeUp: () => nudgeSelectedObjects(0, -1),
+      onNudgeDown: () => nudgeSelectedObjects(0, 1),
+      onNudgeLeft: () => nudgeSelectedObjects(-1, 0),
+      onNudgeRight: () => nudgeSelectedObjects(1, 0),
+
+      // Nudge operations (10px with Shift)
+      onNudgeUpLarge: () => nudgeSelectedObjects(0, -10),
+      onNudgeDownLarge: () => nudgeSelectedObjects(0, 10),
+      onNudgeLeftLarge: () => nudgeSelectedObjects(-10, 0),
+      onNudgeRightLarge: () => nudgeSelectedObjects(10, 0),
+
+      // Layer ordering
+      onBringForward: bringForward,
+      onSendBackward: sendBackward,
+      onBringToFront: bringToFront,
+      onSendToBack: sendToBack,
+
+      // Help
+      onHelp: () => setIsHelpOpen(true),
+    },
+  });
 
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
@@ -78,6 +134,117 @@ export default function Canvas() {
     fps: number;
     latencyMs: number;
   } | null>(null);
+
+  // Help modal state
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    visible: boolean;
+  } | null>(null);
+
+  // Detect platform for keyboard shortcut display
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const modKey = isMac ? "⌘" : "Ctrl";
+
+  /**
+   * Build context menu options based on current selection state
+   */
+  const getContextMenuOptions = () => {
+    const hasSelection = selectedIds.length > 0;
+
+    return [
+      {
+        label: "Copy",
+        shortcut: `${modKey}+C`,
+        action: copySelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Cut",
+        shortcut: `${modKey}+X`,
+        action: cutSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Paste",
+        shortcut: `${modKey}+V`,
+        action: pasteObjects,
+        disabled: false,
+      },
+      {
+        label: "Duplicate",
+        shortcut: `${modKey}+D`,
+        action: duplicateSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Delete",
+        shortcut: "Del",
+        action: deleteSelectedObjects,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Bring to Front",
+        shortcut: `${modKey}+${isMac ? "⌥" : "Alt"}+]`,
+        action: bringToFront,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Bring Forward",
+        shortcut: `${modKey}+]`,
+        action: bringForward,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Send Backward",
+        shortcut: `${modKey}+[`,
+        action: sendBackward,
+        disabled: !hasSelection,
+      },
+      {
+        label: "Send to Back",
+        shortcut: `${modKey}+${isMac ? "⌥" : "Alt"}+[`,
+        action: sendToBack,
+        disabled: !hasSelection,
+      },
+      {
+        separator: true,
+        label: "",
+        action: () => {},
+      },
+      {
+        label: "Select All",
+        shortcut: `${modKey}+A`,
+        action: selectAll,
+        disabled: false,
+      },
+    ];
+  };
+
+  /**
+   * Handle right-click context menu
+   */
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      visible: true,
+    });
+  };
 
   /**
    * Handle object hover change for tooltip
@@ -429,7 +596,7 @@ export default function Canvas() {
 
   return (
     <div className="canvas-page">
-      <Header user={user} />
+      <Header user={user} onHelpClick={() => setIsHelpOpen(true)} />
 
       <div
         className="canvas-workspace"
@@ -450,6 +617,7 @@ export default function Canvas() {
         <div
           id="canvas-container"
           className={`canvas-container ${!loading ? "loaded" : ""}`}
+          onContextMenu={handleContextMenu}
         >
           {import.meta.env.DEV && devPerf && (
             <div
@@ -557,27 +725,34 @@ export default function Canvas() {
 
             {/* Objects Layer - Canvas objects */}
             <Layer>
-              {objects.map((obj) => (
-                <CanvasObject
-                  key={obj.id}
-                  object={obj}
-                  isSelected={selectedIds.includes(obj.id)}
-                  selectedIds={selectedIds}
-                  allObjects={objects}
-                  onSelect={(e) => {
-                    // Shift+Click: Toggle selection (add/remove from multi-select)
-                    // Regular Click: Single select (clear others)
-                    const isShiftPressed =
-                      (e?.evt as MouseEvent)?.shiftKey ?? false;
-                    if (isShiftPressed) {
-                      toggleSelection(obj.id);
-                    } else {
-                      selectObject(obj.id);
-                    }
-                  }}
-                  onHoverChange={handleObjectHoverChange}
-                />
-              ))}
+              {/* Sort objects by zIndex (lower values render first/behind) */}
+              {[...objects]
+                .sort((a, b) => {
+                  const aZ = a.zIndex !== undefined ? a.zIndex : a.timestamp;
+                  const bZ = b.zIndex !== undefined ? b.zIndex : b.timestamp;
+                  return aZ - bZ;
+                })
+                .map((obj) => (
+                  <CanvasObject
+                    key={obj.id}
+                    object={obj}
+                    isSelected={selectedIds.includes(obj.id)}
+                    selectedIds={selectedIds}
+                    allObjects={objects}
+                    onSelect={(e) => {
+                      // Shift+Click: Toggle selection (add/remove from multi-select)
+                      // Regular Click: Single select (clear others)
+                      const isShiftPressed =
+                        (e?.evt as MouseEvent)?.shiftKey ?? false;
+                      if (isShiftPressed) {
+                        toggleSelection(obj.id);
+                      } else {
+                        selectObject(obj.id);
+                      }
+                    }}
+                    onHoverChange={handleObjectHoverChange}
+                  />
+                ))}
 
               {/* Selection Box - Unified bounding box for multi-select */}
               <SelectionBox
@@ -649,6 +824,22 @@ export default function Canvas() {
               <StrokeProperties />
             )}
           </>
+        )}
+
+        {/* Keyboard Shortcuts Help Modal */}
+        <ShortcutHelp
+          isOpen={isHelpOpen}
+          onClose={() => setIsHelpOpen(false)}
+        />
+
+        {/* Context Menu */}
+        {contextMenu?.visible && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            options={getContextMenuOptions()}
+            onClose={() => setContextMenu(null)}
+          />
         )}
       </div>
     </div>

@@ -7,9 +7,10 @@ import "./Header.css";
 
 interface HeaderProps {
   user: User | null;
+  onHelpClick?: () => void;
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, onHelpClick }: HeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
 
@@ -36,6 +37,14 @@ export default function Header({ user }: HeaderProps) {
           {user && (
             <>
               <ConnectionStatusDot />
+              <button
+                onClick={onHelpClick}
+                className="help-button"
+                title="Keyboard shortcuts (Press ? for help)"
+                aria-label="Show keyboard shortcuts"
+              >
+                ?
+              </button>
               <div className="user-info">
                 {user.photoURL && (
                   <img

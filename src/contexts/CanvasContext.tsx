@@ -35,6 +35,7 @@ import {
   TransactionErrorType,
   getErrorMessage,
 } from "../services/transactionService";
+import { clipboardManager } from "../utils/clipboardManager";
 
 /**
  * Canvas Context Interface
@@ -63,6 +64,20 @@ interface CanvasContextType extends CanvasState {
   // Text editing state management
   editingTextId: string | null;
   setEditingTextId: (id: string | null) => void;
+  // Clipboard operations
+  copySelectedObjects: () => void;
+  pasteObjects: () => Promise<void>;
+  cutSelectedObjects: () => Promise<void>;
+  duplicateSelectedObjects: () => Promise<void>;
+  // Enhanced delete operation
+  deleteSelectedObjects: () => Promise<void>;
+  // Nudge operations (arrow keys)
+  nudgeSelectedObjects: (dx: number, dy: number) => Promise<void>;
+  // Layer ordering operations
+  bringForward: () => Promise<void>;
+  sendBackward: () => Promise<void>;
+  bringToFront: () => Promise<void>;
+  sendToBack: () => Promise<void>;
 }
 
 // Create the context with undefined default value
@@ -398,7 +413,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             result = await syncOps.updateObject(
               operation.objectId,
               operation.payload,
-              operation.payload.userId
+              operation.payload.userId,
+              operation.payload.lastEditedByName
             );
             if (!result.success) {
               // If object was deleted, don't throw - just skip
@@ -516,6 +532,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_RECTANGLE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       // Attribution for new objects
       lastEditedBy: user?.id,
       lastEditedByName: userName,
@@ -612,6 +629,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_CIRCLE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -700,6 +718,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_STAR.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -789,6 +808,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       strokeWidth: DEFAULT_LINE.strokeWidth,
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -877,6 +897,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       // Note: stroke and strokeWidth are omitted for text objects (Firebase doesn't accept undefined)
       createdBy: user?.id || "anonymous",
       timestamp: now,
+      zIndex: now, // Use timestamp as initial zIndex
       lastEditedBy: user?.id,
       lastEditedByName: userName,
       lastEditedAt: now,
@@ -933,6 +954,514 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
   };
 
+  /**
+   * Copy selected objects to clipboard
+   * Stores a copy in memory (not browser clipboard)
+   */
+  const copySelectedObjects = () => {
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+
+    if (selectedObjects.length === 0) {
+      console.warn("⚠️ No objects selected to copy");
+      return;
+    }
+
+    clipboardManager.copy(selectedObjects);
+    console.log(`📋 Copied ${selectedObjects.length} object(s)`);
+  };
+
+  /**
+   * Paste objects from clipboard
+   * Creates new objects with offset positions and new IDs
+   */
+  const pasteObjects = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot paste objects");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot paste: User not authenticated");
+      return;
+    }
+
+    // Get objects from clipboard with offset and new IDs
+    const pastedObjects = clipboardManager.paste(
+      10, // 10px X offset
+      10, // 10px Y offset
+      syncHelpers.generateObjectId
+    );
+
+    if (!pastedObjects || pastedObjects.length === 0) {
+      console.warn("⚠️ Nothing to paste");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Update attribution for pasted objects
+    const objectsToCreate = pastedObjects.map((obj) => ({
+      ...obj,
+      createdBy: user.id,
+      timestamp: now,
+      lastEditedBy: user.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+    }));
+
+    // Add to local state immediately (optimistic update)
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: [...prev.objects, ...objectsToCreate],
+      selectedIds: objectsToCreate.map((obj) => obj.id), // Select pasted objects
+    }));
+
+    // Save to Firebase or queue if offline
+    try {
+      for (const obj of objectsToCreate) {
+        if (!navigator.onLine) {
+          await offlineQueue.enqueue({
+            id: `op-create-${Date.now()}`,
+            type: "create",
+            objectId: obj.id,
+            payload: obj,
+            timestamp: Date.now(),
+            retryCount: 0,
+          });
+        } else {
+          const result = await syncOps.saveObject(obj);
+          if (!result.success) {
+            console.error(
+              `Failed to paste object ${obj.id}:`,
+              result.errorMessage
+            );
+            // Remove failed object from local state
+            setCanvasState((prev) => ({
+              ...prev,
+              objects: prev.objects.filter((o) => o.id !== obj.id),
+              selectedIds: prev.selectedIds.filter((id) => id !== obj.id),
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to paste objects:", error);
+    }
+  };
+
+  /**
+   * Cut selected objects
+   * Copies to clipboard and deletes originals
+   */
+  const cutSelectedObjects = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot cut objects");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+
+    if (selectedObjects.length === 0) {
+      console.warn("⚠️ No objects selected to cut");
+      return;
+    }
+
+    // Copy to clipboard first
+    clipboardManager.cut(selectedObjects);
+    console.log(`✂️ Cut ${selectedObjects.length} object(s)`);
+
+    // Delete selected objects
+    const idsToDelete = [...canvasState.selectedIds];
+    for (const id of idsToDelete) {
+      await deleteObject(id);
+    }
+  };
+
+  /**
+   * Duplicate selected objects
+   * Copies and immediately pastes with offset (no clipboard involved)
+   */
+  const duplicateSelectedObjects = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot duplicate objects");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot duplicate: User not authenticated");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+
+    if (selectedObjects.length === 0) {
+      console.warn("⚠️ No objects selected to duplicate");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Create duplicates with offset and new IDs
+    const duplicates = selectedObjects.map((obj) => ({
+      ...JSON.parse(JSON.stringify(obj)), // Deep clone
+      id: syncHelpers.generateObjectId(obj.type),
+      x: obj.x + 10, // 10px offset
+      y: obj.y + 10,
+      createdBy: user.id,
+      timestamp: now,
+      lastEditedBy: user.id,
+      lastEditedByName: userName,
+      lastEditedAt: now,
+    }));
+
+    // Add to local state immediately
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: [...prev.objects, ...duplicates],
+      selectedIds: duplicates.map((obj) => obj.id), // Select duplicates
+    }));
+
+    // Save to Firebase or queue if offline
+    try {
+      for (const obj of duplicates) {
+        if (!navigator.onLine) {
+          await offlineQueue.enqueue({
+            id: `op-create-${Date.now()}`,
+            type: "create",
+            objectId: obj.id,
+            payload: obj,
+            timestamp: Date.now(),
+            retryCount: 0,
+          });
+        } else {
+          const result = await syncOps.saveObject(obj);
+          if (!result.success) {
+            console.error(
+              `Failed to duplicate object ${obj.id}:`,
+              result.errorMessage
+            );
+            // Remove failed object from local state
+            setCanvasState((prev) => ({
+              ...prev,
+              objects: prev.objects.filter((o) => o.id !== obj.id),
+              selectedIds: prev.selectedIds.filter((id) => id !== obj.id),
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to duplicate objects:", error);
+    }
+
+    console.log(`🔄 Duplicated ${duplicates.length} object(s)`);
+  };
+
+  /**
+   * Delete selected objects
+   * Shows confirmation dialog if deleting 10+ objects
+   */
+  const deleteSelectedObjects = async () => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot delete objects");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot delete: User not authenticated");
+      return;
+    }
+
+    const selectedIds = [...canvasState.selectedIds];
+
+    if (selectedIds.length === 0) {
+      console.warn("⚠️ No objects selected to delete");
+      return;
+    }
+
+    // Show confirmation prompt for 10+ objects
+    if (selectedIds.length >= 10) {
+      const confirmed = window.confirm(
+        `Are you sure you want to delete ${selectedIds.length} objects? This action cannot be undone.`
+      );
+      if (!confirmed) {
+        console.log("❌ Delete cancelled by user");
+        return;
+      }
+    }
+
+    // Delete all selected objects
+    console.log(`🗑️ Deleting ${selectedIds.length} object(s)...`);
+    for (const id of selectedIds) {
+      await deleteObject(id);
+    }
+  };
+
+  /**
+   * Helper: Get or initialize zIndex for an object
+   * If object doesn't have zIndex, use timestamp
+   */
+  const getZIndex = (obj: CanvasObject): number => {
+    return obj.zIndex !== undefined ? obj.zIndex : obj.timestamp;
+  };
+
+  /**
+   * Helper: Update zIndex for selected objects
+   */
+  const updateZIndex = async (
+    selectedIds: string[],
+    getNewZIndex: (obj: CanvasObject, allObjects: CanvasObject[]) => number
+  ) => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot update layer order");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot update layer order: User not authenticated");
+      return;
+    }
+
+    if (selectedIds.length === 0) {
+      console.warn("⚠️ No objects selected to reorder");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Calculate new zIndex for each selected object
+    const updates = new Map<string, number>();
+    for (const id of selectedIds) {
+      const obj = canvasState.objects.find((o) => o.id === id);
+      if (obj) {
+        const newZIndex = getNewZIndex(obj, canvasState.objects);
+        updates.set(id, newZIndex);
+      }
+    }
+
+    // Update local state immediately
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: prev.objects.map((obj) => {
+        const newZIndex = updates.get(obj.id);
+        if (newZIndex !== undefined) {
+          return {
+            ...obj,
+            zIndex: newZIndex,
+            timestamp: now,
+            lastEditedBy: user.id,
+            lastEditedByName: userName,
+            lastEditedAt: now,
+          };
+        }
+        return obj;
+      }),
+    }));
+
+    // Sync to Firebase
+    try {
+      for (const [id, newZIndex] of updates) {
+        const updatePayload = {
+          zIndex: newZIndex,
+          timestamp: now,
+          lastEditedBy: user.id,
+          lastEditedByName: userName,
+          lastEditedAt: now,
+          userId: user.id,
+        };
+
+        if (!navigator.onLine) {
+          await offlineQueue.enqueue({
+            id: `op-update-${Date.now()}`,
+            type: "update",
+            objectId: id,
+            payload: updatePayload,
+            timestamp: now,
+            retryCount: 0,
+          });
+        } else {
+          const result = await syncOps.updateObject(
+            id,
+            updatePayload,
+            user.id,
+            userName
+          );
+          if (!result.success) {
+            console.error(
+              `Failed to update zIndex for ${id}:`,
+              result.errorMessage
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync layer order:", error);
+    }
+  };
+
+  /**
+   * Bring selected objects forward by 1 layer
+   * Cmd/Ctrl+]
+   */
+  const bringForward = async () => {
+    await updateZIndex(canvasState.selectedIds, (obj, allObjects) => {
+      const currentZ = getZIndex(obj);
+      // Find the next higher zIndex
+      const higherZIndexes = allObjects
+        .map((o) => getZIndex(o))
+        .filter((z) => z > currentZ)
+        .sort((a, b) => a - b);
+
+      if (higherZIndexes.length > 0) {
+        // Swap with the next object above
+        return higherZIndexes[0] + 1;
+      }
+      // Already at top
+      return currentZ;
+    });
+  };
+
+  /**
+   * Send selected objects backward by 1 layer
+   * Cmd/Ctrl+[
+   */
+  const sendBackward = async () => {
+    await updateZIndex(canvasState.selectedIds, (obj, allObjects) => {
+      const currentZ = getZIndex(obj);
+      // Find the next lower zIndex
+      const lowerZIndexes = allObjects
+        .map((o) => getZIndex(o))
+        .filter((z) => z < currentZ)
+        .sort((a, b) => b - a);
+
+      if (lowerZIndexes.length > 0) {
+        // Swap with the next object below
+        return Math.max(0, lowerZIndexes[0] - 1);
+      }
+      // Already at bottom
+      return 0;
+    });
+  };
+
+  /**
+   * Bring selected objects to front (highest zIndex)
+   * Cmd/Ctrl+Shift+]
+   */
+  const bringToFront = async () => {
+    await updateZIndex(canvasState.selectedIds, (_obj, allObjects) => {
+      const maxZ = Math.max(...allObjects.map((o) => getZIndex(o)), 0);
+      return maxZ + 1;
+    });
+  };
+
+  /**
+   * Send selected objects to back (lowest zIndex)
+   * Cmd/Ctrl+Shift+[
+   */
+  const sendToBack = async () => {
+    await updateZIndex(canvasState.selectedIds, () => {
+      return 0;
+    });
+  };
+
+  /**
+   * Nudge selected objects by specified offset
+   * Used for arrow key movements (1px or 10px with Shift)
+   * Syncs immediately (no debouncing)
+   * @param dx - X offset (positive = right, negative = left)
+   * @param dy - Y offset (positive = down, negative = up)
+   */
+  const nudgeSelectedObjects = async (dx: number, dy: number) => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot nudge objects");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot nudge: User not authenticated");
+      return;
+    }
+
+    const selectedIds = [...canvasState.selectedIds];
+
+    if (selectedIds.length === 0) {
+      console.warn("⚠️ No objects selected to nudge");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Update local state immediately for all selected objects
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: prev.objects.map((obj) => {
+        if (selectedIds.includes(obj.id)) {
+          return {
+            ...obj,
+            x: obj.x + dx,
+            y: obj.y + dy,
+            timestamp: now,
+            lastEditedBy: user.id,
+            lastEditedByName: userName,
+            lastEditedAt: now,
+          };
+        }
+        return obj;
+      }),
+    }));
+
+    // Sync to Firebase immediately (no debouncing for nudge operations)
+    try {
+      for (const id of selectedIds) {
+        const obj = canvasState.objects.find((o) => o.id === id);
+        if (!obj) continue;
+
+        const updates = {
+          x: obj.x + dx,
+          y: obj.y + dy,
+          timestamp: now,
+          lastEditedBy: user.id,
+          lastEditedByName: userName,
+          lastEditedAt: now,
+          userId: user.id, // For transaction validation
+        };
+
+        if (!navigator.onLine) {
+          // Queue operation when offline
+          await offlineQueue.enqueue({
+            id: `op-update-${Date.now()}`,
+            type: "update",
+            objectId: id,
+            payload: updates,
+            timestamp: now,
+            retryCount: 0,
+          });
+        } else {
+          const result = await syncOps.updateObject(
+            id,
+            updates,
+            user.id,
+            userName
+          );
+          if (!result.success) {
+            console.error(`Failed to nudge object ${id}:`, result.errorMessage);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync nudge:", error);
+    }
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -956,6 +1485,16 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     resumeSync,
     editingTextId,
     setEditingTextId,
+    copySelectedObjects,
+    pasteObjects,
+    cutSelectedObjects,
+    duplicateSelectedObjects,
+    deleteSelectedObjects,
+    nudgeSelectedObjects,
+    bringForward,
+    sendBackward,
+    bringToFront,
+    sendToBack,
   };
 
   return (
