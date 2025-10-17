@@ -26,11 +26,14 @@ import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
 import { LayersPanel } from "../layout/LayersPanel";
 import { BottomBar } from "../layout/BottomBar";
+import { ExportModal } from "./ExportModal";
 import "./Canvas.css";
 import {
   startPerfMonitor,
   subscribePerf,
 } from "../../utils/performanceMonitor";
+import { exportToPNG, type ExportOptions } from "../../utils/exportHelpers";
+import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
@@ -155,6 +158,7 @@ export default function Canvas() {
 
   // Help modal state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -262,6 +266,29 @@ export default function Canvas() {
       y: e.clientY,
       visible: true,
     });
+  };
+
+  /**
+   * Handle canvas export
+   */
+  const handleExport = async (options: ExportOptions) => {
+    try {
+      if (options.format === "png") {
+        await exportToPNG(stageRef.current, options);
+      } else if (options.format === "svg") {
+        // Get objects to export
+        const objectsToExport =
+          options.scope === "selection" && options.selectedObjects
+            ? options.selectedObjects
+            : objects;
+
+        await exportToSVG(objectsToExport, options.scope);
+      }
+      console.log(`✅ Export completed: ${options.format.toUpperCase()}`);
+    } catch (error) {
+      console.error("❌ Export failed:", error);
+      throw error;
+    }
   };
 
   /**
@@ -657,6 +684,7 @@ export default function Canvas() {
           <CanvasToolbar
             isSelectionMode={isSelectionMode}
             onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+            onExportClick={() => setIsExportModalOpen(true)}
           />
           <CanvasControls />
 
@@ -864,6 +892,13 @@ export default function Canvas() {
           <ShortcutHelp
             isOpen={isHelpOpen}
             onClose={() => setIsHelpOpen(false)}
+          />
+
+          {/* Export Modal */}
+          <ExportModal
+            isOpen={isExportModalOpen}
+            onClose={() => setIsExportModalOpen(false)}
+            onExport={handleExport}
           />
 
           {/* Context Menu */}
