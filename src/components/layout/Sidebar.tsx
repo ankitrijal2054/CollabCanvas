@@ -1,5 +1,4 @@
-// Sidebar component - shows online users and properties
-import PresenceList from "../collaboration/PresenceList";
+// Sidebar component - shows properties panel (full height)
 import { StrokeProperties } from "../canvas/StrokeProperties";
 import { FontProperties } from "../canvas/FontProperties";
 import "./Sidebar.css";
@@ -15,16 +14,8 @@ export default function Sidebar({
 }: SidebarProps) {
   return (
     <aside className="sidebar">
-      {/* Top section: Online Users */}
-      <div className="sidebar-section sidebar-online-users">
-        <h3 className="sidebar-section-title">Online Users</h3>
-        <div className="sidebar-section-content">
-          <PresenceList />
-        </div>
-      </div>
-
-      {/* Bottom section: Properties (when selection exists) */}
-      <div className="sidebar-section sidebar-properties">
+      {/* Properties section - full height */}
+      <div className="sidebar-section sidebar-properties-full">
         <h3 className="sidebar-section-title">Properties</h3>
         <div className="sidebar-section-content">
           {hasSelection ? (
