@@ -478,6 +478,8 @@ function LineShape({
         points={points}
         stroke={object.stroke || object.color || "#000000"}
         strokeWidth={object.strokeWidth || 2}
+        opacity={object.opacity ?? 1.0}
+        globalCompositeOperation={object.blendMode ?? "source-over"}
         lineCap="round"
         lineJoin="round"
         // Arrow heads

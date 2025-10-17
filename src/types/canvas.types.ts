@@ -1,6 +1,28 @@
 // Canvas types for the collaborative canvas application
 
 /**
+ * Blend modes for canvas objects (maps to Canvas 2D Context globalCompositeOperation)
+ * Controls how colors blend when objects overlap
+ */
+export type BlendMode =
+  | "source-over" // Normal (default) - top layer covers bottom
+  | "multiply" // Darken by multiplying colors (good for shadows)
+  | "screen" // Lighten by inverting, multiplying, and inverting (good for glows)
+  | "overlay" // Combination of multiply and screen (increases contrast)
+  | "darken" // Pick darker of two colors per channel
+  | "lighten" // Pick lighter of two colors per channel
+  | "color-dodge" // Brightens background based on source (extreme lighten)
+  | "color-burn" // Darkens background based on source (extreme darken)
+  | "hard-light" // Like overlay but with source/destination swapped
+  | "soft-light" // Softer version of hard-light
+  | "difference" // Subtracts colors (creates invert-like effect)
+  | "exclusion" // Similar to difference but lower contrast
+  | "hue" // Uses hue of source with saturation/luminosity of destination
+  | "saturation" // Uses saturation of source with hue/luminosity of destination
+  | "color" // Uses hue and saturation of source with luminosity of destination
+  | "luminosity"; // Uses luminosity of source with hue/saturation of destination
+
+/**
  * 2D Position coordinates
  */
 export interface Position {
@@ -57,6 +79,9 @@ export interface CanvasObject {
   zIndex?: number; // Layer order (higher = in front, default: auto-increment from timestamp)
   // Custom layer name (optional, for layers panel)
   name?: string; // User-defined layer name (e.g., "Logo", "Background")
+  // Opacity and blend modes (Phase 2 - PR #22)
+  opacity?: number; // Opacity level (0.0-1.0, default: 1.0 = 100% opaque)
+  blendMode?: BlendMode; // Blend mode for color mixing (default: 'source-over' = normal)
 }
 
 /**

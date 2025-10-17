@@ -394,6 +394,8 @@ function CircleShape({
         stroke={object.stroke || "#000000"}
         strokeWidth={object.strokeWidth || 0}
         strokeEnabled={!!object.stroke && (object.strokeWidth || 0) > 0}
+        opacity={object.opacity ?? 1.0}
+        globalCompositeOperation={object.blendMode ?? "source-over"}
         shadowColor={isSelected ? "rgba(0, 102, 255, 0.3)" : undefined}
         shadowBlur={isSelected ? 10 : 0}
         shadowOffset={isSelected ? { x: 0, y: 0 } : undefined}
