@@ -19,14 +19,14 @@
 
 **Goal:** Implement simplified offline support (5-10 min window) with connection status UI
 
-- [ ] **Task 12.1: Create IndexedDB manager**
+- [x] **Task 12.1: Create IndexedDB manager**
 
   - Files to create: `src/utils/indexedDBManager.ts`
   - Implement: Database initialization, CRUD operations for queued operations
   - Storage: Plain text (no encryption)
   - Add: Error handling and migration logic
 
-- [ ] **Task 12.2: Build offline operation queue (Simplified)**
+- [x] **Task 12.2: Build offline operation queue (Simplified)**
 
   - Files to create: `src/utils/offlineQueue.ts`
   - Implement: `OfflineQueue` class with `enqueue()`, `processQueue()`, `persistToIndexedDB()`
@@ -35,7 +35,7 @@
   - Add: Exponential backoff retry logic (max 3 retries within timeout window)
   - Add: Operation ordering and deduplication
 
-- [ ] **Task 12.3: Create connection status hook**
+- [x] **Task 12.3: Create connection status hook**
 
   - Files to create: `src/hooks/useConnectionStatus.ts`
   - Implement: Online/offline detection using `navigator.onLine`
@@ -43,7 +43,7 @@
   - Track: Queued operation count, offline duration
   - Trigger: Canvas disable after 10-minute timeout
 
-- [ ] **Task 12.4: Build connection status banner (Offline/Reconnecting Only)**
+- [x] **Task 12.4: Build connection status banner (Offline/Reconnecting Only)**
 
   - Files to create: `src/components/layout/ConnectionBanner.tsx`
   - Implement: 3 states (Offline, Reconnecting, Syncing) - NO "Online" state in banner
@@ -52,7 +52,7 @@
   - Style: Non-modal fixed top banner, only visible when offline/reconnecting
   - Add: Auto-dismiss after successful reconnection
 
-- [ ] **Task 12.5: Create connection status dot (Online Indicator)**
+- [x] **Task 12.5: Create connection status dot (Online Indicator)**
 
   - Files to create: `src/components/layout/ConnectionStatusDot.tsx`
   - Implement: Small green dot (2px circle) for online status
@@ -60,20 +60,20 @@
   - Always visible when online (unobtrusive)
   - Add: ARIA label for accessibility
 
-- [ ] **Task 12.6: Integrate queue with canvas context**
+- [x] **Task 12.6: Integrate queue with canvas context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: Queue all create/update/delete operations when offline
   - Implement: Automatic queue processing on reconnection
   - Add: Canvas disable logic after 10-minute timeout
 
-- [ ] **Task 12.7: Integrate queue with canvas service**
+- [x] **Task 12.7: Integrate queue with canvas service**
 
   - Files to update: `src/services/canvasService.ts`
   - Update: All Firebase operations to use queue
   - Add: Network error detection and queue fallback
 
-- [ ] **Task 12.8: Add connection UI to app**
+- [x] **Task 12.8: Add connection UI to app**
 
   - Files to update: `src/App.tsx`
   - Add: `<ConnectionBanner />` at top of layout (conditional render)
@@ -81,7 +81,7 @@
   - Add: `<ConnectionStatusDot />` in header (top-right, near username)
   - Wire: Connection status state
 
-- [ ] **Task 12.9: Test offline functionality**
+- [x] **Task 12.9: Test offline functionality**
   - Manual testing: Disconnect WiFi → make 20 changes → reconnect
   - Test: Queue persists across page refresh (within 10 min)
   - Test: Operations execute in order on reconnect
@@ -129,7 +129,7 @@
   - Test: Concurrent edits resolve correctly
   - Test: Last-write-wins strategy works
 
-- [ ] **Task 13.6: Manual multi-browser testing**
+- [x] **Task 13.6: Manual multi-browser testing**
   - Test: 2 browsers, simultaneous delete + edit
   - Test: 3+ users editing same object
   - Verify: Consistent state across all clients
@@ -269,13 +269,13 @@
 
 **Goal:** Add rich text objects with font controls using Konva.Text + overlay textarea
 
-- [ ] **Task 16.1: Create text object type**
+- [x] **Task 16.1: Create text object type**
 
   - Files to update: `src/types/canvas.types.ts`
   - Add: `TextObject` interface with text, font properties
   - Properties: fontFamily, fontSize, fontWeight, fontStyle, textAlign, color
 
-- [ ] **Task 16.2: Create text shape component**
+- [x] **Task 16.2: Create text shape component**
 
   - Files to create: `src/components/canvas/shapes/TextShape.tsx`
   - Implement: Konva.Text rendering for display
@@ -283,7 +283,7 @@
   - Handle: Line breaks and word wrapping
   - Note: Uses Konva.Text, not contenteditable div
 
-- [ ] **Task 16.3: Create text editor component (Overlay Textarea)**
+- [x] **Task 16.3: Create text editor component (Overlay Textarea)**
 
   - Files to create: `src/components/canvas/TextEditor.tsx`
   - Implement: HTML textarea overlay positioned over Konva.Text
@@ -293,7 +293,7 @@
   - Handle: Escape to finish, click outside to finish
   - Sync: Textarea value to Konva.Text with debouncing (500ms)
 
-- [ ] **Task 16.4: Create font properties panel**
+- [x] **Task 16.4: Create font properties panel**
 
   - Files to create: `src/components/canvas/FontProperties.tsx`
   - Add: Font family dropdown (Arial, Helvetica, Times New Roman, Georgia, Courier New, Verdana)
@@ -302,26 +302,26 @@
   - Add: Text align buttons (left, center, right)
   - Add: Text color picker
 
-- [ ] **Task 16.5: Add text creation to canvas context**
+- [x] **Task 16.5: Add text creation to canvas context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: `createText()` function
   - Implement: Text editing state management
   - Add: Character-by-character sync (debounced 500ms)
 
-- [ ] **Task 16.6: Add text button to toolbar**
+- [x] **Task 16.6: Add text button to toolbar**
 
   - Files to update: `src/components/canvas/CanvasControls.tsx`
   - Add: Text tool button with I-beam icon
   - Implement: Text creation mode toggle
 
-- [ ] **Task 16.7: Integrate text with canvas**
+- [x] **Task 16.7: Integrate text with canvas**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Text creation click handler
   - Show: Text editor at click position
 
-- [ ] **Task 16.8: Test text functionality**
+- [x] **Task 16.8: Test text functionality**
   - Test: Type 1000 characters → no lag
   - Test: Text syncs correctly (debounced)
   - Test: Font changes apply instantly
@@ -334,7 +334,7 @@
 
 ### PR #17: Rotation & Multi-Select
 
-**Goal:** Add rotation to all objects and multi-object selection
+**Goal:** Add rotation to rectangle, start and text objects
 
 - [ ] **Task 17.1: Add rotation to canvas types**
 
@@ -355,57 +355,50 @@
   - Apply: Konva rotation transform
   - Update: Rotation syncs immediately (no debouncing)
 
-- [ ] **Task 17.4: Add rotation to properties panel**
-
-  - Files to update: `src/components/canvas/StrokeProperties.tsx` (or create shared properties)
-  - Add: Numeric rotation input with degree symbol
-  - Add: 0-360 range validation
-
-- [ ] **Task 17.5: Update canvas context for multi-select**
+- [x] **Task 17.4: Update canvas context for multi-select**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Change: `selectedId` to `selectedIds: string[]`
   - Add: `toggleSelection()`, `clearSelection()`, `selectAll()` functions
 
-- [ ] **Task 17.6: Create selection box component**
+- [x] **Task 17.5: Create selection box component**
 
   - Files to create: `src/components/canvas/SelectionBox.tsx`
   - Implement: Unified bounding box for multi-select
   - Add: Standard transform handles (corners and edges)
   - Calculate: Bounding box from all selected object bounds
 
-- [ ] **Task 17.7: Implement Shift+Click selection**
+- [x] **Task 17.6: Implement Shift+Click selection**
 
   - Files to update: `src/components/canvas/CanvasObject.tsx`
   - Add: Shift key detection on click
   - Implement: Add/remove from selection
 
-- [ ] **Task 17.8: Implement drag-box selection**
+- [x] **Task 17.7: Implement drag-box selection**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: Drag on empty canvas creates selection rectangle
   - Implement: Rubber-band visual feedback
   - Select: All objects intersecting selection box on release
 
-- [ ] **Task 17.9: Create multi-select helpers**
+- [x] **Task 17.8: Create multi-select helpers**
 
   - Files to create: `src/utils/multiSelectHelpers.ts`
   - Implement: `getBoundingBox()`, `transformGroup()`, `maintainRelativePositions()`
 
-- [ ] **Task 17.10: Implement group transformations**
+- [x] **Task 17.9: Implement group transformations**
 
   - Files to update: `src/components/canvas/SelectionBox.tsx`
   - Add: Group move (drag any selected object → all move)
-  - Add: Group resize (scale all proportionally)
 
-- [ ] **Task 17.11: Update presence to sync selection**
+- [ ] **Task 17.10: Update presence to sync selection**
 
   - Files to update: `src/types/collaboration.types.ts`
   - Add: `selectedIds` array to `UserPresence`
   - Files to update: `src/services/presenceService.ts`
   - Sync: Selection state between users (<50ms)
 
-- [ ] **Task 17.12: Implement visual selection sync**
+- [ ] **Task 17.11: Implement visual selection sync**
 
   - Files to create: `src/components/canvas/RemoteSelectionHighlight.tsx`
   - Render: Border highlights for other users' selections
@@ -414,7 +407,7 @@
   - Update: In real-time when other users change selection
   - Handle: Multiple users selecting same object (stack borders)
 
-- [ ] **Task 17.13: Test rotation and multi-select**
+- [ ] **Task 17.12: Test rotation and multi-select**
   - Test: Rotate 50 objects simultaneously → 60 FPS
   - Test: Multi-select 100 objects → move smoothly
   - Test: Shift+click selection predictable
@@ -432,64 +425,64 @@
 
 **Goal:** Add 10+ keyboard shortcuts for productivity
 
-- [ ] **Task 18.1: Create clipboard manager**
+- [x] **Task 18.1: Create clipboard manager**
 
   - Files to create: `src/utils/clipboardManager.ts`
   - Implement: In-memory clipboard storage (not browser clipboard)
   - Add: `ClipboardData` interface with objects array and timestamp
 
-- [ ] **Task 18.2: Create keyboard shortcuts hook**
+- [x] **Task 18.2: Create keyboard shortcuts hook**
 
   - Files to create: `src/hooks/useKeyboardShortcuts.ts`
   - Implement: Global keyboard event listener
   - Add: Platform detection (Cmd on Mac, Ctrl on Windows/Linux)
   - Handle: All shortcuts with proper event.preventDefault()
 
-- [ ] **Task 18.3: Implement clipboard operations in context**
+- [x] **Task 18.3: Implement clipboard operations in context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: Clipboard state
   - Implement: `copy()`, `paste()`, `cut()`, `duplicate()` functions
   - Add: Paste offset logic (10px from original or at cursor)
 
-- [ ] **Task 18.4: Add delete operation**
+- [x] **Task 18.4: Add delete operation**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Update: `deleteObject()` to accept array of IDs
   - Add: Confirmation prompt for 10+ objects
 
-- [ ] **Task 18.5: Implement nudge operations**
+- [x] **Task 18.5: Implement nudge operations**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: `nudge()` function (arrow keys: 1px, shift+arrow: 10px)
   - Sync: Immediately (no debouncing)
 
-- [ ] **Task 18.6: Implement layer ordering operations**
+- [x] **Task 18.6: Implement layer ordering operations**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: `bringForward()`, `sendBackward()`, `bringToFront()`, `sendToBack()`
   - Add: `zIndex` field to `BaseObject` (default: auto-increment from timestamp)
 
-- [ ] **Task 18.7: Integrate shortcuts with canvas**
+- [x] **Task 18.7: Integrate shortcuts with canvas**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Add: `useKeyboardShortcuts()` hook
   - Wire: All shortcut handlers to context functions
   - Handle: Focus management (disable when text editing)
 
-- [ ] **Task 18.8: Create shortcut help modal**
+- [x] **Task 18.8: Create shortcut help modal**
 
   - Files to create: `src/components/layout/ShortcutHelp.tsx`
   - Add: Table of all shortcuts with descriptions
   - Add: Platform-specific display (⌘ vs Ctrl)
   - Trigger: ? key or Help menu item
 
-- [ ] **Task 18.9: Add help button to header**
+- [x] **Task 18.9: Add help button to header**
 
   - Files to update: `src/components/layout/Header.tsx`
   - Add: "?" button to open shortcut help
 
-- [ ] **Task 18.10: Test all shortcuts**
+- [x] **Task 18.10: Test all shortcuts**
   - Test: All clipboard operations work (copy, paste, cut, duplicate)
   - Test: Delete with confirmation for 10+ objects
   - Test: Nudge works in all directions
@@ -511,8 +504,8 @@
 - Escape: Deselect
 - Cmd/Ctrl+]: Bring Forward
 - Cmd/Ctrl+[: Send Backward
-- Cmd/Ctrl+Shift+]: Bring to Front
-- Cmd/Ctrl+Shift+[: Send to Back
+- Cmd/Ctrl+Alt+]: Bring to Front
+- Cmd/Ctrl+Alt+[: Send to Back
 
 **PR Title:** `feat: implement keyboard shortcuts and clipboard operations`
 
@@ -522,12 +515,12 @@
 
 **Goal:** Add visual layer hierarchy with drag-to-reorder
 
-- [ ] **Task 19.1: Ensure zIndex in canvas types**
+- [x] **Task 19.1: Ensure zIndex in canvas types**
 
   - Files to update: `src/types/canvas.types.ts`
   - Verify: `zIndex` field exists on `BaseObject` (added in PR #18)
 
-- [ ] **Task 19.2: Create layer item component**
+- [x] **Task 19.2: Create layer item component**
 
   - Files to create: `src/components/layout/LayerItem.tsx`
   - Implement: Single layer row with icon, name, zIndex
@@ -535,7 +528,7 @@
   - Add: Active state styling
   - Add: Click to select
 
-- [ ] **Task 19.3: Create layers panel component**
+- [x] **Task 19.3: Create layers panel component**
 
   - Files to create: `src/components/layout/LayersPanel.tsx`
   - Implement: List of all canvas objects sorted by zIndex (descending)
@@ -544,45 +537,45 @@
   - Location: Right sidebar (always visible)
   - Note: Manual rename deferred to Phase 3
 
-- [ ] **Task 19.4: Create layer reordering hook**
+- [x] **Task 19.4: Create layer reordering hook**
 
   - Files to create: `src/hooks/useLayerReordering.ts`
   - Implement: Drag-and-drop logic
   - Handle: zIndex updates on drop
   - Prevent: zIndex collisions
 
-- [ ] **Task 19.5: Integrate reordering with layers panel**
+- [x] **Task 19.5: Integrate reordering with layers panel**
 
   - Files to update: `src/components/layout/LayersPanel.tsx`
   - Add: Drag handlers (`onDragStart`, `onDragOver`, `onDrop`)
   - Update: zIndex via context function
   - Add: Visual drag feedback (placeholder, drag preview)
 
-- [ ] **Task 19.6: Add layer operations to canvas context**
+- [x] **Task 19.6: Add layer operations to canvas context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: `updateZIndex()` function
   - Add: `getObjectsByZIndex()` helper
 
-- [ ] **Task 19.7: Sync selection between panel and canvas**
+- [x] **Task 19.7: Sync selection between panel and canvas**
 
   - Files to update: `src/components/layout/LayersPanel.tsx`
   - Add: Click layer → selects object on canvas (bidirectional)
   - Add: Selected state styling
 
-- [ ] **Task 19.8: Update canvas rendering by zIndex**
+- [x] **Task 19.8: Update canvas rendering by zIndex**
 
   - Files to update: `src/components/canvas/Canvas.tsx`
   - Sort: Objects by zIndex before rendering
   - Ensure: Higher zIndex renders on top
 
-- [ ] **Task 19.9: Add layers panel to app layout**
+- [x] **Task 19.9: Add layers panel to app layout**
 
   - Files to update: `src/App.tsx`
   - Add: Layers panel to right sidebar
   - Add: Collapsible/expandable functionality (optional)
 
-- [ ] **Task 19.10: Test layers panel**
+- [x] **Task 19.10: Test layers panel**
   - Test: Drag-to-reorder 50 layers → smooth (60 FPS)
   - Test: Panel syncs with canvas selection (bidirectional)
   - Test: Layer updates within 100ms
@@ -597,34 +590,34 @@
 
 **Goal:** Add multi-object alignment and distribution
 
-- [ ] **Task 20.1: Create alignment helpers**
+- [x] **Task 20.1: Create alignment helpers**
 
   - Files to create: `src/utils/alignmentHelpers.ts`
   - Implement: `alignLeft()`, `alignRight()`, `alignTop()`, `alignBottom()`
   - Implement: `alignHorizontalCenter()`, `alignVerticalMiddle()`
   - Implement: `distributeHorizontal()`, `distributeVertical()`
 
-- [ ] **Task 20.2: Add alignment functions to canvas context**
+- [x] **Task 20.2: Add alignment functions to canvas context**
 
   - Files to update: `src/contexts/CanvasContext.tsx`
   - Add: All 8 alignment/distribution functions
   - Implement: Batch updates for performance
   - Handle: Rotated objects (align bounding boxes)
 
-- [ ] **Task 20.3: Create alignment toolbar component**
+- [x] **Task 20.3: Create alignment toolbar component**
 
   - Files to create: `src/components/canvas/AlignmentToolbar.tsx`
   - Add: 8 alignment buttons (only visible when 2+ objects selected)
   - Add: Icons for each operation (left, center, right, top, middle, bottom, distribute-h, distribute-v)
   - Add: Tooltips with keyboard shortcuts
 
-- [ ] **Task 20.4: Integrate alignment toolbar with canvas controls**
+- [x] **Task 20.4: Integrate alignment toolbar with canvas controls**
 
   - Files to update: `src/components/canvas/CanvasControls.tsx`
   - Add: Alignment toolbar (conditionally rendered)
   - Position: Below main toolbar or in properties panel
 
-- [ ] **Task 20.5: Add alignment keyboard shortcuts**
+- [x] **Task 20.5: Add alignment keyboard shortcuts**
 
   - Files to update: `src/hooks/useKeyboardShortcuts.ts`
   - Add: Cmd/Ctrl+Shift+L (Align Left)
@@ -634,7 +627,7 @@
   - Add: Cmd/Ctrl+Shift+R (Align Right)
   - Add: Cmd/Ctrl+Shift+B (Align Bottom)
 
-- [ ] **Task 20.6: Test alignment tools**
+- [x] **Task 20.6: Test alignment tools**
   - Test: Align 50 objects → instant (no animation)
   - Test: Changes sync immediately (<100ms)
   - Test: Works with rotated objects (aligns bounding boxes)
@@ -650,21 +643,21 @@
 
 **Goal:** Enable high-quality canvas export
 
-- [ ] **Task 21.1: Create export helpers**
+- [x] **Task 21.1: Create export helpers**
 
   - Files to create: `src/utils/exportHelpers.ts`
   - Implement: `exportToPNG()` using Konva's `stage.toDataURL()`
   - Add: 2x pixel ratio for high DPI
   - Add: Bounding box calculation for selection-only export
 
-- [ ] **Task 21.2: Create SVG generator**
+- [x] **Task 21.2: Create SVG generator**
 
   - Files to create: `src/utils/svgGenerator.ts`
   - Implement: Convert Konva objects to SVG elements
   - Handle: All shape types (Rectangle, Circle, Star, Line, Text)
   - Preserve: Transforms (rotation, scale), colors, strokes
 
-- [ ] **Task 21.3: Create export modal component**
+- [x] **Task 21.3: Create export modal component**
 
   - Files to create: `src/components/canvas/ExportModal.tsx`
   - Add: Format selection (PNG, SVG radio buttons)
@@ -672,7 +665,7 @@
   - Add: Download button
   - Add: Filename preview with timestamp
 
-- [ ] **Task 21.4: Implement PNG export**
+- [x] **Task 21.4: Implement PNG export**
 
   - Files to update: `src/utils/exportHelpers.ts`
   - Use: Konva `stage.toDataURL()` with `pixelRatio: 2`
@@ -680,7 +673,7 @@
   - Handle: Large canvases (use Web Worker if needed)
   - Generate: Blob and trigger download
 
-- [ ] **Task 21.5: Implement SVG export**
+- [x] **Task 21.5: Implement SVG export**
 
   - Files to update: `src/utils/svgGenerator.ts`
   - Convert: Each canvas object to SVG element
@@ -688,13 +681,13 @@
   - Handle: Transforms (rotation, position)
   - Generate: Valid SVG string and trigger download
 
-- [ ] **Task 21.6: Add export button to toolbar**
+- [x] **Task 21.6: Add export button to toolbar**
 
   - Files to update: `src/components/canvas/CanvasControls.tsx`
   - Add: Export button with download icon
   - Wire: Opens export modal
 
-- [ ] **Task 21.7: Test export functionality**
+- [x] **Task 21.7: Test export functionality**
   - Test: PNG exports at 2x resolution (high quality)
   - Test: SVG preserves all shapes as vectors
   - Test: Text exports correctly in SVG (fonts, formatting)

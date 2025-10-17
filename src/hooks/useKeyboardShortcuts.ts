@@ -167,37 +167,43 @@ export const useKeyboardShortcuts = ({
             return;
         }
       }
-
       // Alignment shortcuts with Shift (Cmd/Ctrl + Shift + key)
-      if (isModifier && isShift && !event.altKey) {
-        switch (event.key) {
+      if (isModifier && event.altKey && !isShift) {
+        console.log("Alignment shortcuts", event.key);
+        switch (event.key.toLowerCase()) {
           // Alignment shortcuts (for PR #20)
-          case "L":
+          case "n":
+          case "dead":
             event.preventDefault();
             handlers.onAlignLeft?.();
             return;
 
-          case "H":
+          case "m":
+          case "µ":
             event.preventDefault();
             handlers.onAlignCenter?.();
             return;
 
-          case "R":
+          case ",":
+          case "≤":
             event.preventDefault();
             handlers.onAlignRight?.();
             return;
 
-          case "T":
+          case ".":
+          case "≥":
             event.preventDefault();
             handlers.onAlignTop?.();
             return;
 
-          case "V":
+          case ";":
+          case "…":
             event.preventDefault();
             handlers.onAlignMiddle?.();
             return;
 
-          case "B":
+          case "/":
+          case "÷":
             event.preventDefault();
             handlers.onAlignBottom?.();
             return;
@@ -365,32 +371,32 @@ export const getKeyboardShortcuts = () => {
     // Alignment (Phase 2 PR #20)
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+L`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+N`,
       description: "Align left",
     },
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+H`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+M`,
       description: "Align horizontal center",
     },
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+R`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+<`,
       description: "Align right",
     },
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+T`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+>`,
       description: "Align top",
     },
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+V`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+:`,
       description: "Align vertical middle",
     },
     {
       category: "Alignment",
-      keys: `${modKey}+Shift+B`,
+      keys: `${modKey}+${isMac() ? "Option" : "Alt"}+?`,
       description: "Align bottom",
     },
 
