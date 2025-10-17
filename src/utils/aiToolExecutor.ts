@@ -254,8 +254,8 @@ export async function executeToolCalls(
 async function executeCreateShape(
   toolCall: ToolCall,
   context: CanvasContextForTools,
-  userId: string,
-  aiOperationId: string
+  _userId: string,
+  _aiOperationId: string
 ): Promise<ToolExecutionResult> {
   const {
     type,
@@ -378,8 +378,8 @@ async function executeCreateShape(
 async function executeCreateText(
   toolCall: ToolCall,
   context: CanvasContextForTools,
-  userId: string,
-  aiOperationId: string
+  _userId: string,
+  _aiOperationId: string
 ): Promise<ToolExecutionResult> {
   const {
     text,

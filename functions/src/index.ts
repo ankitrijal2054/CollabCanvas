@@ -6,6 +6,7 @@
 
 import * as admin from "firebase-admin";
 import { onRequest } from "firebase-functions/v2/https";
+import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import cors from "cors";
 import type { AICommand, AIAPIResponse, AIError } from "./types/ai.types";
@@ -28,6 +29,9 @@ admin.initializeApp();
 
 // Database instance for use in functions
 const db = admin.database();
+
+// Define the OpenAI API Key secret
+const openaiApiKey = defineSecret("OPENAI_API_KEY");
 
 // Configure CORS to allow requests from localhost and production
 const corsHandler = cors({
@@ -56,6 +60,7 @@ export const aichat = onRequest(
     maxInstances: 10,
     timeoutSeconds: 60,
     memory: "512MiB",
+    secrets: [openaiApiKey],
   },
   async (request, response) => {
     // Handle CORS

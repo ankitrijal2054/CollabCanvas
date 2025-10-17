@@ -90,7 +90,7 @@ export function AIProvider({ children }: AIProviderProps) {
   const [currentCommand, setCurrentCommand] = useState<QueuedAICommand | null>(
     null
   );
-  const [commandHistory, setCommandHistory] = useState<any[]>([]);
+  const [commandHistory, _setCommandHistory] = useState<any[]>([]);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 
   // Command queue (per canvas)
@@ -258,7 +258,7 @@ export function AIProvider({ children }: AIProviderProps) {
           toolCallCount: response.toolCalls.length,
         });
 
-        const executionResult = await executeToolCalls(
+        await executeToolCalls(
           response.toolCalls,
           canvasContext as CanvasContextForTools,
           user.id,

@@ -24,20 +24,19 @@ const COMMAND_TIMEOUT = 30000; // 30 seconds
 export class AICommandQueue {
   private queue: QueuedAICommand[] = [];
   private isProcessing: boolean = false;
-  private readonly canvasId: string;
   private onStatusChange?: (
     queue: QueuedAICommand[],
     current: QueuedAICommand | null
   ) => void;
 
   constructor(
-    canvasId: string,
+    _canvasId: string,
     onStatusChange?: (
       queue: QueuedAICommand[],
       current: QueuedAICommand | null
     ) => void
   ) {
-    this.canvasId = canvasId;
+    // canvasId parameter kept for future use
     this.onStatusChange = onStatusChange;
   }
 
