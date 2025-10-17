@@ -265,7 +265,7 @@ function TextShape({
   };
 
   /**
-   * Handle transform end - update width/height after resize
+   * Handle transform end - update width/height and rotation after resize
    */
   const handleTransformEnd = async () => {
     if (isCanvasDisabled) {
@@ -289,6 +289,7 @@ function TextShape({
       y: node.y(),
       width: Math.max(50, node.width() * scaleX), // Minimum 50px width
       height: Math.max(20, node.height() * scaleY), // Minimum 20px height
+      rotation: node.rotation(),
       timestamp: Date.now(),
     };
 
@@ -409,6 +410,7 @@ function TextShape({
         align={object.textAlign || "left"}
         width={object.width || 200}
         height={object.height || 24}
+        rotation={object.rotation || 0}
         // Text wrapping configuration
         wrap="word" // Wrap at word boundaries
         ellipsis={false} // Don't show ellipsis
@@ -473,7 +475,8 @@ function TextShape({
             "bottom-left",
             "bottom-right",
           ]}
-          rotateEnabled={false} // No rotation for text in this phase
+          rotateEnabled={selectedIds.length === 1}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           keepRatio={false} // Allow independent width/height adjustment
         />
       )}
@@ -503,6 +506,7 @@ export default React.memo(TextShape, (prevProps, nextProps) => {
   if (prev.fontStyle !== next.fontStyle) return false;
   if (prev.textAlign !== next.textAlign) return false;
   if (prev.color !== next.color) return false;
+  if (prev.rotation !== next.rotation) return false;
 
   return true; // No re-render needed
 });

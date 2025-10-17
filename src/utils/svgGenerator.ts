@@ -81,7 +81,7 @@ function objectToSVG(obj: CanvasObject): string | null {
     case "text":
       return textToSVG(obj as TextObject);
     default:
-      console.warn(`⚠️ Unknown object type: ${(obj as any).type}`);
+      console.warn(`⚠️ Unknown object type: ${obj.type}`);
       return null;
   }
 }
@@ -93,10 +93,18 @@ function rectangleToSVG(obj: RectangleObject): string {
   const fill = obj.color || "#3B82F6";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  // Note: Rotation not yet implemented in MVP
-  const transform = "";
+  const opacity = obj.opacity ?? 1.0;
 
-  return `<rect x="${obj.x}" y="${obj.y}" width="${obj.width}" height="${obj.height}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${transform}/>`;
+  // Apply rotation transform if object is rotated
+  const rotation = obj.rotation || 0;
+  const transform =
+    rotation !== 0
+      ? ` transform="rotate(${rotation} ${obj.x + obj.width / 2} ${
+          obj.y + obj.height / 2
+        })"`
+      : "";
+
+  return `<rect x="${obj.x}" y="${obj.y}" width="${obj.width}" height="${obj.height}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"${transform}/>`;
 }
 
 /**
@@ -109,10 +117,10 @@ function circleToSVG(obj: CircleObject): string {
   const fill = obj.color || "#10B981";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  // Note: Rotation not yet implemented in MVP
-  const transform = "";
+  const opacity = obj.opacity ?? 1.0;
+  // Note: Circles don't need rotation (symmetrical shape)
 
-  return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${transform}/>`;
+  return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"/>`;
 }
 
 /**
@@ -138,12 +146,18 @@ function starToSVG(obj: StarObject): string {
   const fill = obj.color || "#F59E0B";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  // Note: Rotation not yet implemented in MVP
-  const transform = "";
+  const opacity = obj.opacity ?? 1.0;
+
+  // Apply rotation transform if object is rotated
+  const rotation = obj.rotation || 0;
+  const transform =
+    rotation !== 0
+      ? ` transform="rotate(${rotation} ${centerX} ${centerY})"`
+      : "";
 
   return `<polygon points="${points.join(
     " "
-  )}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${transform}/>`;
+  )}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}"${transform}/>`;
 }
 
 /**
@@ -194,19 +208,27 @@ function textToSVG(obj: TextObject): string {
   const fontWeight = obj.fontWeight || "normal";
   const fontStyle = obj.fontStyle || "normal";
   const textAlign = obj.textAlign || "left";
-  // Note: Rotation not yet implemented in MVP
+  const opacity = obj.opacity ?? 1.0;
 
   // Text anchor based on alignment
   let textAnchor = "start";
   if (textAlign === "center") textAnchor = "middle";
   if (textAlign === "right") textAnchor = "end";
 
-  const transform = "";
+  // Apply rotation transform if object is rotated
+  // Rotate around the center of the text box
+  const rotation = obj.rotation || 0;
+  const centerX = obj.x + obj.width / 2;
+  const centerY = obj.y + obj.height / 2;
+  const transform =
+    rotation !== 0
+      ? ` transform="rotate(${rotation} ${centerX} ${centerY})"`
+      : "";
 
   // Escape special XML characters
   const escapedText = escapeXML(obj.text || "");
 
-  return `<text x="${x}" y="${y}" fill="${fill}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" text-anchor="${textAnchor}"${transform}>${escapedText}</text>`;
+  return `<text x="${x}" y="${y}" fill="${fill}" font-family="${fontFamily}" font-size="${fontSize}" font-weight="${fontWeight}" font-style="${fontStyle}" text-anchor="${textAnchor}" opacity="${opacity}"${transform}>${escapedText}</text>`;
 }
 
 /**

@@ -82,6 +82,8 @@ export interface CanvasObject {
   // Opacity and blend modes (Phase 2 - PR #22)
   opacity?: number; // Opacity level (0.0-1.0, default: 1.0 = 100% opaque)
   blendMode?: BlendMode; // Blend mode for color mixing (default: 'source-over' = normal)
+  // Rotation (Phase 2 - PR #17)
+  rotation?: number; // Rotation angle in degrees (0-360, default: 0)
 }
 
 /**

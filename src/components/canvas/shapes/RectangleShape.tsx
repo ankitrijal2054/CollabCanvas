@@ -267,7 +267,7 @@ function RectangleShape({
   };
 
   /**
-   * Handle transform end - update size
+   * Handle transform end - update size and rotation
    */
   const handleTransformEnd = async () => {
     if (isCanvasDisabled) {
@@ -290,6 +290,7 @@ function RectangleShape({
       y: node.y(),
       width: Math.max(5, node.width() * scaleX),
       height: Math.max(5, node.height() * scaleY),
+      rotation: node.rotation(),
       timestamp: Date.now(),
     };
 
@@ -384,12 +385,18 @@ function RectangleShape({
         strokeEnabled={!!object.stroke && (object.strokeWidth || 0) > 0}
         opacity={object.opacity ?? 1.0}
         globalCompositeOperation={object.blendMode ?? "source-over"}
+        rotation={object.rotation || 0}
         shadowColor={isSelected ? "rgba(0, 102, 255, 0.3)" : undefined}
         shadowBlur={isSelected ? 10 : 0}
         shadowOffset={isSelected ? { x: 0, y: 0 } : undefined}
         draggable
         dragBoundFunc={(pos) => {
-          // Constrain drag position within canvas bounds
+          // Allow free movement for rotated objects (production standard)
+          if (object.rotation && object.rotation !== 0) {
+            return pos;
+          }
+
+          // Constrain non-rotated objects within canvas bounds
           const newX = Math.max(
             0,
             Math.min(pos.x, canvasSize.width - object.width)
@@ -448,7 +455,8 @@ function RectangleShape({
             "bottom-center",
             "bottom-right",
           ]}
-          rotateEnabled={false}
+          rotateEnabled={selectedIds.length === 1}
+          rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           keepRatio={false} // Allow free transformation
         />
       )}
@@ -472,6 +480,7 @@ export default React.memo(RectangleShape, (prevProps, nextProps) => {
   if (prev.color !== next.color) return false;
   if (prev.stroke !== next.stroke) return false;
   if (prev.strokeWidth !== next.strokeWidth) return false;
+  if (prev.rotation !== next.rotation) return false;
 
   return true; // No re-render needed
 });
