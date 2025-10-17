@@ -19,13 +19,12 @@ import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
 import { EditAttributionTooltip } from "./EditAttributionTooltip";
-import { StrokeProperties } from "./StrokeProperties";
-import { FontProperties } from "./FontProperties";
 import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
 import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
 import { LayersPanel } from "../layout/LayersPanel";
+import { BottomBar } from "../layout/BottomBar";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -274,7 +273,7 @@ export default function Canvas() {
   };
 
   /**
-   * Handle window resize - update stage size
+   * Handle window resize and container size changes - update stage size
    */
   useEffect(() => {
     const updateSize = () => {
@@ -287,9 +286,30 @@ export default function Canvas() {
       }
     };
 
-    updateSize();
+    // Initial size calculation (with small delay to ensure layout is ready)
+    const initialTimeout = setTimeout(updateSize, 100);
+
+    // Window resize listener
     window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+
+    // ResizeObserver to detect container size changes
+    const container = document.getElementById("canvas-container");
+    let resizeObserver: ResizeObserver | null = null;
+
+    if (container) {
+      resizeObserver = new ResizeObserver(() => {
+        updateSize();
+      });
+      resizeObserver.observe(container);
+    }
+
+    return () => {
+      clearTimeout(initialTimeout);
+      window.removeEventListener("resize", updateSize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
   }, []);
 
   // Dev-only performance monitor
@@ -595,257 +615,256 @@ export default function Canvas() {
     });
   };
 
+  // Get selected object type for properties panel
+  const selectedObjectType =
+    selectedIds.length === 1
+      ? objects.find((obj) => obj.id === selectedIds[0])?.type
+      : undefined;
+
   return (
     <div className="canvas-page">
-      <Header user={user} onHelpClick={() => setIsHelpOpen(true)} />
+      {/* Top Header */}
+      <Header user={user} />
 
-      <div
-        className="canvas-workspace"
-        onClick={(e) => {
-          // Deselect when clicking outside canvas container
-          if (e.target === e.currentTarget && selectedIds.length > 0) {
-            selectObject(null);
-          }
-        }}
-      >
-        <Sidebar />
-        <CanvasToolbar
-          isSelectionMode={isSelectionMode}
-          onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+      {/* Main Content Area */}
+      <div className="canvas-main-content">
+        {/* Left Sidebar: Online Users + Properties */}
+        <Sidebar
+          hasSelection={selectedIds.length === 1}
+          selectedObjectType={selectedObjectType}
         />
-        <CanvasControls />
 
-        <div
-          id="canvas-container"
-          className={`canvas-container ${!loading ? "loaded" : ""}`}
-          onContextMenu={handleContextMenu}
-        >
-          {import.meta.env.DEV && devPerf && (
-            <div
-              style={{
-                position: "absolute",
-                top: 8,
-                left: 8,
-                zIndex: 1003,
-                background: "rgba(17,24,39,0)",
-                color: "#000",
-                padding: "4px 8px",
-                borderRadius: 6,
-                fontSize: 12,
-                pointerEvents: "none",
-              }}
-            >
-              <div>FPS: {devPerf.fps}</div>
-              <div>Latency: {devPerf.latencyMs} ms</div>
-            </div>
-          )}
-          {loading && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "rgba(255,255,255,0.6)",
-                zIndex: 1002,
-                backdropFilter: "blur(4px)",
-              }}
-            >
+        {/* Center: Canvas Area */}
+        <div className="canvas-center">
+          <CanvasToolbar
+            isSelectionMode={isSelectionMode}
+            onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+          />
+          <CanvasControls />
+
+          <div
+            id="canvas-container"
+            className={`canvas-container ${!loading ? "loaded" : ""}`}
+            onContextMenu={handleContextMenu}
+          >
+            {import.meta.env.DEV && devPerf && (
               <div
                 style={{
-                  padding: "8px 12px",
-                  background: "#111827",
-                  color: "white",
-                  borderRadius: 8,
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  zIndex: 1003,
+                  background: "rgba(17,24,39,0)",
+                  color: "#000",
+                  padding: "4px 8px",
+                  borderRadius: 6,
                   fontSize: 12,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  pointerEvents: "none",
                 }}
               >
-                Loading canvas…
+                <div>FPS: {devPerf.fps}</div>
+                <div>Latency: {devPerf.latencyMs} ms</div>
               </div>
-            </div>
-          )}
-          <Stage
-            ref={stageRef}
-            width={stageSize.width}
-            height={stageSize.height}
-            scaleX={viewport.scale}
-            scaleY={viewport.scale}
-            x={viewport.x}
-            y={viewport.y}
-            draggable={false}
-            onClick={handleBackgroundClick}
-            onTap={handleBackgroundClick}
-            onMouseDown={handlePanStart}
-            onMouseMove={handlePanMove}
-            onMouseUp={handlePanEnd}
-            onMouseLeave={() => {
-              handlePanEnd();
-              handleCursorLeave();
-            }}
-            onTouchStart={handlePanStart}
-            onTouchMove={handlePanMove}
-            onTouchEnd={handlePanEnd}
-            onWheel={handleWheel}
-          >
-            {/* Background Layer */}
-            <Layer>
-              {/* Canvas background */}
-              <Rect
-                x={0}
-                y={0}
-                width={canvasSize.width}
-                height={canvasSize.height}
-                fill="#ffffff"
-                shadowColor="rgba(0, 0, 0, 0.1)"
-                shadowBlur={10}
-                shadowOffset={{ x: 0, y: 2 }}
-                listening={false}
-              />
-
-              {/* Grid pattern */}
-              <CanvasGrid
-                width={canvasSize.width}
-                height={canvasSize.height}
-                scale={viewport.scale}
-              />
-
-              {/* Canvas border */}
-              <Rect
-                x={0}
-                y={0}
-                width={canvasSize.width}
-                height={canvasSize.height}
-                stroke="#e5e7eb"
-                strokeWidth={2 / viewport.scale} // Scale-independent border
-                fill="transparent"
-                listening={false}
-              />
-            </Layer>
-
-            {/* Objects Layer - Canvas objects */}
-            <Layer>
-              {/* Sort objects by zIndex (lower values render first/behind) */}
-              {[...objects]
-                .sort((a, b) => {
-                  const aZ = a.zIndex !== undefined ? a.zIndex : a.timestamp;
-                  const bZ = b.zIndex !== undefined ? b.zIndex : b.timestamp;
-                  return aZ - bZ;
-                })
-                .map((obj) => (
-                  <CanvasObject
-                    key={obj.id}
-                    object={obj}
-                    isSelected={selectedIds.includes(obj.id)}
-                    selectedIds={selectedIds}
-                    allObjects={objects}
-                    onSelect={(e) => {
-                      // Shift+Click: Toggle selection (add/remove from multi-select)
-                      // Regular Click: Single select (clear others)
-                      const isShiftPressed =
-                        (e?.evt as MouseEvent)?.shiftKey ?? false;
-                      if (isShiftPressed) {
-                        toggleSelection(obj.id);
-                      } else {
-                        selectObject(obj.id);
-                      }
-                    }}
-                    onHoverChange={handleObjectHoverChange}
-                  />
-                ))}
-
-              {/* Selection Box - Unified bounding box for multi-select */}
-              <SelectionBox
-                selectedObjects={objects.filter((obj) =>
-                  selectedIds.includes(obj.id)
-                )}
-              />
-
-              {/* Drag Selection Rectangle - Rubber-band visual feedback */}
-              {selectionRect && (
+            )}
+            {loading && (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(255,255,255,0.6)",
+                  zIndex: 1002,
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    background: "#111827",
+                    color: "white",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  Loading canvas…
+                </div>
+              </div>
+            )}
+            <Stage
+              ref={stageRef}
+              width={stageSize.width}
+              height={stageSize.height}
+              scaleX={viewport.scale}
+              scaleY={viewport.scale}
+              x={viewport.x}
+              y={viewport.y}
+              draggable={false}
+              onClick={handleBackgroundClick}
+              onTap={handleBackgroundClick}
+              onMouseDown={handlePanStart}
+              onMouseMove={handlePanMove}
+              onMouseUp={handlePanEnd}
+              onMouseLeave={() => {
+                handlePanEnd();
+                handleCursorLeave();
+              }}
+              onTouchStart={handlePanStart}
+              onTouchMove={handlePanMove}
+              onTouchEnd={handlePanEnd}
+              onWheel={handleWheel}
+            >
+              {/* Background Layer */}
+              <Layer>
+                {/* Canvas background */}
                 <Rect
-                  x={
-                    selectionRect.width >= 0
-                      ? selectionRect.x
-                      : selectionRect.x + selectionRect.width
-                  }
-                  y={
-                    selectionRect.height >= 0
-                      ? selectionRect.y
-                      : selectionRect.y + selectionRect.height
-                  }
-                  width={Math.abs(selectionRect.width)}
-                  height={Math.abs(selectionRect.height)}
-                  fill="rgba(0, 102, 255, 0.1)"
-                  stroke="#0066FF"
-                  strokeWidth={1}
-                  dash={[4, 4]}
+                  x={0}
+                  y={0}
+                  width={canvasSize.width}
+                  height={canvasSize.height}
+                  fill="#ffffff"
+                  shadowColor="rgba(0, 0, 0, 0.1)"
+                  shadowBlur={10}
+                  shadowOffset={{ x: 0, y: 2 }}
                   listening={false}
                 />
-              )}
-            </Layer>
-          </Stage>
 
-          {/* Edit Attribution Tooltip */}
-          <EditAttributionTooltip
-            userName={hoveredObject?.lastEditedByName}
-            editedAt={hoveredObject?.lastEditedAt}
-            position={tooltipPosition}
-            visible={hoveredObject !== null}
+                {/* Grid pattern */}
+                <CanvasGrid
+                  width={canvasSize.width}
+                  height={canvasSize.height}
+                  scale={viewport.scale}
+                />
+
+                {/* Canvas border */}
+                <Rect
+                  x={0}
+                  y={0}
+                  width={canvasSize.width}
+                  height={canvasSize.height}
+                  stroke="#e5e7eb"
+                  strokeWidth={2 / viewport.scale} // Scale-independent border
+                  fill="transparent"
+                  listening={false}
+                />
+              </Layer>
+
+              {/* Objects Layer - Canvas objects */}
+              <Layer>
+                {/* Sort objects by zIndex (lower values render first/behind) */}
+                {[...objects]
+                  .sort((a, b) => {
+                    const aZ = a.zIndex !== undefined ? a.zIndex : a.timestamp;
+                    const bZ = b.zIndex !== undefined ? b.zIndex : b.timestamp;
+                    return aZ - bZ;
+                  })
+                  .map((obj) => (
+                    <CanvasObject
+                      key={obj.id}
+                      object={obj}
+                      isSelected={selectedIds.includes(obj.id)}
+                      selectedIds={selectedIds}
+                      allObjects={objects}
+                      onSelect={(e) => {
+                        // Shift+Click: Toggle selection (add/remove from multi-select)
+                        // Regular Click: Single select (clear others)
+                        const isShiftPressed =
+                          (e?.evt as MouseEvent)?.shiftKey ?? false;
+                        if (isShiftPressed) {
+                          toggleSelection(obj.id);
+                        } else {
+                          selectObject(obj.id);
+                        }
+                      }}
+                      onHoverChange={handleObjectHoverChange}
+                    />
+                  ))}
+
+                {/* Selection Box - Unified bounding box for multi-select */}
+                <SelectionBox
+                  selectedObjects={objects.filter((obj) =>
+                    selectedIds.includes(obj.id)
+                  )}
+                />
+
+                {/* Drag Selection Rectangle - Rubber-band visual feedback */}
+                {selectionRect && (
+                  <Rect
+                    x={
+                      selectionRect.width >= 0
+                        ? selectionRect.x
+                        : selectionRect.x + selectionRect.width
+                    }
+                    y={
+                      selectionRect.height >= 0
+                        ? selectionRect.y
+                        : selectionRect.y + selectionRect.height
+                    }
+                    width={Math.abs(selectionRect.width)}
+                    height={Math.abs(selectionRect.height)}
+                    fill="rgba(0, 102, 255, 0.1)"
+                    stroke="#0066FF"
+                    strokeWidth={1}
+                    dash={[4, 4]}
+                    listening={false}
+                  />
+                )}
+              </Layer>
+            </Stage>
+
+            {/* Edit Attribution Tooltip */}
+            <EditAttributionTooltip
+              userName={hoveredObject?.lastEditedByName}
+              editedAt={hoveredObject?.lastEditedAt}
+              position={tooltipPosition}
+              visible={hoveredObject !== null}
+            />
+
+            {/* Multiplayer Cursors Overlay */}
+            <CursorLayer
+              cursors={cursors}
+              scale={viewport.scale}
+              offsetX={viewport.x}
+              offsetY={viewport.y}
+            />
+
+            {/* Text Editor Overlay - shows when editing text */}
+            {editingTextId && (
+              <TextEditor
+                object={
+                  objects.find((obj) => obj.id === editingTextId) as TextObject
+                }
+                viewport={viewport}
+                onFinishEditing={() => setEditingTextId(null)}
+              />
+            )}
+          </div>
+
+          {/* Keyboard Shortcuts Help Modal */}
+          <ShortcutHelp
+            isOpen={isHelpOpen}
+            onClose={() => setIsHelpOpen(false)}
           />
 
-          {/* Multiplayer Cursors Overlay */}
-          <CursorLayer
-            cursors={cursors}
-            scale={viewport.scale}
-            offsetX={viewport.x}
-            offsetY={viewport.y}
-          />
-
-          {/* Text Editor Overlay - shows when editing text */}
-          {editingTextId && (
-            <TextEditor
-              object={
-                objects.find((obj) => obj.id === editingTextId) as TextObject
-              }
-              viewport={viewport}
-              onFinishEditing={() => setEditingTextId(null)}
+          {/* Context Menu */}
+          {contextMenu?.visible && (
+            <ContextMenu
+              x={contextMenu.x}
+              y={contextMenu.y}
+              options={getContextMenuOptions()}
+              onClose={() => setContextMenu(null)}
             />
           )}
         </div>
 
-        {/* Properties Panels - conditional based on selected object type */}
-        {selectedIds.length === 1 && (
-          <>
-            {objects.find((obj) => obj.id === selectedIds[0])?.type ===
-            "text" ? (
-              <FontProperties />
-            ) : (
-              <StrokeProperties />
-            )}
-          </>
-        )}
-
-        {/* Keyboard Shortcuts Help Modal */}
-        <ShortcutHelp
-          isOpen={isHelpOpen}
-          onClose={() => setIsHelpOpen(false)}
-        />
-
-        {/* Context Menu */}
-        {contextMenu?.visible && (
-          <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            options={getContextMenuOptions()}
-            onClose={() => setContextMenu(null)}
-          />
-        )}
-
-        {/* Layers Panel */}
+        {/* Right Sidebar: Layers Panel */}
         <LayersPanel />
       </div>
+
+      {/* Bottom Bar */}
+      <BottomBar onHelpClick={() => setIsHelpOpen(true)} />
     </div>
   );
 }
