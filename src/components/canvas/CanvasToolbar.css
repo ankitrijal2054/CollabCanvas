@@ -23,13 +23,15 @@
   gap: 0.5rem;
   height: 40px;
   padding: 0 1rem;
-  border: none;
+  border: 2px solid #3b82f6;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  background-color: #3b82f6;
+  color: white;
 }
 
 .toolbar-button svg {
@@ -47,82 +49,65 @@
   display: none;
 }
 
-/* Active button (Selection Mode) - Strong visual indication */
+/* Active button (Selection Mode) - Grey to indicate selected state */
 .toolbar-button-active {
-  background-color: #3b82f6;
+  background-color: #4b5563;
+  border-color: #374151;
   color: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2),
-    0 4px 12px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.2);
   position: relative;
 }
 
-.toolbar-button-active::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border: 2px solid #3b82f6;
-  border-radius: 10px;
-  animation: pulse-border 2s ease-in-out infinite;
-}
-
-@keyframes pulse-border {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.05);
-  }
-}
-
 .toolbar-button-active:hover {
-  background-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3),
-    0 4px 16px rgba(59, 130, 246, 0.5);
+  background-color: #374151;
+  border-color: #1f2937;
+  box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.3);
   transform: translateY(-1px);
 }
 
-/* Primary button (Add Rectangle) */
+/* Primary button (Add shapes) - Keep blue */
 .toolbar-button-primary {
   background-color: #3b82f6;
+  border-color: #3b82f6;
   color: white;
 }
 
 .toolbar-button-primary:hover:not(:disabled) {
   background-color: #2563eb;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  border-color: #2563eb;
   transform: translateY(-1px);
 }
 
 .toolbar-button-primary:active:not(:disabled) {
   background-color: #1d4ed8;
+  border-color: #1d4ed8;
   transform: translateY(0);
 }
 
 /* Danger button (Delete) */
 .toolbar-button-danger {
   background-color: #ef4444;
+  border-color: #ef4444;
   color: white;
 }
 
 .toolbar-button-danger:hover:not(:disabled) {
   background-color: #dc2626;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  border-color: #dc2626;
   transform: translateY(-1px);
 }
 
 .toolbar-button-danger:active:not(:disabled) {
   background-color: #b91c1c;
+  border-color: #b91c1c;
   transform: translateY(0);
 }
 
 .toolbar-button-danger:disabled {
   background-color: #f3f4f6;
+  border-color: #e5e7eb;
   color: #9ca3af;
   cursor: not-allowed;
-  border: 1px solid #e5e7eb;
 }
 
 /* Toolbar divider */

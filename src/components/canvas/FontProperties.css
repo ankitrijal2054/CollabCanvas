@@ -138,18 +138,60 @@
   cursor: not-allowed;
 }
 
-/* Alignment Buttons */
-.alignment-buttons {
+/* Font Style Buttons (Bold/Italic) */
+.font-style-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px; /* Gap before alignment buttons */
+}
+
+.font-style-button {
+  flex: 1;
+  height: 32px;
+  border: 2px solid #3b82f6;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.font-style-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.font-style-button.active {
+  background: #4b5563;
+  border-color: #374151;
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.2);
+}
+
+.font-style-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+}
+
+/* Text Alignment Buttons */
+.text-align-buttons {
   display: flex;
   gap: 6px;
 }
 
-.alignment-button {
+.text-align-button {
   flex: 1;
   height: 32px;
-  border: 1px solid #d1d5db;
+  border: 2px solid #3b82f6;
   border-radius: 8px;
-  background: #ffffff;
+  background: #3b82f6;
+  color: #ffffff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -158,19 +200,19 @@
   font-size: 16px;
 }
 
-.alignment-button:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  transform: scale(1.05);
+.text-align-button:hover {
+  background: #2563eb;
+  border-color: #2563eb;
 }
 
-.alignment-button.active {
-  background: #3b82f6;
-  border-color: #3b82f6;
+.text-align-button.active {
+  background: #4b5563;
+  border-color: #374151;
   color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.2);
 }
 
-.alignment-button:disabled {
+.text-align-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #f3f4f6;

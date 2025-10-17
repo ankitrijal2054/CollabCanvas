@@ -36,6 +36,8 @@
   border: 1px solid #e5e7eb;
   min-width: 0;
   transition: all 0.2s ease;
+  min-height: 48px; /* Explicit height for consistency */
+  box-sizing: border-box;
 }
 
 .user-section:hover {

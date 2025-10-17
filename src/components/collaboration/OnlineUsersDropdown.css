@@ -20,6 +20,8 @@
   font-size: 14px;
   color: #111827;
   white-space: nowrap;
+  min-height: 48px; /* Match user-section height (36px avatar + 12px padding) */
+  box-sizing: border-box;
 }
 
 .online-users-button:hover {

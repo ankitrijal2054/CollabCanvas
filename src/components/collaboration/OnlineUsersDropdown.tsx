@@ -19,7 +19,7 @@ export function OnlineUsersDropdown() {
         <span className="online-users-icon" aria-hidden="true">
           👥
         </span>
-        <span className="online-users-text">Online Users</span>
+        <span className="online-users-text">Online</span>
         <span className="online-users-count">{count}</span>
         <span className="online-users-arrow" aria-hidden="true">
           ▼
