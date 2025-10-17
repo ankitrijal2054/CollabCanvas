@@ -78,6 +78,9 @@ interface CanvasContextType extends CanvasState {
   sendBackward: () => Promise<void>;
   bringToFront: () => Promise<void>;
   sendToBack: () => Promise<void>;
+  // Layer management
+  updateObjectZIndex: (objectId: string, newZIndex: number) => Promise<void>;
+  getObjectsByZIndex: () => CanvasObject[];
 }
 
 // Create the context with undefined default value
@@ -1462,6 +1465,92 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
   };
 
+  /**
+   * Update object zIndex with Firebase sync
+   * Used by layers panel for drag-to-reorder
+   */
+  const updateObjectZIndex = async (objectId: string, newZIndex: number) => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot update zIndex");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot update zIndex: User not authenticated");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Update local state immediately
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: prev.objects.map((obj) =>
+        obj.id === objectId
+          ? {
+              ...obj,
+              zIndex: newZIndex,
+              timestamp: now,
+              lastEditedBy: user.id,
+              lastEditedByName: userName,
+              lastEditedAt: now,
+            }
+          : obj
+      ),
+    }));
+
+    // Sync to Firebase
+    try {
+      const updatePayload = {
+        zIndex: newZIndex,
+        timestamp: now,
+        lastEditedBy: user.id,
+        lastEditedByName: userName,
+        lastEditedAt: now,
+        userId: user.id,
+      };
+
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-update-${Date.now()}`,
+          type: "update",
+          objectId,
+          payload: updatePayload,
+          timestamp: now,
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.updateObject(
+          objectId,
+          updatePayload,
+          user.id,
+          userName
+        );
+        if (!result.success) {
+          console.error(
+            `Failed to update zIndex for ${objectId}:`,
+            result.errorMessage
+          );
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync zIndex update:", error);
+    }
+  };
+
+  /**
+   * Get all objects sorted by zIndex (descending)
+   * Helper for layers panel
+   */
+  const getObjectsByZIndex = (): CanvasObject[] => {
+    return [...canvasState.objects].sort((a, b) => {
+      const aZ = a.zIndex !== undefined ? a.zIndex : a.timestamp;
+      const bZ = b.zIndex !== undefined ? b.zIndex : b.timestamp;
+      return bZ - aZ; // Descending order (highest first)
+    });
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -1495,6 +1584,8 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     sendBackward,
     bringToFront,
     sendToBack,
+    updateObjectZIndex,
+    getObjectsByZIndex,
   };
 
   return (

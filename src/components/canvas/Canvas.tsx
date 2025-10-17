@@ -25,6 +25,7 @@ import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
 import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
+import { LayersPanel } from "../layout/LayersPanel";
 import "./Canvas.css";
 import {
   startPerfMonitor,
@@ -841,6 +842,9 @@ export default function Canvas() {
             onClose={() => setContextMenu(null)}
           />
         )}
+
+        {/* Layers Panel */}
+        <LayersPanel />
       </div>
     </div>
   );
