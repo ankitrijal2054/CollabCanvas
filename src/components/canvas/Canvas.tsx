@@ -274,12 +274,27 @@ export default function Canvas() {
   const handleExport = async (options: ExportOptions) => {
     try {
       if (options.format === "png") {
+        // Temporarily hide selection box by clearing selection
+        const originalSelection = [...selectedIds];
+        if (originalSelection.length > 0) {
+          clearSelection();
+
+          // Wait for next frame to ensure selection box is removed from render
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+
         // Include viewport information for accurate selection export
         const exportOptionsWithViewport = {
           ...options,
           viewport: { x: viewport.x, y: viewport.y, scale: viewport.scale },
         };
         await exportToPNG(stageRef.current, exportOptionsWithViewport);
+
+        // Restore selection after export
+        if (originalSelection.length > 0) {
+          selectObject(null); // Clear first
+          originalSelection.forEach((id) => toggleSelection(id)); // Then add all back
+        }
       } else if (options.format === "svg") {
         // Get objects to export
         const objectsToExport =
