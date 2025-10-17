@@ -695,11 +695,8 @@ export default function Canvas() {
 
       {/* Main Content Area */}
       <div className="canvas-main-content">
-        {/* Left Sidebar: Online Users + Properties */}
-        <Sidebar
-          hasSelection={selectedIds.length === 1}
-          selectedObjectType={selectedObjectType}
-        />
+        {/* Left Sidebar: Layers Panel */}
+        <LayersPanel />
 
         {/* Center: Canvas Area */}
         <div className="canvas-center">
@@ -937,11 +934,15 @@ export default function Canvas() {
           <AlignmentToolbar />
         </div>
 
-        {/* Right Sidebar: Layers Panel + AI Chat Panel */}
-        <div className="right-sidebar-container">
-          <LayersPanel />
-          {isAIPanelOpen && <AIChatPanel />}
-        </div>
+        {/* Right Sidebar: AI Chat Panel OR Properties Panel */}
+        {isAIPanelOpen ? (
+          <AIChatPanel />
+        ) : (
+          <Sidebar
+            hasSelection={selectedIds.length === 1}
+            selectedObjectType={selectedObjectType}
+          />
+        )}
       </div>
 
       {/* Bottom Bar */}

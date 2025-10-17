@@ -9,11 +9,16 @@ import CommandSuggestions from "./CommandSuggestions";
 import "./AIChatPanel.css";
 
 export default function AIChatPanel() {
-  const { messages, isProcessing, sendCommand, clearHistory, getQueueStatus } =
-    useAI();
+  const {
+    messages,
+    isProcessing,
+    sendCommand,
+    clearHistory,
+    getQueueStatus,
+    setIsAIPanelOpen,
+  } = useAI();
 
   const [inputValue, setInputValue] = useState("");
-  const [isExpanded, setIsExpanded] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -24,10 +29,8 @@ export default function AIChatPanel() {
 
   // Focus input on mount
   useEffect(() => {
-    if (isExpanded) {
-      inputRef.current?.focus();
-    }
-  }, [isExpanded]);
+    inputRef.current?.focus();
+  }, []);
 
   /**
    * Handle send command
@@ -72,7 +75,7 @@ export default function AIChatPanel() {
       : null;
 
   return (
-    <div className={`ai-chat-panel ${isExpanded ? "expanded" : "collapsed"}`}>
+    <div className="ai-chat-panel expanded">
       {/* Header */}
       <div className="ai-chat-header">
         <div className="header-title">
@@ -90,17 +93,17 @@ export default function AIChatPanel() {
             </button>
           )}
           <button
-            className="collapse-button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            title={isExpanded ? "Collapse" : "Expand"}
+            className="close-button"
+            onClick={() => setIsAIPanelOpen(false)}
+            title="Close AI Assistant"
           >
-            <span>{isExpanded ? "▼" : "▲"}</span>
+            <span>✕</span>
           </button>
         </div>
       </div>
 
-      {/* Content (only show when expanded) */}
-      {isExpanded && (
+      {/* Content */}
+      <div className="ai-chat-content">
         <>
           {/* Messages */}
           <div className="ai-chat-messages">
@@ -166,7 +169,7 @@ export default function AIChatPanel() {
             </div>
           </div>
         </>
-      )}
+      </div>
     </div>
   );
 }
