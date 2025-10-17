@@ -38,11 +38,7 @@ export default function CanvasToolbar({
           isSelectionMode ? "toolbar-button-active" : ""
         }`}
         onClick={onToggleSelectionMode}
-        title={
-          isSelectionMode
-            ? "Selection Mode (Active) - Drag to select multiple objects"
-            : "Selection Mode (Inactive) - Click to enable drag-to-select"
-        }
+        title={"Selection Mode"}
       >
         <svg
           width="20"
@@ -65,7 +61,7 @@ export default function CanvasToolbar({
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createRectangle}
-        title="Add Rectangle (R)"
+        title="Add Rectangle"
       >
         <svg
           width="20"
@@ -84,7 +80,7 @@ export default function CanvasToolbar({
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createCircle}
-        title="Add Circle (C)"
+        title="Add Circle"
       >
         <svg
           width="20"
@@ -103,7 +99,7 @@ export default function CanvasToolbar({
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createStar}
-        title="Add Star (S)"
+        title="Add Star"
       >
         <svg
           width="20"
@@ -125,7 +121,7 @@ export default function CanvasToolbar({
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createLine}
-        title="Add Line (L)"
+        title="Add Line"
       >
         <svg
           width="20"
@@ -147,7 +143,7 @@ export default function CanvasToolbar({
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
         onClick={createText}
-        title="Add Text (T)"
+        title="Add Text"
       >
         <svg
           width="20"
