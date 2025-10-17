@@ -13,6 +13,78 @@ export interface BoundingBox {
 }
 
 /**
+ * Calculate axis-aligned bounding box for a rotated object
+ * @param obj - Canvas object with rotation
+ * @returns Min/max coordinates of rotated bounding box
+ */
+function calculateRotatedBounds(obj: CanvasObject): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  const rotation = (obj.rotation || 0) * (Math.PI / 180); // Convert to radians
+
+  // Get center point based on object type
+  let centerX: number;
+  let centerY: number;
+  let halfWidth: number;
+  let halfHeight: number;
+
+  if (obj.type === "circle") {
+    const radius = (obj as { radius?: number }).radius || obj.width / 2;
+    centerX = obj.x + radius;
+    centerY = obj.y + radius;
+    halfWidth = radius;
+    halfHeight = radius;
+  } else if (obj.type === "star") {
+    centerX = obj.x + obj.width / 2;
+    centerY = obj.y + obj.height / 2;
+    halfWidth = obj.width / 2;
+    halfHeight = obj.height / 2;
+  } else {
+    // Rectangle, text, line
+    centerX = obj.x + obj.width / 2;
+    centerY = obj.y + obj.height / 2;
+    halfWidth = obj.width / 2;
+    halfHeight = obj.height / 2;
+  }
+
+  // Calculate the four corners of the bounding box before rotation
+  const corners = [
+    { x: -halfWidth, y: -halfHeight }, // Top-left
+    { x: halfWidth, y: -halfHeight }, // Top-right
+    { x: halfWidth, y: halfHeight }, // Bottom-right
+    { x: -halfWidth, y: halfHeight }, // Bottom-left
+  ];
+
+  // Rotate each corner and find min/max
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  corners.forEach((corner) => {
+    // Apply rotation matrix
+    const rotatedX =
+      corner.x * Math.cos(rotation) - corner.y * Math.sin(rotation);
+    const rotatedY =
+      corner.x * Math.sin(rotation) + corner.y * Math.cos(rotation);
+
+    // Transform back to world coordinates
+    const worldX = centerX + rotatedX;
+    const worldY = centerY + rotatedY;
+
+    minX = Math.min(minX, worldX);
+    minY = Math.min(minY, worldY);
+    maxX = Math.max(maxX, worldX);
+    maxY = Math.max(maxY, worldY);
+  });
+
+  return { minX, minY, maxX, maxY };
+}
+
+/**
  * Export options
  */
 export interface ExportOptions {
@@ -24,7 +96,7 @@ export interface ExportOptions {
 }
 
 /**
- * Calculate bounding box for a set of objects
+ * Calculate bounding box for a set of objects (accounting for rotation)
  * @param objects - Array of canvas objects
  * @returns Bounding box containing all objects
  */
@@ -39,43 +111,53 @@ export function calculateBoundingBox(objects: CanvasObject[]): BoundingBox {
   let maxY = -Infinity;
 
   objects.forEach((obj) => {
-    let objMinX = obj.x;
-    let objMinY = obj.y;
-    let objMaxX = obj.x + (obj.width || 0);
-    let objMaxY = obj.y + (obj.height || 0);
+    const rotation = obj.rotation || 0;
 
-    // Handle special cases for different shape types
-    if (obj.type === "circle") {
-      // Circles are positioned by center in some cases, but our data model uses x,y as top-left
-      const circleObj = obj as {
-        radius?: number;
-        width: number;
-        height: number;
-      };
-      const radius = circleObj.radius || obj.width / 2;
-      objMinX = obj.x;
-      objMinY = obj.y;
-      objMaxX = obj.x + radius * 2;
-      objMaxY = obj.y + radius * 2;
-    } else if (obj.type === "line") {
-      // Lines use points array [x1, y1, x2, y2]
-      const lineObj = obj as { points?: number[] };
-      if (lineObj.points && lineObj.points.length >= 4) {
-        const x1 = lineObj.points[0];
-        const y1 = lineObj.points[1];
-        const x2 = lineObj.points[2];
-        const y2 = lineObj.points[3];
-        objMinX = Math.min(x1, x2);
-        objMinY = Math.min(y1, y2);
-        objMaxX = Math.max(x1, x2);
-        objMaxY = Math.max(y1, y2);
+    // If object is rotated, calculate rotated bounding box
+    if (rotation !== 0) {
+      const bounds = calculateRotatedBounds(obj);
+      minX = Math.min(minX, bounds.minX);
+      minY = Math.min(minY, bounds.minY);
+      maxX = Math.max(maxX, bounds.maxX);
+      maxY = Math.max(maxY, bounds.maxY);
+    } else {
+      // Non-rotated object - use simple bounds
+      let objMinX = obj.x;
+      let objMinY = obj.y;
+      let objMaxX = obj.x + (obj.width || 0);
+      let objMaxY = obj.y + (obj.height || 0);
+
+      // Handle special cases for different shape types
+      if (obj.type === "circle") {
+        const circleObj = obj as {
+          radius?: number;
+          width: number;
+          height: number;
+        };
+        const radius = circleObj.radius || obj.width / 2;
+        objMinX = obj.x;
+        objMinY = obj.y;
+        objMaxX = obj.x + radius * 2;
+        objMaxY = obj.y + radius * 2;
+      } else if (obj.type === "line") {
+        const lineObj = obj as { points?: number[] };
+        if (lineObj.points && lineObj.points.length >= 4) {
+          const x1 = lineObj.points[0];
+          const y1 = lineObj.points[1];
+          const x2 = lineObj.points[2];
+          const y2 = lineObj.points[3];
+          objMinX = Math.min(x1, x2);
+          objMinY = Math.min(y1, y2);
+          objMaxX = Math.max(x1, x2);
+          objMaxY = Math.max(y1, y2);
+        }
       }
-    }
 
-    minX = Math.min(minX, objMinX);
-    minY = Math.min(minY, objMinY);
-    maxX = Math.max(maxX, objMaxX);
-    maxY = Math.max(maxY, objMaxY);
+      minX = Math.min(minX, objMinX);
+      minY = Math.min(minY, objMinY);
+      maxX = Math.max(maxX, objMaxX);
+      maxY = Math.max(maxY, objMaxY);
+    }
   });
 
   // Add padding (20px on each side)
