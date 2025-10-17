@@ -169,7 +169,6 @@ export const useKeyboardShortcuts = ({
       }
       // Alignment shortcuts with Shift (Cmd/Ctrl + Shift + key)
       if (isModifier && event.altKey && !isShift) {
-        console.log("Alignment shortcuts", event.key);
         switch (event.key.toLowerCase()) {
           // Alignment shortcuts (for PR #20)
           case "n":

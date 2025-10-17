@@ -35,6 +35,10 @@ export interface CanvasContextForTools {
   clearSelection: () => void;
   selectAll: () => void;
 
+  // Sync control (to batch operations)
+  pauseSync: () => void;
+  resumeSync: () => void;
+
   // Alignment
   alignSelectedLeft: () => Promise<void>;
   alignSelectedRight: () => Promise<void>;
@@ -253,73 +257,122 @@ async function executeCreateShape(
   userId: string,
   aiOperationId: string
 ): Promise<ToolExecutionResult> {
-  const { type, x, y, width, height, color, stroke, strokeWidth } =
-    toolCall.parameters;
+  const {
+    type,
+    x,
+    y,
+    width,
+    height,
+    color,
+    stroke,
+    strokeWidth,
+    rotation,
+    opacity,
+    numPoints,
+    innerRadius,
+    points,
+    arrowStart,
+    arrowEnd,
+  } = toolCall.parameters;
 
-  // Determine which creation function to call
-  let createFunc: () => Promise<void>;
-  switch (type) {
-    case "rectangle":
-      createFunc = context.createRectangle;
-      break;
-    case "circle":
-      createFunc = context.createCircle;
-      break;
-    case "star":
-      createFunc = context.createStar;
-      break;
-    case "line":
-      createFunc = context.createLine;
-      break;
-    default:
+  // PAUSE SYNC to prevent intermediate state from syncing to Firebase
+  context.pauseSync();
+  console.log("tool call", toolCall.parameters);
+
+  try {
+    // Determine which creation function to call
+    let createFunc: () => Promise<void>;
+    switch (type) {
+      case "rectangle":
+        createFunc = context.createRectangle;
+        break;
+      case "circle":
+        createFunc = context.createCircle;
+        break;
+      case "star":
+        createFunc = context.createStar;
+        break;
+      case "line":
+        createFunc = context.createLine;
+        break;
+      default:
+        context.resumeSync();
+        return {
+          success: false,
+          message: `Unknown shape type: ${type}`,
+          error: "INVALID_SHAPE_TYPE",
+        };
+    }
+
+    // Create the shape (uses default color)
+    await createFunc.call(context);
+
+    // Get the newly created object (last in the list)
+    const newObject = context.objects[context.objects.length - 1];
+
+    if (!newObject) {
+      context.resumeSync();
       return {
         success: false,
-        message: `Unknown shape type: ${type}`,
-        error: "INVALID_SHAPE_TYPE",
+        message: "Failed to create shape",
+        error: "CREATION_FAILED",
       };
-  }
+    }
 
-  // Create the shape
-  await createFunc.call(context);
-
-  // Get the newly created object (last in the list)
-  const newObject = context.objects[context.objects.length - 1];
-
-  if (!newObject) {
-    return {
-      success: false,
-      message: "Failed to create shape",
-      error: "CREATION_FAILED",
+    // Update with AI-specific properties
+    const updates: Partial<CanvasObject> = {
+      x: x as number,
+      y: y as number,
+      width: width as number,
+      height: height as number,
+      color: color as string,
+      createdBy: "ai-agent",
+      lastEditedBy: "ai-agent",
+      lastEditedByName: "AI Agent",
+      lastEditedAt: Date.now(),
     };
+
+    // Add optional properties
+    if (stroke) updates.stroke = stroke as string;
+    if (strokeWidth !== undefined) updates.strokeWidth = strokeWidth as number;
+    if (rotation !== undefined) updates.rotation = rotation as number;
+    if (opacity !== undefined) updates.opacity = opacity as number;
+
+    // Star-specific properties
+    if (type === "star") {
+      if (numPoints !== undefined)
+        (updates as any).numPoints = numPoints as number;
+      if (innerRadius !== undefined)
+        (updates as any).innerRadius = innerRadius as number;
+    }
+
+    // Line-specific properties
+    if (type === "line") {
+      if (points) (updates as any).points = points as number[];
+      if (arrowStart !== undefined)
+        (updates as any).arrowStart = arrowStart as boolean;
+      if (arrowEnd !== undefined)
+        (updates as any).arrowEnd = arrowEnd as boolean;
+    }
+
+    // Apply all updates at once (while paused, only updates local state)
+    context.updateObject(newObject.id, updates);
+
+    // RESUME SYNC first
+    context.resumeSync();
+
+    // Now sync the final object to Firebase
+    context.updateObject(newObject.id, {});
+
+    return {
+      success: true,
+      message: `Created ${type} at (${x}, ${y})`,
+      objectsCreated: [newObject.id],
+    };
+  } catch (error) {
+    context.resumeSync();
+    throw error;
   }
-
-  // Update with AI-specific properties
-  const updates: Partial<CanvasObject> = {
-    x: x as number,
-    y: y as number,
-    width: width as number,
-    height: height as number,
-    fill: color as string,
-    createdBy: "ai-agent",
-    lastEditedBy: "ai-agent",
-    lastEditedByName: "AI Agent",
-    lastEditedAt: Date.now(),
-  };
-
-  if (stroke) {
-    updates.stroke = stroke as string;
-  }
-  if (strokeWidth !== undefined) {
-    updates.strokeWidth = strokeWidth as number;
-  }
-
-  context.updateObject(newObject.id, updates);
-
-  return {
-    success: true,
-    message: `Created ${type} at (${x}, ${y})`,
-    objectsCreated: [newObject.id],
-  };
 }
 
 async function executeCreateText(
@@ -328,50 +381,77 @@ async function executeCreateText(
   userId: string,
   aiOperationId: string
 ): Promise<ToolExecutionResult> {
-  const { text, x, y, fontSize, fontFamily, color } = toolCall.parameters;
+  const {
+    text,
+    x,
+    y,
+    fontSize,
+    fontFamily,
+    fontWeight,
+    fontStyle,
+    textAlign,
+    color,
+    rotation,
+    opacity,
+  } = toolCall.parameters;
 
-  // Create text object
-  await context.createText();
+  // PAUSE SYNC to prevent intermediate state from syncing to Firebase
+  context.pauseSync();
 
-  // Get the newly created object
-  const newObject = context.objects[context.objects.length - 1];
+  try {
+    // Create text object
+    await context.createText();
 
-  if (!newObject || newObject.type !== "text") {
-    return {
-      success: false,
-      message: "Failed to create text",
-      error: "CREATION_FAILED",
+    // Get the newly created object
+    const newObject = context.objects[context.objects.length - 1];
+
+    if (!newObject || newObject.type !== "text") {
+      context.resumeSync();
+      return {
+        success: false,
+        message: "Failed to create text",
+        error: "CREATION_FAILED",
+      };
+    }
+
+    // Update with AI-specific properties
+    const updates: Partial<CanvasObject> = {
+      x: x as number,
+      y: y as number,
+      createdBy: "ai-agent",
+      lastEditedBy: "ai-agent",
+      lastEditedByName: "AI Agent",
+      lastEditedAt: Date.now(),
     };
-  }
 
-  // Update with AI-specific properties
-  const updates: Partial<CanvasObject> = {
-    x: x as number,
-    y: y as number,
-    text: text as string,
-    createdBy: "ai-agent",
-    lastEditedBy: "ai-agent",
-    lastEditedByName: "AI Agent",
-    lastEditedAt: Date.now(),
-  };
+    // Add text-specific properties
+    (updates as any).text = text as string;
+    if (fontSize) (updates as any).fontSize = fontSize as number;
+    if (fontFamily) (updates as any).fontFamily = fontFamily as string;
+    if (fontWeight) (updates as any).fontWeight = fontWeight as string;
+    if (fontStyle) (updates as any).fontStyle = fontStyle as string;
+    if (textAlign) (updates as any).textAlign = textAlign as string;
+    if (color) updates.color = color as string;
+    if (rotation !== undefined) updates.rotation = rotation as number;
+    if (opacity !== undefined) updates.opacity = opacity as number;
 
-  if (fontSize) {
-    updates.fontSize = fontSize as number;
-  }
-  if (fontFamily) {
-    updates.fontFamily = fontFamily as string;
-  }
-  if (color) {
-    updates.fill = color as string;
-  }
+    context.updateObject(newObject.id, updates);
 
-  context.updateObject(newObject.id, updates);
+    // RESUME SYNC first
+    context.resumeSync();
 
-  return {
-    success: true,
-    message: `Created text "${text}" at (${x}, ${y})`,
-    objectsCreated: [newObject.id],
-  };
+    // Now sync the final object to Firebase
+    context.updateObject(newObject.id, {});
+
+    return {
+      success: true,
+      message: `Created text "${text}" at (${x}, ${y})`,
+      objectsCreated: [newObject.id],
+    };
+  } catch (error) {
+    context.resumeSync();
+    throw error;
+  }
 }
 
 async function executeMoveShape(
@@ -497,7 +577,7 @@ async function executeUpdateShapeStyle(
   toolCall: ToolCall,
   context: CanvasContextForTools
 ): Promise<ToolExecutionResult> {
-  const { shapeId, fill, stroke, strokeWidth, opacity } = toolCall.parameters;
+  const { shapeId, color, stroke, strokeWidth, opacity } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
   if (!object) {
@@ -514,7 +594,7 @@ async function executeUpdateShapeStyle(
     lastEditedAt: Date.now(),
   };
 
-  if (fill !== undefined) updates.fill = fill as string;
+  if (color !== undefined) updates.color = color as string;
   if (stroke !== undefined) updates.stroke = stroke as string;
   if (strokeWidth !== undefined) updates.strokeWidth = strokeWidth as number;
   if (opacity !== undefined) updates.opacity = opacity as number;
@@ -550,11 +630,13 @@ async function executeUpdateTextStyle(
     lastEditedAt: Date.now(),
   };
 
-  if (fontSize !== undefined) updates.fontSize = fontSize as number;
-  if (fontWeight !== undefined) updates.fontWeight = fontWeight as string;
-  if (fontFamily !== undefined) updates.fontFamily = fontFamily as string;
+  if (fontSize !== undefined) (updates as any).fontSize = fontSize as number;
+  if (fontWeight !== undefined)
+    (updates as any).fontWeight = fontWeight as string;
+  if (fontFamily !== undefined)
+    (updates as any).fontFamily = fontFamily as string;
   if (textAlign !== undefined)
-    updates.textAlign = textAlign as "left" | "center" | "right";
+    (updates as any).textAlign = textAlign as "left" | "center" | "right";
 
   context.updateObject(shapeId as string, updates);
 
@@ -673,16 +755,20 @@ async function executeCreateGrid(
   userId: string,
   aiOperationId: string
 ): Promise<ToolExecutionResult> {
-  const { rows, cols, cellWidth, cellHeight, spacing } = toolCall.parameters;
+  const { rows, cols, cellWidth, cellHeight, spacing, color, startX, startY } =
+    toolCall.parameters;
 
   const rowCount = rows as number;
   const colCount = cols as number;
+  const gridColor = (color as string) || "#3B82F6";
+  const baseX = (startX as number) || 5000;
+  const baseY = (startY as number) || 5000;
   const created: string[] = [];
 
   for (let row = 0; row < rowCount; row++) {
     for (let col = 0; col < colCount; col++) {
-      const x = 5000 + col * ((cellWidth as number) + (spacing as number));
-      const y = 5000 + row * ((cellHeight as number) + (spacing as number));
+      const x = baseX + col * ((cellWidth as number) + (spacing as number));
+      const y = baseY + row * ((cellHeight as number) + (spacing as number));
 
       // Create rectangle
       const createTool: ToolCall = {
@@ -693,7 +779,7 @@ async function executeCreateGrid(
           y,
           width: cellWidth,
           height: cellHeight,
-          color: "#3B82F6",
+          color: gridColor,
         },
       };
 
@@ -839,7 +925,7 @@ function executeGetCanvasState(
       y: obj.y,
       width: obj.width,
       height: obj.height,
-      fill: obj.fill,
+      color: obj.color,
     })),
   };
 
@@ -855,7 +941,7 @@ function executeFindShapesByColor(
 ): ToolExecutionResult {
   const { color } = toolCall.parameters;
 
-  const matches = context.objects.filter((obj) => obj.fill === color);
+  const matches = context.objects.filter((obj) => obj.color === color);
 
   return {
     success: true,

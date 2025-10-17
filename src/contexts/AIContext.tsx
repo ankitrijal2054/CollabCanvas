@@ -215,11 +215,6 @@ export function AIProvider({ children }: AIProviderProps) {
           }));
 
         // Send command to server
-        console.log("[AI Context] Sending command to server", {
-          commandId,
-          messageLength: message.length,
-        });
-
         const response = await sendAICommand(
           {
             message,
@@ -286,12 +281,6 @@ export function AIProvider({ children }: AIProviderProps) {
 
         // Update user message status
         updateMessage(commandId, { status: "completed" });
-
-        console.log("[AI Context] Command completed successfully", {
-          commandId,
-          executionTime: response.executionTime,
-          tokensUsed: response.tokensUsed,
-        });
       } catch (error) {
         console.error("[AI Context] Command execution error", {
           commandId,

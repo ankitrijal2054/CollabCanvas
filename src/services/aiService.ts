@@ -31,8 +31,6 @@ const getFirebaseFunctionsURL = (): string => {
 const FUNCTIONS_URL = getFirebaseFunctionsURL();
 const AI_CHAT_ENDPOINT = `${FUNCTIONS_URL}/aichat`;
 
-console.log("[AI Service] Using Functions URL:", FUNCTIONS_URL);
-
 /**
  * Maximum retry attempts for failed requests
  */
@@ -81,15 +79,6 @@ export async function sendAICommand(
   // Retry loop with exponential backoff
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      console.log(
-        `[AI Service] Sending command (attempt ${attempt + 1}/${MAX_RETRIES})`,
-        {
-          messageLength: command.message.length,
-          canvasId: command.canvasId,
-          historyLength: command.conversationHistory?.length || 0,
-        }
-      );
-
       const response = await fetch(AI_CHAT_ENDPOINT, {
         method: "POST",
         headers: {
@@ -119,11 +108,6 @@ export async function sendAICommand(
       }
 
       // Success
-      console.log("[AI Service] Command successful", {
-        toolCallCount: (data as AIAPIResponse).toolCalls?.length || 0,
-        executionTime: (data as AIAPIResponse).executionTime,
-      });
-
       return data;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));

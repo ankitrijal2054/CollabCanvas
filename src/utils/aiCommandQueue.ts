@@ -39,7 +39,6 @@ export class AICommandQueue {
   ) {
     this.canvasId = canvasId;
     this.onStatusChange = onStatusChange;
-    console.log(`[AI Queue] Initialized for canvas: ${this.canvasId}`);
   }
 
   /**
@@ -55,13 +54,6 @@ export class AICommandQueue {
         `Command queue is full (maximum ${MAX_QUEUE_SIZE} commands). Please wait for commands to complete.`
       );
     }
-
-    console.log("[AI Queue] Enqueuing command", {
-      commandId: command.id,
-      queuePosition: this.queue.length,
-      message: command.message.substring(0, 50),
-    });
-
     // Set initial status
     command.status = "pending";
     command.timestamp = Date.now();
@@ -93,11 +85,6 @@ export class AICommandQueue {
     try {
       while (this.queue.length > 0) {
         const command = this.queue[0];
-
-        console.log("[AI Queue] Processing command", {
-          commandId: command.id,
-          remainingInQueue: this.queue.length - 1,
-        });
 
         // Update status to processing
         command.status = "processing";
@@ -190,12 +177,6 @@ export class AICommandQueue {
       });
       return;
     }
-
-    console.log("[AI Queue] Command completed", {
-      commandId,
-      executionTime: response.executionTime,
-    });
-
     command.status = "completed";
     command.response = response;
     this.notifyStatusChange();
@@ -253,12 +234,6 @@ export class AICommandQueue {
     if (command.status !== "pending") {
       return false;
     }
-
-    console.log("[AI Queue] Cancelling command", {
-      commandId,
-      position: index,
-    });
-
     command.status = "cancelled";
     this.queue.splice(index, 1);
     this.notifyStatusChange();
@@ -298,10 +273,6 @@ export class AICommandQueue {
    * Clear all pending commands (emergency stop)
    */
   clear(): void {
-    console.log("[AI Queue] Clearing queue", {
-      queueLength: this.queue.length,
-    });
-
     this.queue = [];
     this.isProcessing = false;
     this.notifyStatusChange();

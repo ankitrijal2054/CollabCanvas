@@ -305,6 +305,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       ),
     }));
 
+    // Skip Firebase sync if paused (for batching operations)
+    if (isSyncPaused) {
+      return;
+    }
+
     // Sync to Firebase
     try {
       const updatePayload = {
@@ -1043,7 +1048,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
 
     clipboardManager.copy(selectedObjects);
-    console.log(`📋 Copied ${selectedObjects.length} object(s)`);
   };
 
   /**
@@ -1147,7 +1151,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     // Copy to clipboard first
     clipboardManager.cut(selectedObjects);
-    console.log(`✂️ Cut ${selectedObjects.length} object(s)`);
 
     // Delete selected objects
     const idsToDelete = [...canvasState.selectedIds];
@@ -1234,8 +1237,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     } catch (error) {
       console.error("❌ Failed to duplicate objects:", error);
     }
-
-    console.log(`🔄 Duplicated ${duplicates.length} object(s)`);
   };
 
   /**
@@ -1266,13 +1267,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         `Are you sure you want to delete ${selectedIds.length} objects? This action cannot be undone.`
       );
       if (!confirmed) {
-        console.log("❌ Delete cancelled by user");
         return;
       }
     }
 
     // Delete all selected objects
-    console.log(`🗑️ Deleting ${selectedIds.length} object(s)...`);
     for (const id of selectedIds) {
       await deleteObject(id);
     }
