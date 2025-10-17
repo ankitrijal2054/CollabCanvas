@@ -59,6 +59,27 @@
   color: #1976d2;
 }
 
+/* Layer name input (editing mode) */
+.layer-name-input {
+  flex: 1;
+  font-size: 14px;
+  padding: 2px 6px;
+  border: 1px solid #2196f3;
+  border-radius: 3px;
+  outline: none;
+  background-color: white;
+  font-family: inherit;
+}
+
+.layer-name-input:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.layer-item.editing {
+  background-color: #f5f5f5;
+}
+
 /* Drag feedback */
 .layer-item.dragging {
   opacity: 0.5;

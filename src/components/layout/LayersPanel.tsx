@@ -7,6 +7,7 @@ import "./LayersPanel.css";
 /**
  * Auto-generate layer names based on shape type and index
  * e.g., "Rectangle 1", "Rectangle 2", "Circle 1", "Circle 2"
+ * Uses custom name if object has one
  */
 const generateLayerNames = (objects: CanvasObject[]): Map<string, string> => {
   const nameMap = new Map<string, string>();
@@ -16,14 +17,20 @@ const generateLayerNames = (objects: CanvasObject[]): Map<string, string> => {
   const sortedObjects = [...objects].sort((a, b) => a.timestamp - b.timestamp);
 
   sortedObjects.forEach((obj) => {
-    const typeName = obj.type.charAt(0).toUpperCase() + obj.type.slice(1);
+    // Use custom name if it exists
+    if (obj.name) {
+      nameMap.set(obj.id, obj.name);
+    } else {
+      // Otherwise auto-generate
+      const typeName = obj.type.charAt(0).toUpperCase() + obj.type.slice(1);
 
-    // Increment counter for this type
-    const currentCount = (typeCounters.get(obj.type) || 0) + 1;
-    typeCounters.set(obj.type, currentCount);
+      // Increment counter for this type
+      const currentCount = (typeCounters.get(obj.type) || 0) + 1;
+      typeCounters.set(obj.type, currentCount);
 
-    // Generate name
-    nameMap.set(obj.id, `${typeName} ${currentCount}`);
+      // Generate name
+      nameMap.set(obj.id, `${typeName} ${currentCount}`);
+    }
   });
 
   return nameMap;
@@ -43,8 +50,13 @@ const getZIndex = (obj: CanvasObject): number => {
  * Supports drag-to-reorder and click-to-select.
  */
 export const LayersPanel: React.FC = () => {
-  const { objects, selectedIds, selectObject, updateObjectZIndex } =
-    useCanvas();
+  const {
+    objects,
+    selectedIds,
+    selectObject,
+    updateObject,
+    updateObjectZIndex,
+  } = useCanvas();
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [_dragOverId, setDragOverId] = useState<string | null>(null);
@@ -62,6 +74,14 @@ export const LayersPanel: React.FC = () => {
    */
   const handleLayerClick = (objectId: string) => {
     selectObject(objectId);
+  };
+
+  /**
+   * Handle layer rename
+   */
+  const handleRename = (objectId: string, newName: string) => {
+    // Update object with new custom name
+    updateObject(objectId, { name: newName });
   };
 
   /**
@@ -131,6 +151,7 @@ export const LayersPanel: React.FC = () => {
               name={layerNames.get(obj.id) || "Unknown"}
               isSelected={selectedIds.includes(obj.id)}
               onClick={handleLayerClick}
+              onRename={handleRename}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}

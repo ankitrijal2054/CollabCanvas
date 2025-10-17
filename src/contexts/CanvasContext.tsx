@@ -261,16 +261,74 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
   };
 
   /**
-   * Update an existing object (local state only)
-   * Firebase sync happens separately
+   * Update an existing object with Firebase sync
+   * Used for property updates like name, color, etc.
    */
-  const updateObject = (id: string, updates: Partial<CanvasObject>) => {
+  const updateObject = async (id: string, updates: Partial<CanvasObject>) => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot update object");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot update object: User not authenticated");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Update local state immediately (optimistic update)
     setCanvasState((prev) => ({
       ...prev,
       objects: prev.objects.map((obj) =>
-        obj.id === id ? { ...obj, ...updates, timestamp: Date.now() } : obj
+        obj.id === id
+          ? {
+              ...obj,
+              ...updates,
+              timestamp: now,
+              lastEditedBy: user.id,
+              lastEditedByName: userName,
+              lastEditedAt: now,
+            }
+          : obj
       ),
     }));
+
+    // Sync to Firebase
+    try {
+      const updatePayload = {
+        ...updates,
+        timestamp: now,
+        lastEditedBy: user.id,
+        lastEditedByName: userName,
+        lastEditedAt: now,
+        userId: user.id,
+      };
+
+      if (!navigator.onLine) {
+        await offlineQueue.enqueue({
+          id: `op-update-${Date.now()}`,
+          type: "update",
+          objectId: id,
+          payload: updatePayload,
+          timestamp: now,
+          retryCount: 0,
+        });
+      } else {
+        const result = await syncOps.updateObject(
+          id,
+          updatePayload,
+          user.id,
+          userName
+        );
+        if (!result.success) {
+          console.error(`Failed to update object ${id}:`, result.errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync object update:", error);
+    }
   };
 
   /**

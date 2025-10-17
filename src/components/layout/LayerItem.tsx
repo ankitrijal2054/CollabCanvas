@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { CanvasObject } from "../../types/canvas.types";
 import "./LayerItem.css";
 
@@ -11,6 +11,8 @@ interface LayerItemProps {
   isSelected: boolean;
   /** Click handler for layer selection */
   onClick: (objectId: string) => void;
+  /** Rename handler */
+  onRename: (objectId: string, newName: string) => void;
   /** Drag start handler */
   onDragStart: (objectId: string) => void;
   /** Drag over handler */
@@ -50,16 +52,67 @@ export const LayerItem: React.FC<LayerItemProps> = ({
   name,
   isSelected,
   onClick,
+  onRename,
   onDragStart,
   onDragOver,
   onDrop,
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update editName when name prop changes (e.g., from another user)
+  useEffect(() => {
+    if (!isEditing) {
+      setEditName(name);
+    }
+  }, [name, isEditing]);
+
+  // Auto-focus input when entering edit mode
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClick(object.id);
+    if (!isEditing) {
+      onClick(object.id);
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    const trimmedName = editName.trim();
+    if (trimmedName && trimmedName !== name) {
+      onRename(object.id, trimmedName);
+    } else if (!trimmedName) {
+      // If empty, revert to original name
+      setEditName(name);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setEditName(name);
+      setIsEditing(false);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    if (isEditing) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", object.id);
     onDragStart(object.id);
@@ -79,9 +132,11 @@ export const LayerItem: React.FC<LayerItemProps> = ({
 
   return (
     <div
-      className={`layer-item ${isSelected ? "selected" : ""}`}
+      className={`layer-item ${isSelected ? "selected" : ""} ${
+        isEditing ? "editing" : ""
+      }`}
       onClick={handleClick}
-      draggable={true}
+      draggable={!isEditing}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -90,9 +145,27 @@ export const LayerItem: React.FC<LayerItemProps> = ({
         ⋮
       </span>
       <span className="layer-icon">{getShapeIcon(object.type)}</span>
-      <span className="layer-name" title={name}>
-        {name}
-      </span>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          className="layer-name-input"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          maxLength={50}
+        />
+      ) : (
+        <span
+          className="layer-name"
+          title={`${name} (Double-click to rename)`}
+          onDoubleClick={handleDoubleClick}
+        >
+          {name}
+        </span>
+      )}
     </div>
   );
 };
