@@ -177,6 +177,18 @@ export const authService = {
   },
 
   /**
+   * Get the Firebase ID token for the current user
+   * @returns ID token string or null if not authenticated
+   */
+  getIdToken: async (): Promise<string | null> => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      return null;
+    }
+    return await firebaseUser.getIdToken();
+  },
+
+  /**
    * Listen for authentication state changes
    * @param callback - Function to call when auth state changes
    * @returns Unsubscribe function

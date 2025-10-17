@@ -8,6 +8,7 @@ import type {
 } from "../../types/canvas.types";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
+import { useAI } from "../../contexts/AIContext";
 import { usePresence } from "../../hooks/usePresence";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { canvasHelpers } from "../../utils/canvasHelpers";
@@ -25,6 +26,7 @@ import TextEditor from "./TextEditor";
 import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
 import { LayersPanel } from "../layout/LayersPanel";
+import AIChatPanel from "../ai/AIChatPanel";
 import { BottomBar } from "../layout/BottomBar";
 import { ExportModal } from "./ExportModal";
 import "./Canvas.css";
@@ -37,6 +39,7 @@ import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
+  const { isAIPanelOpen } = useAI();
   const {
     viewport,
     canvasSize,
@@ -934,8 +937,11 @@ export default function Canvas() {
           <AlignmentToolbar />
         </div>
 
-        {/* Right Sidebar: Layers Panel */}
-        <LayersPanel />
+        {/* Right Sidebar: Layers Panel + AI Chat Panel */}
+        <div className="right-sidebar-container">
+          <LayersPanel />
+          {isAIPanelOpen && <AIChatPanel />}
+        </div>
       </div>
 
       {/* Bottom Bar */}

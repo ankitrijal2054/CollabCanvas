@@ -93,6 +93,7 @@ cp .env.local.example .env.local
 Fill in your Firebase configuration values:
 
 ```env
+# Firebase Configuration
 VITE_FIREBASE_API_KEY=your_api_key_here
 VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your-project-id
@@ -100,6 +101,12 @@ VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
+
+# Firebase Functions URL (for AI features)
+# For local development with emulator:
+VITE_FIREBASE_FUNCTIONS_URL=http://127.0.0.1:5001/your-project-id/us-central1
+# For production:
+# VITE_FIREBASE_FUNCTIONS_URL=https://us-central1-your-project-id.cloudfunctions.net
 ```
 
 > **Note**: The `.env.local` file is gitignored and will not be committed to version control.

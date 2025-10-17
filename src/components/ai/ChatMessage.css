@@ -1,0 +1,146 @@
+/**
+ * Chat Message Styles
+ */
+
+.chat-message {
+  display: flex;
+  gap: 12px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Avatar */
+.message-avatar {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Content */
+.message-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Header */
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.message-author {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Text */
+.message-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* User message styling */
+.chat-message.user .message-content {
+  background: #eff6ff;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+}
+
+.chat-message.user .message-text {
+  color: #1e3a8a;
+}
+
+/* Assistant message styling */
+.chat-message.assistant .message-content {
+  background: #f9fafb;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Error message styling */
+.chat-message.error .message-content {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.chat-message.error .message-text {
+  color: #991b1b;
+}
+
+.message-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  background: #fee2e2;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #991b1b;
+}
+
+.error-icon {
+  font-size: 16px;
+}
+
+/* Tool calls */
+.message-tools {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #e0f2fe;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #0c4a6e;
+  display: inline-block;
+}
+
+.tools-label {
+  font-weight: 500;
+}
+
+/* Markdown-like formatting */
+.message-text strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.message-text em {
+  font-style: italic;
+}
+
+.message-text code {
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  color: #374151;
+}

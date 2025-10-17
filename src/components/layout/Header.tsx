@@ -1,6 +1,7 @@
 // Header component - Top navigation bar
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useAI } from "../../contexts/AIContext";
 import type { User } from "../../types/user.types";
 import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { OnlineUsersDropdown } from "../collaboration/OnlineUsersDropdown";
@@ -13,6 +14,7 @@ interface HeaderProps {
 export default function Header({ user }: HeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { isAIPanelOpen, setIsAIPanelOpen } = useAI();
 
   const handleLogout = async () => {
     try {
@@ -21,6 +23,10 @@ export default function Header({ user }: HeaderProps) {
     } catch (error) {
       console.error("Failed to logout:", error);
     }
+  };
+
+  const toggleAIPanel = () => {
+    setIsAIPanelOpen(!isAIPanelOpen);
   };
 
   return (
@@ -60,12 +66,22 @@ export default function Header({ user }: HeaderProps) {
           </h1>
         </div>
 
-        {/* Right: Logout button */}
+        {/* Right: AI Assistant toggle + Logout button */}
         <div className="header-right">
           {user && (
-            <button onClick={handleLogout} className="logout-button">
-              Logout
-            </button>
+            <>
+              <button
+                onClick={toggleAIPanel}
+                className={`ai-toggle-button ${isAIPanelOpen ? "active" : ""}`}
+                title="Toggle AI Assistant"
+              >
+                <span className="ai-icon">⚡</span>
+                <span className="ai-label">AI Assistant</span>
+              </button>
+              <button onClick={handleLogout} className="logout-button">
+                Logout
+              </button>
+            </>
           )}
         </div>
       </div>

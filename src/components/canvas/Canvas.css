@@ -19,6 +19,13 @@
   min-height: 0;
 }
 
+/* Right sidebar container - for layers panel and AI chat */
+.right-sidebar-container {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+}
+
 /* Center canvas area */
 .canvas-center {
   flex: 1 1 auto;

@@ -10,6 +10,7 @@ import Signup from "./components/auth/Signup";
 import Canvas from "./components/canvas/Canvas.tsx";
 import AuthGuard from "./components/auth/AuthGuard";
 import { CanvasProvider } from "./contexts/CanvasContext";
+import { AIProvider } from "./contexts/AIContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ConnectionBanner } from "./components/layout/ConnectionBanner";
 
@@ -31,8 +32,10 @@ function App() {
             <AuthGuard>
               <ErrorBoundary>
                 <CanvasProvider>
-                  <ConnectionBanner />
-                  <Canvas />
+                  <AIProvider>
+                    <ConnectionBanner />
+                    <Canvas />
+                  </AIProvider>
                 </CanvasProvider>
               </ErrorBoundary>
             </AuthGuard>

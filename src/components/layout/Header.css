@@ -99,12 +99,54 @@
   font-size: 24px;
 }
 
-/* Right section: Logout button */
+/* Right section: AI toggle + Logout button */
 .header-right {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 12px;
+}
+
+/* AI Assistant Toggle Button */
+.ai-toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ai-toggle-button:hover {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+}
+
+.ai-toggle-button.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.ai-toggle-button.active:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.ai-toggle-button .ai-icon {
+  font-size: 16px;
+}
+
+.ai-toggle-button .ai-label {
+  font-size: 14px;
 }
 
 .logout-button {
