@@ -5,11 +5,13 @@ import "./CanvasToolbar.css";
 interface CanvasToolbarProps {
   isSelectionMode: boolean;
   onToggleSelectionMode: () => void;
+  onExportClick?: () => void;
 }
 
 export default function CanvasToolbar({
   isSelectionMode,
   onToggleSelectionMode,
+  onExportClick,
 }: CanvasToolbarProps) {
   const {
     createRectangle,
@@ -207,6 +209,34 @@ export default function CanvasToolbar({
           <path d="M12 9v6" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </button>
+
+      {/* Divider */}
+      <div className="toolbar-divider"></div>
+
+      {/* Export Button */}
+      {onExportClick && (
+        <button
+          className="toolbar-button toolbar-icon-only"
+          onClick={onExportClick}
+          title="Export Canvas (PNG/SVG)"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path
+              d="M10 3v10M6 9l4 4 4-4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path d="M3 15h14" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

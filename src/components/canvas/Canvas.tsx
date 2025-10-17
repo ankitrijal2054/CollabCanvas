@@ -14,6 +14,7 @@ import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
 import Sidebar from "../layout/Sidebar";
 import CanvasToolbar from "./CanvasToolbar";
+import { AlignmentToolbar } from "./AlignmentToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
@@ -25,11 +26,14 @@ import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
 import { LayersPanel } from "../layout/LayersPanel";
 import { BottomBar } from "../layout/BottomBar";
+import { ExportModal } from "./ExportModal";
 import "./Canvas.css";
 import {
   startPerfMonitor,
   subscribePerf,
 } from "../../utils/performanceMonitor";
+import { exportToPNG, type ExportOptions } from "../../utils/exportHelpers";
+import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
@@ -61,6 +65,15 @@ export default function Canvas() {
     sendBackward,
     bringToFront,
     sendToBack,
+    // Alignment operations
+    alignSelectedLeft,
+    alignSelectedRight,
+    alignSelectedTop,
+    alignSelectedBottom,
+    alignSelectedHorizontalCenter,
+    alignSelectedVerticalMiddle,
+    distributeSelectedHorizontal,
+    distributeSelectedVertical,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -105,6 +118,14 @@ export default function Canvas() {
       onBringToFront: bringToFront,
       onSendToBack: sendToBack,
 
+      // Alignment operations
+      onAlignLeft: alignSelectedLeft,
+      onAlignCenter: alignSelectedHorizontalCenter,
+      onAlignRight: alignSelectedRight,
+      onAlignTop: alignSelectedTop,
+      onAlignMiddle: alignSelectedVerticalMiddle,
+      onAlignBottom: alignSelectedBottom,
+
       // Help
       onHelp: () => setIsHelpOpen(true),
     },
@@ -137,6 +158,7 @@ export default function Canvas() {
 
   // Help modal state
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -244,6 +266,49 @@ export default function Canvas() {
       y: e.clientY,
       visible: true,
     });
+  };
+
+  /**
+   * Handle canvas export
+   */
+  const handleExport = async (options: ExportOptions) => {
+    try {
+      if (options.format === "png") {
+        // Temporarily hide selection box by clearing selection
+        const originalSelection = [...selectedIds];
+        if (originalSelection.length > 0) {
+          clearSelection();
+
+          // Wait for next frame to ensure selection box is removed from render
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+
+        // Include viewport information for accurate selection export
+        const exportOptionsWithViewport = {
+          ...options,
+          viewport: { x: viewport.x, y: viewport.y, scale: viewport.scale },
+        };
+        await exportToPNG(stageRef.current, exportOptionsWithViewport);
+
+        // Restore selection after export
+        if (originalSelection.length > 0) {
+          selectObject(null); // Clear first
+          originalSelection.forEach((id) => toggleSelection(id)); // Then add all back
+        }
+      } else if (options.format === "svg") {
+        // Get objects to export
+        const objectsToExport =
+          options.scope === "selection" && options.selectedObjects
+            ? options.selectedObjects
+            : objects;
+
+        await exportToSVG(objectsToExport, options.scope);
+      }
+      console.log(`✅ Export completed: ${options.format.toUpperCase()}`);
+    } catch (error) {
+      console.error("❌ Export failed:", error);
+      throw error;
+    }
   };
 
   /**
@@ -639,6 +704,7 @@ export default function Canvas() {
           <CanvasToolbar
             isSelectionMode={isSelectionMode}
             onToggleSelectionMode={() => setIsSelectionMode(!isSelectionMode)}
+            onExportClick={() => setIsExportModalOpen(true)}
           />
           <CanvasControls />
 
@@ -848,6 +914,13 @@ export default function Canvas() {
             onClose={() => setIsHelpOpen(false)}
           />
 
+          {/* Export Modal */}
+          <ExportModal
+            isOpen={isExportModalOpen}
+            onClose={() => setIsExportModalOpen(false)}
+            onExport={handleExport}
+          />
+
           {/* Context Menu */}
           {contextMenu?.visible && (
             <ContextMenu
@@ -857,6 +930,9 @@ export default function Canvas() {
               onClose={() => setContextMenu(null)}
             />
           )}
+
+          {/* Alignment Toolbar - Bottom */}
+          <AlignmentToolbar />
         </div>
 
         {/* Right Sidebar: Layers Panel */}

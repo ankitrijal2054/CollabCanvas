@@ -1,0 +1,134 @@
+/* AlignmentToolbar Styles */
+
+.alignment-toolbar {
+  position: fixed;
+  bottom: 70px; /* Positioned above the bottom bar */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideUpFade 0.2s ease-out;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.alignment-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alignment-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  margin-right: 4px;
+  user-select: none;
+}
+
+.alignment-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.alignment-button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.alignment-button:active {
+  background: #e2e8f0;
+  transform: scale(0.95);
+}
+
+.alignment-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+}
+
+.alignment-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.alignment-divider {
+  width: 1px;
+  height: 24px;
+  background: #e2e8f0;
+  margin: 0 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .alignment-toolbar {
+    flex-wrap: wrap;
+    padding: 8px;
+  }
+
+  .alignment-button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .alignment-label {
+    font-size: 12px;
+  }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+  .alignment-toolbar {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .alignment-label {
+    color: #94a3b8;
+  }
+
+  .alignment-button {
+    color: #cbd5e1;
+  }
+
+  .alignment-button:hover {
+    background: #334155;
+    border-color: #475569;
+    color: #e2e8f0;
+  }
+
+  .alignment-button:active {
+    background: #475569;
+  }
+
+  .alignment-divider {
+    background: #334155;
+  }
+}

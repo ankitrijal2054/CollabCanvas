@@ -36,6 +36,7 @@ import {
   getErrorMessage,
 } from "../services/transactionService";
 import { clipboardManager } from "../utils/clipboardManager";
+import { alignmentHelpers } from "../utils/alignmentHelpers";
 
 /**
  * Canvas Context Interface
@@ -81,6 +82,15 @@ interface CanvasContextType extends CanvasState {
   // Layer management
   updateObjectZIndex: (objectId: string, newZIndex: number) => Promise<void>;
   getObjectsByZIndex: () => CanvasObject[];
+  // Alignment and distribution operations
+  alignSelectedLeft: () => Promise<void>;
+  alignSelectedRight: () => Promise<void>;
+  alignSelectedTop: () => Promise<void>;
+  alignSelectedBottom: () => Promise<void>;
+  alignSelectedHorizontalCenter: () => Promise<void>;
+  alignSelectedVerticalMiddle: () => Promise<void>;
+  distributeSelectedHorizontal: () => Promise<void>;
+  distributeSelectedVertical: () => Promise<void>;
 }
 
 // Create the context with undefined default value
@@ -1609,6 +1619,224 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     });
   };
 
+  /**
+   * Helper function to batch update aligned objects
+   * Updates local state and syncs to Firebase
+   */
+  const applyAlignmentUpdates = async (alignedObjects: CanvasObject[]) => {
+    if (isCanvasDisabled) {
+      console.warn("🚫 Canvas is disabled - cannot align objects");
+      return;
+    }
+
+    if (!user?.id) {
+      console.error("❌ Cannot align: User not authenticated");
+      return;
+    }
+
+    const now = Date.now();
+    const userName = user?.name || user?.email || "Unknown User";
+
+    // Create a map for quick lookup
+    const alignedMap = new Map(alignedObjects.map((obj) => [obj.id, obj]));
+
+    // Update local state immediately for smooth UX
+    setCanvasState((prev) => ({
+      ...prev,
+      objects: prev.objects.map((obj) => {
+        const aligned = alignedMap.get(obj.id);
+        if (aligned) {
+          return {
+            ...aligned,
+            lastEditedBy: user.id,
+            lastEditedByName: userName,
+            lastEditedAt: now,
+          };
+        }
+        return obj;
+      }),
+    }));
+
+    // Sync to Firebase (batch update for performance)
+    try {
+      for (const alignedObj of alignedObjects) {
+        const updates = {
+          x: alignedObj.x,
+          y: alignedObj.y,
+          timestamp: now,
+          lastEditedBy: user.id,
+          lastEditedByName: userName,
+          lastEditedAt: now,
+          userId: user.id,
+        };
+
+        if (!navigator.onLine) {
+          await offlineQueue.enqueue({
+            id: `op-update-${Date.now()}-${alignedObj.id}`,
+            type: "update",
+            objectId: alignedObj.id,
+            payload: updates,
+            timestamp: now,
+            retryCount: 0,
+          });
+        } else {
+          const result = await syncOps.updateObject(
+            alignedObj.id,
+            updates,
+            user.id,
+            userName
+          );
+          if (!result.success) {
+            console.error(
+              `Failed to sync alignment for ${alignedObj.id}:`,
+              result.errorMessage
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to sync alignment:", error);
+    }
+  };
+
+  /**
+   * Align selected objects to the left
+   * Cmd/Ctrl+Shift+L
+   */
+  const alignSelectedLeft = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects = alignmentHelpers.alignLeft(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Align selected objects to the right
+   * Cmd/Ctrl+Shift+R
+   */
+  const alignSelectedRight = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects = alignmentHelpers.alignRight(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Align selected objects to the top
+   * Cmd/Ctrl+Shift+T
+   */
+  const alignSelectedTop = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects = alignmentHelpers.alignTop(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Align selected objects to the bottom
+   * Cmd/Ctrl+Shift+B
+   */
+  const alignSelectedBottom = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects = alignmentHelpers.alignBottom(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Align selected objects horizontally centered
+   * Cmd/Ctrl+Shift+H
+   */
+  const alignSelectedHorizontalCenter = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects =
+      alignmentHelpers.alignHorizontalCenter(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Align selected objects vertically centered
+   * Cmd/Ctrl+Shift+V
+   */
+  const alignSelectedVerticalMiddle = async () => {
+    if (canvasState.selectedIds.length < 2) {
+      console.warn("⚠️ Need at least 2 objects to align");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const alignedObjects =
+      alignmentHelpers.alignVerticalMiddle(selectedObjects);
+    await applyAlignmentUpdates(alignedObjects);
+  };
+
+  /**
+   * Distribute selected objects evenly horizontally
+   */
+  const distributeSelectedHorizontal = async () => {
+    if (canvasState.selectedIds.length < 3) {
+      console.warn("⚠️ Need at least 3 objects to distribute");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const distributedObjects =
+      alignmentHelpers.distributeHorizontal(selectedObjects);
+    await applyAlignmentUpdates(distributedObjects);
+  };
+
+  /**
+   * Distribute selected objects evenly vertically
+   */
+  const distributeSelectedVertical = async () => {
+    if (canvasState.selectedIds.length < 3) {
+      console.warn("⚠️ Need at least 3 objects to distribute");
+      return;
+    }
+
+    const selectedObjects = canvasState.objects.filter((obj) =>
+      canvasState.selectedIds.includes(obj.id)
+    );
+    const distributedObjects =
+      alignmentHelpers.distributeVertical(selectedObjects);
+    await applyAlignmentUpdates(distributedObjects);
+  };
+
   const value: CanvasContextType = {
     ...canvasState,
     setViewport,
@@ -1644,6 +1872,14 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     sendToBack,
     updateObjectZIndex,
     getObjectsByZIndex,
+    alignSelectedLeft,
+    alignSelectedRight,
+    alignSelectedTop,
+    alignSelectedBottom,
+    alignSelectedHorizontalCenter,
+    alignSelectedVerticalMiddle,
+    distributeSelectedHorizontal,
+    distributeSelectedVertical,
   };
 
   return (
