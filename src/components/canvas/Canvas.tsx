@@ -274,7 +274,12 @@ export default function Canvas() {
   const handleExport = async (options: ExportOptions) => {
     try {
       if (options.format === "png") {
-        await exportToPNG(stageRef.current, options);
+        // Include viewport information for accurate selection export
+        const exportOptionsWithViewport = {
+          ...options,
+          viewport: { x: viewport.x, y: viewport.y, scale: viewport.scale },
+        };
+        await exportToPNG(stageRef.current, exportOptionsWithViewport);
       } else if (options.format === "svg") {
         // Get objects to export
         const objectsToExport =
