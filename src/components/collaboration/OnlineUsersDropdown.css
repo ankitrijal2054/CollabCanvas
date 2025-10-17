@@ -1,0 +1,274 @@
+/* OnlineUsersDropdown - Header component showing online users with hover dropdown */
+
+.online-users-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Button styling - matches user-section appearance */
+.online-users-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  font-size: 14px;
+  color: #111827;
+  white-space: nowrap;
+  min-height: 48px; /* Match user-section height (36px avatar + 12px padding) */
+  box-sizing: border-box;
+}
+
+.online-users-button:hover {
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.online-users-button:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.online-users-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.online-users-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.online-users-count {
+  font-size: 12px;
+  font-weight: 600;
+  background: #111827;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.online-users-arrow {
+  font-size: 10px;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.online-users-dropdown:hover .online-users-arrow {
+  transform: rotate(180deg);
+}
+
+/* Dropdown panel */
+.online-users-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 260px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: all 0.2s ease;
+  z-index: 1001;
+  max-height: 400px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.online-users-dropdown:hover .online-users-list {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* Keep dropdown visible when hovering over it */
+.online-users-list:hover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Dropdown header */
+.online-users-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  flex-shrink: 0;
+}
+
+.online-users-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.online-users-list-count {
+  font-size: 12px;
+  font-weight: 600;
+  background: #111827;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* Loading state */
+.online-users-loading {
+  padding: 16px;
+}
+
+.loading-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skeleton-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.skeleton-bar {
+  height: 10px;
+  flex: 1;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+/* Empty state */
+.online-users-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* User list */
+.online-users-items {
+  list-style: none;
+  padding: 8px;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.online-user-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.online-user-item:hover {
+  background-color: #f9fafb;
+}
+
+.online-user-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.online-user-name {
+  font-size: 13px;
+  color: #111827;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Custom scrollbar for user list */
+.online-users-items::-webkit-scrollbar {
+  width: 6px;
+}
+
+.online-users-items::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.online-users-items::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.online-users-items::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .online-users-text {
+    display: none; /* Hide "Online Users" text on smaller screens */
+  }
+
+  .online-users-button {
+    padding: 6px 10px;
+  }
+
+  .online-users-list {
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 640px) {
+  .online-users-button {
+    padding: 6px 8px;
+  }
+
+  .online-users-icon {
+    font-size: 14px;
+  }
+
+  .online-users-count {
+    font-size: 11px;
+    padding: 1px 6px;
+  }
+
+  .online-users-arrow {
+    display: none;
+  }
+}

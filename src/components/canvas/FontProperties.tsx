@@ -3,7 +3,12 @@ import { useCanvas } from "../../contexts/CanvasContext";
 import { useSyncOperations } from "../../hooks/useRealtimeSync";
 import { useAuth } from "../../hooks/useAuth";
 import { offlineQueue } from "../../utils/offlineQueue";
-import type { TextObject } from "../../types/canvas.types";
+import {
+  BLEND_MODES,
+  DEFAULT_OPACITY,
+  DEFAULT_BLEND_MODE,
+} from "../../constants/canvas";
+import type { TextObject, BlendMode } from "../../types/canvas.types";
 import "./FontProperties.css";
 
 /**
@@ -33,6 +38,12 @@ export const FontProperties: React.FC = () => {
   const [fontStyle, setFontStyle] = useState(textObject?.fontStyle || "normal");
   const [textAlign, setTextAlign] = useState(textObject?.textAlign || "left");
   const [textColor, setTextColor] = useState(textObject?.color || "#000000");
+  const [opacity, setOpacity] = useState(
+    textObject?.opacity ?? DEFAULT_OPACITY
+  );
+  const [blendMode, setBlendMode] = useState<BlendMode>(
+    textObject?.blendMode ?? DEFAULT_BLEND_MODE
+  );
 
   // Refs for debouncing
   const debounceTimerRef = useRef<number | null>(null);
@@ -46,6 +57,8 @@ export const FontProperties: React.FC = () => {
       setFontStyle(textObject.fontStyle || "normal");
       setTextAlign(textObject.textAlign || "left");
       setTextColor(textObject.color || "#000000");
+      setOpacity(textObject.opacity ?? DEFAULT_OPACITY);
+      setBlendMode(textObject.blendMode ?? DEFAULT_BLEND_MODE);
     }
   }, [textObject?.id]); // Only run when selection changes
 
@@ -165,6 +178,25 @@ export const FontProperties: React.FC = () => {
   };
 
   /**
+   * Handle opacity change
+   */
+  const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newOpacity = parseFloat(e.target.value) / 100; // Convert 0-100 to 0-1
+    setOpacity(newOpacity);
+    debouncedSync({ opacity: newOpacity });
+  };
+
+  /**
+   * Handle blend mode change
+   */
+  const handleBlendModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBlendMode = e.target.value as BlendMode;
+    setBlendMode(newBlendMode);
+    // No debounce for dropdown - sync immediately
+    syncChanges({ blendMode: newBlendMode });
+  };
+
+  /**
    * Clear debounce timer on unmount
    */
   useEffect(() => {
@@ -182,10 +214,6 @@ export const FontProperties: React.FC = () => {
 
   return (
     <div className="font-properties">
-      <div className="font-properties-header">
-        <h3>Text Properties</h3>
-      </div>
-
       <div className="font-properties-content">
         {/* Font Family Dropdown */}
         <div className="property-group">
@@ -355,6 +383,45 @@ export const FontProperties: React.FC = () => {
               placeholder="#000000"
             />
           </div>
+        </div>
+
+        {/* Separator */}
+        <div className="property-separator" />
+
+        {/* Opacity Slider */}
+        <div className="property-group">
+          <label htmlFor="opacity">
+            Opacity
+            <span className="property-value">{Math.round(opacity * 100)}%</span>
+          </label>
+          <input
+            id="opacity"
+            type="range"
+            min="0"
+            max="100"
+            value={Math.round(opacity * 100)}
+            onChange={handleOpacityChange}
+            disabled={isCanvasDisabled}
+            className="opacity-slider"
+          />
+        </div>
+
+        {/* Blend Mode Dropdown */}
+        <div className="property-group">
+          <label htmlFor="blend-mode">Blend Mode</label>
+          <select
+            id="blend-mode"
+            value={blendMode}
+            onChange={handleBlendModeChange}
+            disabled={isCanvasDisabled}
+            className="blend-mode-select"
+          >
+            {BLEND_MODES.map((mode) => (
+              <option key={mode.value} value={mode.value}>
+                {mode.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

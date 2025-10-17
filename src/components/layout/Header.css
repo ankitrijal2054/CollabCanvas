@@ -17,11 +17,12 @@
   gap: 16px;
 }
 
-/* Left section: User info with status */
+/* Left section: User info + Online Users dropdown */
 .header-left {
   flex: 1;
   display: flex;
   align-items: center;
+  gap: 12px; /* Space between user-section and online-users-dropdown */
   min-width: 0; /* Allow text truncation */
 }
 
@@ -35,6 +36,8 @@
   border: 1px solid #e5e7eb;
   min-width: 0;
   transition: all 0.2s ease;
+  min-height: 48px; /* Explicit height for consistency */
+  box-sizing: border-box;
 }
 
 .user-section:hover {

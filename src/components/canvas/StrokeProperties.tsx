@@ -3,6 +3,12 @@ import { useCanvas } from "../../contexts/CanvasContext";
 import { useSyncOperations } from "../../hooks/useRealtimeSync";
 import { useAuth } from "../../hooks/useAuth";
 import { offlineQueue } from "../../utils/offlineQueue";
+import {
+  BLEND_MODES,
+  DEFAULT_OPACITY,
+  DEFAULT_BLEND_MODE,
+} from "../../constants/canvas";
+import type { BlendMode } from "../../types/canvas.types";
 import "./StrokeProperties.css";
 
 /**
@@ -27,6 +33,12 @@ export const StrokeProperties: React.FC = () => {
   const [strokeWidth, setStrokeWidth] = useState(
     selectedObject?.strokeWidth || 0
   );
+  const [opacity, setOpacity] = useState(
+    selectedObject?.opacity ?? DEFAULT_OPACITY
+  );
+  const [blendMode, setBlendMode] = useState<BlendMode>(
+    selectedObject?.blendMode ?? DEFAULT_BLEND_MODE
+  );
 
   // Refs for debouncing
   const debounceTimerRef = useRef<number | null>(null);
@@ -37,6 +49,8 @@ export const StrokeProperties: React.FC = () => {
       setFillColor(selectedObject.color);
       setStrokeColor(selectedObject.stroke || "#000000");
       setStrokeWidth(selectedObject.strokeWidth || 0);
+      setOpacity(selectedObject.opacity ?? DEFAULT_OPACITY);
+      setBlendMode(selectedObject.blendMode ?? DEFAULT_BLEND_MODE);
     }
   }, [selectedObject?.id]); // Only run when selection changes
 
@@ -48,6 +62,8 @@ export const StrokeProperties: React.FC = () => {
       color?: string;
       stroke?: string;
       strokeWidth?: number;
+      opacity?: number;
+      blendMode?: BlendMode;
     }) => {
       if (!selectedObject || isCanvasDisabled) return;
 
@@ -90,7 +106,13 @@ export const StrokeProperties: React.FC = () => {
    * Debounce helper - delays sync by 300ms after last change
    */
   const debouncedSync = useCallback(
-    (updates: { color?: string; stroke?: string; strokeWidth?: number }) => {
+    (updates: {
+      color?: string;
+      stroke?: string;
+      strokeWidth?: number;
+      opacity?: number;
+      blendMode?: BlendMode;
+    }) => {
       // Clear existing timer
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
@@ -132,6 +154,25 @@ export const StrokeProperties: React.FC = () => {
   };
 
   /**
+   * Handle opacity change
+   */
+  const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newOpacity = parseFloat(e.target.value) / 100; // Convert 0-100 to 0-1
+    setOpacity(newOpacity);
+    debouncedSync({ opacity: newOpacity });
+  };
+
+  /**
+   * Handle blend mode change
+   */
+  const handleBlendModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newBlendMode = e.target.value as BlendMode;
+    setBlendMode(newBlendMode);
+    // No debounce for dropdown - sync immediately
+    syncChanges({ blendMode: newBlendMode });
+  };
+
+  /**
    * Clear debounce timer on unmount
    */
   useEffect(() => {
@@ -152,10 +193,6 @@ export const StrokeProperties: React.FC = () => {
 
   return (
     <div className="stroke-properties">
-      <div className="stroke-properties-header">
-        <h3>Properties</h3>
-      </div>
-
       <div className="stroke-properties-content">
         {/* Fill Color - hide for lines */}
         {!isLine && (
@@ -239,6 +276,45 @@ export const StrokeProperties: React.FC = () => {
             disabled={isCanvasDisabled}
             className="stroke-width-slider"
           />
+        </div>
+
+        {/* Separator */}
+        <div className="property-separator" />
+
+        {/* Opacity Slider */}
+        <div className="property-group">
+          <label htmlFor="opacity">
+            Opacity
+            <span className="property-value">{Math.round(opacity * 100)}%</span>
+          </label>
+          <input
+            id="opacity"
+            type="range"
+            min="0"
+            max="100"
+            value={Math.round(opacity * 100)}
+            onChange={handleOpacityChange}
+            disabled={isCanvasDisabled}
+            className="opacity-slider"
+          />
+        </div>
+
+        {/* Blend Mode Dropdown */}
+        <div className="property-group">
+          <label htmlFor="blend-mode">Blend Mode</label>
+          <select
+            id="blend-mode"
+            value={blendMode}
+            onChange={handleBlendModeChange}
+            disabled={isCanvasDisabled}
+            className="blend-mode-select"
+          >
+            {BLEND_MODES.map((mode) => (
+              <option key={mode.value} value={mode.value}>
+                {mode.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

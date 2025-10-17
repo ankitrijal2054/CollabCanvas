@@ -72,8 +72,7 @@ export default function Canvas() {
     alignSelectedBottom,
     alignSelectedHorizontalCenter,
     alignSelectedVerticalMiddle,
-    distributeSelectedHorizontal,
-    distributeSelectedVertical,
+    // Note: distributeSelected* functions are used by AlignmentToolbar, not directly here
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -296,13 +295,13 @@ export default function Canvas() {
           originalSelection.forEach((id) => toggleSelection(id)); // Then add all back
         }
       } else if (options.format === "svg") {
-        // Get objects to export
+        // Get objects to export (filtering handled here, not in exportToSVG)
         const objectsToExport =
           options.scope === "selection" && options.selectedObjects
             ? options.selectedObjects
             : objects;
 
-        await exportToSVG(objectsToExport, options.scope);
+        await exportToSVG(objectsToExport);
       }
       console.log(`✅ Export completed: ${options.format.toUpperCase()}`);
     } catch (error) {

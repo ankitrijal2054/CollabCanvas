@@ -404,6 +404,8 @@ function TextShape({
           object.fontWeight || "normal"
         }`}
         fill={object.color || "#000000"}
+        opacity={object.opacity ?? 1.0}
+        globalCompositeOperation={object.blendMode ?? "source-over"}
         align={object.textAlign || "left"}
         width={object.width || 200}
         height={object.height || 24}

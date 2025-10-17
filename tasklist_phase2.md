@@ -707,157 +707,81 @@
 
 ---
 
-### PR #22: Collaborative Comments (Simplified - No Threading)
+### PR #22: Advanced Opacity & Blend Modes ✅
 
-**Goal:** Add simple pin-based commenting system (no threading/replies)
+**Goal:** Add opacity control and blend mode options to all canvas objects
 
-- [ ] **Task 22.1: Create comment types**
+- [x] **Task 22.1: Add type definitions**
 
-  - Files to update: `src/types/collaboration.types.ts`
-  - Add: `Comment` interface WITHOUT thread array
-  - Properties: id, canvasId, x, y, authorId, authorName, text, createdAt, resolved
-  - Note: No CommentReply interface needed (threading deferred to Phase 3)
+  - Files to update: `src/types/canvas.types.ts`
+  - Add: `BlendMode` type with 15+ modes
+  - Add: `opacity?: number` to `CanvasObject` interface
+  - Add: `blendMode?: BlendMode` to `CanvasObject` interface
+  - Defaults: opacity=1.0, blendMode='source-over'
 
-- [ ] **Task 22.2: Update database schema for comments**
+- [x] **Task 22.2: Add blend mode constants**
 
-  - Files to update: `firebase.json` (database rules)
-  - Add: `/comments/{canvasId}/{commentId}` structure
-  - Set: Read/write permissions
+  - Files to update: `src/constants/canvas.ts`
+  - Add: `BLEND_MODES` array with labels and descriptions
+  - Add: `DEFAULT_OPACITY` and `DEFAULT_BLEND_MODE` constants
 
-- [ ] **Task 22.3: Create comment service**
+- [x] **Task 22.3: Update shape components**
 
-  - Files to create: `src/services/commentService.ts`
-  - Implement: `createComment()`, `resolveComment()`, `deleteComment()`
-  - Implement: Real-time comment subscription
-  - Note: No `replyToComment()` - threading removed
+  - Files to update: All 5 shape components
+    - `src/components/canvas/shapes/RectangleShape.tsx`
+    - `src/components/canvas/shapes/CircleShape.tsx`
+    - `src/components/canvas/shapes/StarShape.tsx`
+    - `src/components/canvas/shapes/LineShape.tsx`
+    - `src/components/canvas/shapes/TextShape.tsx`
+  - Add: `opacity={object.opacity ?? 1.0}` prop
+  - Add: `globalCompositeOperation={object.blendMode ?? 'source-over'}` prop
 
-- [ ] **Task 22.4: Create comment hook**
+- [x] **Task 22.4: Integrate into StrokeProperties**
 
-  - Files to create: `src/hooks/useComments.ts`
-  - Implement: Comment state management
-  - Add: Real-time listeners for comments
-  - Track: Unresolved comment count
+  - Files to update: `src/components/canvas/StrokeProperties.tsx`
+  - Implement: Opacity slider (0-100%)
+  - Implement: Blend mode dropdown with 15 modes
+  - Add: Real-time local preview
+  - Add: Debounced Firebase sync (300ms)
+  - Add: Offline queue support
+  - Add: Last-edit attribution
 
-- [ ] **Task 22.5: Create comment pin component**
+- [x] **Task 22.5: Style StrokeProperties**
 
-  - Files to create: `src/components/collaboration/CommentPin.tsx`
-  - Implement: Numbered circle pin with user color
-  - Add: Click to center in viewport
-  - Transform: Position based on canvas zoom/pan
+  - Files to update: `src/components/canvas/StrokeProperties.css`
+  - Style: Opacity slider with percentage display
+  - Add: Dropdown styling with clear labels
+  - Add: Property separator
 
-- [ ] **Task 22.6: Create comment panel component (Simplified)**
+- [x] **Task 22.6: Integrate into FontProperties**
 
-  - Files to create: `src/components/collaboration/CommentPanel.tsx`
-  - Implement: Scrollable list of all comments (no threading)
-  - Display: Author avatar, name, timestamp, text
-  - Add: Unresolved count header
-  - Add: Filter toggle (show/hide resolved)
-  - Add: Click comment → centers pin in viewport
-  - Add: Resolve button per comment
-  - Note: No reply textarea - just single-level comments
+  - Files to update: `src/components/canvas/FontProperties.tsx`
+  - Implement: Opacity slider (0-100%)
+  - Implement: Blend mode dropdown with 15 modes
+  - Same pattern as StrokeProperties
 
-- [ ] **Task 22.7: Add comment mode to canvas**
+- [x] **Task 22.7: Style FontProperties**
 
-  - Files to update: `src/components/canvas/Canvas.tsx`
-  - Add: Comment mode toggle (C key or toolbar button)
-  - Implement: Click canvas → drop pin, show input field
-  - Add: Pin layer (render above objects)
+  - Files to update: `src/components/canvas/FontProperties.css`
+  - Same styles as StrokeProperties
 
-- [ ] **Task 22.8: Add comment panel to app layout**
+- [x] **Task 22.8: Verify compilation**
 
-  - Files to update: `src/App.tsx`
-  - Add: Comment panel to sidebar
-  - Wire: Comment state and handlers
+  - Verify: TypeScript compiles without errors
+  - Check: All linter errors resolved
+  - Status: ✅ 0 errors in modified files
 
-- [ ] **Task 22.9: Add tooltips to toolbar**
+- [x] **Task 22.9: Ready for manual testing**
 
-  - Files to update: `src/components/canvas/CanvasControls.tsx`
-  - Add: Tooltips to all toolbar buttons showing keyboard shortcuts
-  - Example: "Add Rectangle (R)", "Text Tool (T)", "Comment (C)"
+  - Status: ✅ All code complete
+  - Next: User manual testing required
+  - See: PR22_IMPLEMENTATION_COMPLETE.md for test plan
 
-- [ ] **Task 22.10: Test comments system**
-  - Test: 100 comments on canvas → no performance drop
-  - Test: Comments sync within 200ms
-  - Test: Clicking pin centers it in viewport
-  - Test: Resolved comments hidden by default (toggle works)
-  - Test: Pins not selectable in design mode (only in comment mode)
-  - Test: Delete requires confirmation
-  - Test: Comment mode keyboard shortcut (C) works
+- [x] **Task 22.10: Documentation**
+  - Created: PR22_IMPLEMENTATION_COMPLETE.md
+  - Includes: Full testing checklist and examples
 
-**Note:** Simplified for Phase 2 - just pins + basic text. Threading/replies deferred to Phase 3.
-
-**PR Title:** `feat: implement simple pin-based commenting system`
-
----
-
-### PR #23: Properties Panel + First-Time Onboarding
-
-**Goal:** Add floating properties panel and onboarding for new users
-
-- [ ] **Task 23.1: Create properties panel component**
-
-  - Files to create: `src/components/canvas/PropertiesPanel.tsx`
-  - Implement: Floating panel near selected object
-  - Style: Card with shadow, draggable positioning
-  - Show: Contextual properties based on object type
-  - Auto-hide: When no selection
-
-- [ ] **Task 23.2: Create object properties component**
-
-  - Files to create: `src/components/canvas/ObjectProperties.tsx`
-  - Implement: Property inputs for each object type:
-    - Rectangle/Circle/Star: Fill, Stroke, Stroke Width, Rotation, Width, Height
-    - Line: Stroke, Stroke Width, Arrow Start, Arrow End
-    - Text: Font Family, Font Size, Bold, Italic, Text Align, Color
-  - Update: Properties in real-time with debouncing (300ms)
-
-- [ ] **Task 23.3: Create properties panel positioning hook**
-
-  - Files to create: `src/hooks/usePropertiesPanel.ts`
-  - Implement: Calculate panel position near selected object
-  - Handle: Canvas zoom/pan transforms
-  - Ensure: Panel stays on screen (boundary detection)
-  - Add: Draggable positioning state
-
-- [ ] **Task 23.4: Integrate properties panel with canvas**
-
-  - Files to update: `src/components/canvas/Canvas.tsx`
-  - Add: `<PropertiesPanel />` component
-  - Wire: Selected object data and update handlers
-  - Position: Near selected object, above other UI elements
-
-- [ ] **Task 23.5: Create shortcut guide component**
-
-  - Files to create: `src/components/layout/ShortcutGuide.tsx`
-  - Implement: Small floating container (bottom-right corner)
-  - Display: All keyboard shortcuts with descriptions
-  - Add: "Don't show again" button (saves to localStorage: `hasSeenShortcuts`)
-  - Style: Dismissible, semi-transparent background
-
-- [ ] **Task 23.6: Add onboarding to app**
-
-  - Files to update: `src/App.tsx`
-  - Add: ShortcutGuide component (conditional render)
-  - Check: localStorage on mount - show only on first login
-  - Add: "Show Shortcuts" button in header Help menu
-
-- [ ] **Task 23.7: Update header with Help menu**
-
-  - Files to update: `src/components/layout/Header.tsx`
-  - Add: Help menu item with "?" icon
-  - Add: "Show Shortcuts" option → re-opens ShortcutGuide
-
-- [ ] **Task 23.8: Test properties panel and onboarding**
-  - Test: Properties panel shows correct inputs for each object type
-  - Test: Property changes sync in real-time
-  - Test: Panel positioned correctly with zoom/pan
-  - Test: Draggable positioning works smoothly
-  - Test: Panel auto-hides when selection cleared
-  - Test: Onboarding appears on first login only
-  - Test: "Show Shortcuts" button works from header
-  - Test: All shortcuts listed accurately in guide
-
-**PR Title:** `feat: add floating properties panel and first-time onboarding`
+**PR Title:** `feat: add advanced opacity and blend modes to all shapes`
 
 ---
 

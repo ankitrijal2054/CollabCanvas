@@ -1,7 +1,7 @@
 /* Left Sidebar styling */
 
 .sidebar {
-  width: 260px;
+  width: 280px; /* Slightly wider since we have more space */
   background-color: #fff;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -16,17 +16,10 @@
   min-height: 0; /* Allow flex shrinking */
 }
 
-/* Online Users section (top) - flexible */
-.sidebar-online-users {
+/* Properties section - full height (no online users section anymore) */
+.sidebar-properties-full {
   flex: 1;
-  min-height: 200px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-/* Properties section (bottom) - flexible */
-.sidebar-properties {
-  flex: 1;
-  min-height: 200px;
+  height: 100%; /* Take all available vertical space */
 }
 
 .sidebar-section-title {
@@ -46,7 +39,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 12px;
+  padding: 16px; /* Slightly more padding with extra space */
   min-height: 0;
 }
 
@@ -86,13 +79,13 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 240px;
+    width: 260px;
   }
 }
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 200px;
+    width: 240px;
   }
 
   .sidebar-section-title {
@@ -101,6 +94,6 @@
   }
 
   .sidebar-section-content {
-    padding: 10px;
+    padding: 12px;
   }
 }

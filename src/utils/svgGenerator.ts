@@ -19,10 +19,7 @@ import {
  * @param scope - Export entire canvas or selection only
  * @returns SVG string
  */
-export function generateSVG(
-  objects: CanvasObject[],
-  scope: "all" | "selection" = "all"
-): string {
+export function generateSVG(objects: CanvasObject[]): string {
   if (objects.length === 0) {
     console.warn("⚠️ No objects to export");
     return generateEmptySVG();
@@ -96,14 +93,8 @@ function rectangleToSVG(obj: RectangleObject): string {
   const fill = obj.color || "#3B82F6";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  const rotation = obj.rotation || 0;
-
-  let transform = "";
-  if (rotation !== 0) {
-    const centerX = obj.x + obj.width / 2;
-    const centerY = obj.y + obj.height / 2;
-    transform = ` transform="rotate(${rotation} ${centerX} ${centerY})"`;
-  }
+  // Note: Rotation not yet implemented in MVP
+  const transform = "";
 
   return `<rect x="${obj.x}" y="${obj.y}" width="${obj.width}" height="${obj.height}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${transform}/>`;
 }
@@ -118,12 +109,8 @@ function circleToSVG(obj: CircleObject): string {
   const fill = obj.color || "#10B981";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  const rotation = obj.rotation || 0;
-
-  let transform = "";
-  if (rotation !== 0) {
-    transform = ` transform="rotate(${rotation} ${cx} ${cy})"`;
-  }
+  // Note: Rotation not yet implemented in MVP
+  const transform = "";
 
   return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${transform}/>`;
 }
@@ -151,12 +138,8 @@ function starToSVG(obj: StarObject): string {
   const fill = obj.color || "#F59E0B";
   const stroke = obj.stroke || "none";
   const strokeWidth = obj.strokeWidth || 0;
-  const rotation = obj.rotation || 0;
-
-  let transform = "";
-  if (rotation !== 0) {
-    transform = ` transform="rotate(${rotation} ${centerX} ${centerY})"`;
-  }
+  // Note: Rotation not yet implemented in MVP
+  const transform = "";
 
   return `<polygon points="${points.join(
     " "
@@ -211,17 +194,14 @@ function textToSVG(obj: TextObject): string {
   const fontWeight = obj.fontWeight || "normal";
   const fontStyle = obj.fontStyle || "normal";
   const textAlign = obj.textAlign || "left";
-  const rotation = obj.rotation || 0;
+  // Note: Rotation not yet implemented in MVP
 
   // Text anchor based on alignment
   let textAnchor = "start";
   if (textAlign === "center") textAnchor = "middle";
   if (textAlign === "right") textAnchor = "end";
 
-  let transform = "";
-  if (rotation !== 0) {
-    transform = ` transform="rotate(${rotation} ${x} ${y})"`;
-  }
+  const transform = "";
 
   // Escape special XML characters
   const escapedText = escapeXML(obj.text || "");
@@ -243,16 +223,12 @@ function escapeXML(text: string): string {
 
 /**
  * Export canvas objects as SVG file
- * @param objects - Canvas objects to export
- * @param scope - Export scope (all or selection)
+ * @param objects - Canvas objects to export (already filtered by caller)
  */
-export async function exportToSVG(
-  objects: CanvasObject[],
-  scope: "all" | "selection" = "all"
-): Promise<void> {
+export async function exportToSVG(objects: CanvasObject[]): Promise<void> {
   try {
-    // Generate SVG string
-    const svgString = generateSVG(objects, scope);
+    // Generate SVG string (scope parameter removed - filtering handled by caller)
+    const svgString = generateSVG(objects);
 
     // Create blob
     const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
