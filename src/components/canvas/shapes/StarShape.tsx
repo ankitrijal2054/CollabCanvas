@@ -462,7 +462,7 @@ function StarShape({
             "bottom-left",
             "bottom-right",
           ]}
-          rotateEnabled={true}
+          rotateEnabled={selectedIds.length === 1}
           rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           keepRatio={true} // Force proportional scaling
         />

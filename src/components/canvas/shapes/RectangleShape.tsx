@@ -455,7 +455,7 @@ function RectangleShape({
             "bottom-center",
             "bottom-right",
           ]}
-          rotateEnabled={true}
+          rotateEnabled={selectedIds.length === 1}
           rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
           keepRatio={false} // Allow free transformation
         />
