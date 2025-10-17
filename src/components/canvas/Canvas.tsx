@@ -14,6 +14,7 @@ import { canvasHelpers } from "../../utils/canvasHelpers";
 import Header from "../layout/Header";
 import Sidebar from "../layout/Sidebar";
 import CanvasToolbar from "./CanvasToolbar";
+import { AlignmentToolbar } from "./AlignmentToolbar";
 import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
@@ -61,6 +62,15 @@ export default function Canvas() {
     sendBackward,
     bringToFront,
     sendToBack,
+    // Alignment operations
+    alignSelectedLeft,
+    alignSelectedRight,
+    alignSelectedTop,
+    alignSelectedBottom,
+    alignSelectedHorizontalCenter,
+    alignSelectedVerticalMiddle,
+    distributeSelectedHorizontal,
+    distributeSelectedVertical,
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
@@ -104,6 +114,14 @@ export default function Canvas() {
       onSendBackward: sendBackward,
       onBringToFront: bringToFront,
       onSendToBack: sendToBack,
+
+      // Alignment operations
+      onAlignLeft: alignSelectedLeft,
+      onAlignCenter: alignSelectedHorizontalCenter,
+      onAlignRight: alignSelectedRight,
+      onAlignTop: alignSelectedTop,
+      onAlignMiddle: alignSelectedVerticalMiddle,
+      onAlignBottom: alignSelectedBottom,
 
       // Help
       onHelp: () => setIsHelpOpen(true),
@@ -857,6 +875,9 @@ export default function Canvas() {
               onClose={() => setContextMenu(null)}
             />
           )}
+
+          {/* Alignment Toolbar - Bottom */}
+          <AlignmentToolbar />
         </div>
 
         {/* Right Sidebar: Layers Panel */}
