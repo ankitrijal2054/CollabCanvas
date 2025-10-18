@@ -84,6 +84,9 @@ export interface CanvasObject {
   blendMode?: BlendMode; // Blend mode for color mixing (default: 'source-over' = normal)
   // Rotation (Phase 2 - PR #17)
   rotation?: number; // Rotation angle in degrees (0-360, default: 0)
+  // AI attribution fields (Phase 3 - PR #24)
+  aiRequestedBy?: string; // User ID who requested AI operation
+  aiOperationId?: string; // Groups objects from same AI command (for undo)
 }
 
 /**
