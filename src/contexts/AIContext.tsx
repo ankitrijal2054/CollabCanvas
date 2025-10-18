@@ -2,6 +2,8 @@
  * AI Context - Manages AI command state and execution
  *
  * Provides AI chat functionality to the application
+ *
+ * PR #27: Added ReAct loop for multi-step reasoning
  */
 
 import {
@@ -17,6 +19,9 @@ import type {
   QueuedAICommand,
   AIState,
   ConversationMessage,
+  OpenAIMessage,
+  ToolExecutionResult,
+  ReActConfig,
 } from "../types/ai.types";
 import {
   sendAICommand,
@@ -26,7 +31,7 @@ import {
 import { authService } from "../services/authService";
 import { AICommandQueue, generateCommandId } from "../utils/aiCommandQueue";
 import {
-  executeToolCalls,
+  executeToolCallsWithResults,
   type CanvasContextForTools,
 } from "../utils/aiToolExecutor";
 import { useAuth } from "../hooks/useAuth";
@@ -63,6 +68,35 @@ interface AIProviderProps {
  */
 const MESSAGE_HISTORY_KEY = "collabcanvas_ai_messages";
 const MAX_STORED_MESSAGES = 10;
+
+/**
+ * ReAct Loop Configuration (PR #27)
+ *
+ * Can be overridden via environment variables:
+ * - VITE_AI_REACT_MAX_ITERATIONS
+ * - VITE_AI_REACT_ENABLED
+ */
+const REACT_CONFIG: ReActConfig = {
+  maxIterations: Number(import.meta.env.VITE_AI_REACT_MAX_ITERATIONS) || 5,
+  continueOnQueryTools: import.meta.env.VITE_AI_REACT_ENABLED !== "false", // Default: true
+  showProgress: true, // Show iteration progress in UI
+};
+
+// Log ReAct configuration on initialization
+console.log("[AI Context] ReAct Configuration:", {
+  maxIterations: REACT_CONFIG.maxIterations,
+  continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
+  showProgress: REACT_CONFIG.showProgress,
+});
+
+/**
+ * Query tools that trigger continuation in ReAct loop
+ */
+const QUERY_TOOLS = new Set([
+  "getCanvasState",
+  "findShapesByColor",
+  "findShapesByType",
+]);
 
 /**
  * AI Provider Component
@@ -129,7 +163,51 @@ export function AIProvider({ children }: AIProviderProps) {
   );
 
   /**
-   * Send AI command
+   * Check if any query tools were used (triggers ReAct continuation)
+   */
+  const usedQueryTools = useCallback((toolNames: string[]): boolean => {
+    return toolNames.some((name) => QUERY_TOOLS.has(name));
+  }, []);
+
+  /**
+   * Convert tool execution results to OpenAI tool message format
+   */
+  const formatToolResultsForAI = useCallback(
+    (results: ToolExecutionResult[]): string => {
+      return results
+        .map((result) => {
+          const parts = [
+            `Tool: ${result.tool}`,
+            `Status: ${result.success ? "Success" : "Failed"}`,
+            `Message: ${result.message}`,
+          ];
+
+          // Include structured data for query tools
+          if (result.data) {
+            parts.push(`Data: ${JSON.stringify(result.data, null, 2)}`);
+          }
+
+          // Include object IDs for action tools
+          if (result.objectsCreated && result.objectsCreated.length > 0) {
+            parts.push(`Created IDs: ${result.objectsCreated.join(", ")}`);
+          }
+          if (result.objectsModified && result.objectsModified.length > 0) {
+            parts.push(`Modified IDs: ${result.objectsModified.join(", ")}`);
+          }
+
+          if (result.error) {
+            parts.push(`Error: ${result.error}`);
+          }
+
+          return parts.join("\n");
+        })
+        .join("\n\n---\n\n");
+    },
+    []
+  );
+
+  /**
+   * Send AI command with ReAct loop support
    */
   const sendCommand = useCallback(
     async (message: string) => {
@@ -214,68 +292,194 @@ export function AIProvider({ children }: AIProviderProps) {
             timestamp: msg.timestamp,
           }));
 
-        // Send command to server
-        const response = await sendAICommand(
-          {
-            message,
-            canvasId: DEFAULT_CANVAS_ID,
-            userId: user.id,
-            conversationHistory,
-          },
-          idToken
-        );
-
-        // Check if response is error
-        if (!response.success) {
-          console.error("[AI Context] AI command failed", {
-            commandId,
-            error: response,
-          });
-
-          // Mark command as failed
-          commandQueue.failCommand(commandId, response);
-
-          // Add error message to chat
-          const errorMessage = formatErrorMessage(response);
-          addMessage({
-            id: `${commandId}-error`,
-            role: "assistant",
-            content: errorMessage,
-            timestamp: Date.now(),
-            status: "error",
-            error: errorMessage,
-          });
-
-          // Update user message status
-          updateMessage(commandId, { status: "error", error: errorMessage });
-
-          return;
-        }
-
-        // Success - execute tool calls
-        console.log("[AI Context] Executing tool calls", {
+        // ===== ReAct LOOP IMPLEMENTATION (PR #27) =====
+        const reactStartTime = Date.now();
+        console.log("[AI Context] Starting ReAct loop", {
           commandId,
-          toolCallCount: response.toolCalls.length,
+          maxIterations: REACT_CONFIG.maxIterations,
+          continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
         });
 
-        await executeToolCalls(
-          response.toolCalls,
-          canvasContext as CanvasContextForTools,
-          user.id,
-          response.aiOperationId
-        );
+        let iteration = 0;
+        let shouldContinue = true;
+        let conversationContext: OpenAIMessage[] = [];
+        let allToolCalls: any[] = [];
+        let finalResponse = "";
+        let totalToolsExecuted = 0;
+
+        while (shouldContinue && iteration < REACT_CONFIG.maxIterations) {
+          iteration++;
+          console.log(
+            `[AI Context] ReAct iteration ${iteration}/${REACT_CONFIG.maxIterations}`
+          );
+
+          // Update UI with progress
+          updateMessage(commandId, {
+            status: "processing",
+            content: `Processing step ${iteration}/${REACT_CONFIG.maxIterations}...`,
+          });
+
+          // Send command to server (with conversation context for iterations > 1)
+          const response = await sendAICommand(
+            {
+              message,
+              canvasId: DEFAULT_CANVAS_ID,
+              userId: user.id,
+              conversationHistory,
+              conversationContext:
+                iteration > 1 ? conversationContext : undefined,
+            },
+            idToken
+          );
+
+          // Check if response is error
+          if (!response.success) {
+            console.error("[AI Context] AI command failed", {
+              commandId,
+              iteration,
+              error: response,
+            });
+
+            // Mark command as failed
+            commandQueue.failCommand(commandId, response);
+
+            // Add error message to chat
+            const errorMessage = formatErrorMessage(response);
+            addMessage({
+              id: `${commandId}-error`,
+              role: "assistant",
+              content: errorMessage,
+              timestamp: Date.now(),
+              status: "error",
+              error: errorMessage,
+            });
+
+            // Update user message status
+            updateMessage(commandId, { status: "error", error: errorMessage });
+
+            return;
+          }
+
+          // Store AI's response
+          finalResponse = response.aiResponse;
+
+          // Execute tool calls and get detailed results
+          console.log("[AI Context] Executing tool calls", {
+            commandId,
+            iteration,
+            toolCallCount: response.toolCalls.length,
+          });
+
+          const toolResults = await executeToolCallsWithResults(
+            response.toolCalls,
+            canvasContext as CanvasContextForTools,
+            user.id,
+            response.aiOperationId
+          );
+
+          // Track all tool calls for final display
+          allToolCalls.push(...response.toolCalls);
+          totalToolsExecuted += response.toolCalls.length;
+
+          // Check if we should continue (ReAct logic)
+          const toolNames = response.toolCalls.map((tc: any) => tc.tool);
+          const hadQueryTools = usedQueryTools(toolNames);
+
+          console.log("[AI Context] ReAct decision", {
+            iteration,
+            hadQueryTools,
+            toolNames,
+            continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
+          });
+
+          // Decide whether to continue
+          if (
+            REACT_CONFIG.continueOnQueryTools &&
+            hadQueryTools &&
+            iteration < REACT_CONFIG.maxIterations
+          ) {
+            console.log(
+              `[AI Context] Continuing ReAct loop (query tools used)`
+            );
+
+            // Build conversation context for next iteration
+            // Add assistant's tool calls
+            conversationContext.push({
+              role: "assistant",
+              content: response.aiResponse,
+              tool_calls: response.toolCalls.map((tc: any, idx: number) => ({
+                id: `call_${iteration}_${idx}`,
+                type: "function",
+                function: {
+                  name: tc.tool,
+                  arguments: JSON.stringify(tc.parameters),
+                },
+              })),
+            });
+
+            // Add tool results as "tool" messages
+            const toolResultMessage = formatToolResultsForAI(toolResults);
+            conversationContext.push({
+              role: "tool",
+              content: toolResultMessage,
+              tool_call_id: `call_${iteration}_0`, // Reference first tool call
+            });
+
+            shouldContinue = true;
+          } else {
+            console.log(`[AI Context] Stopping ReAct loop`, {
+              reason: !hadQueryTools ? "no query tools" : "max iterations",
+            });
+            shouldContinue = false;
+          }
+        }
+
+        // Calculate total execution time
+        const reactTotalTime = Date.now() - reactStartTime;
+
+        // ===== COMPREHENSIVE LOGGING SUMMARY (PR #27) =====
+        console.log("═══════════════════════════════════════════");
+        console.log("[AI Context] ReAct Loop Completed");
+        console.log("═══════════════════════════════════════════");
+        console.log("Summary:", {
+          commandId,
+          userMessage: message,
+          totalIterations: iteration,
+          maxIterations: REACT_CONFIG.maxIterations,
+          totalToolsExecuted,
+          uniqueTools: [...new Set(allToolCalls.map((tc: any) => tc.tool))],
+          totalExecutionTime: `${reactTotalTime}ms`,
+          averageTimePerIteration: `${Math.round(
+            reactTotalTime / iteration
+          )}ms`,
+          finalResponse: finalResponse.substring(0, 100) + "...",
+        });
+        console.log("Tool Breakdown:");
+        const toolCounts: Record<string, number> = {};
+        allToolCalls.forEach((tc: any) => {
+          toolCounts[tc.tool] = (toolCounts[tc.tool] || 0) + 1;
+        });
+        Object.entries(toolCounts).forEach(([tool, count]) => {
+          console.log(`  - ${tool}: ${count} call(s)`);
+        });
+        console.log("═══════════════════════════════════════════");
 
         // Mark command as complete
-        commandQueue.completeCommand(commandId, response);
+        commandQueue.completeCommand(commandId, {
+          success: true,
+          aiResponse: finalResponse,
+          toolCalls: allToolCalls,
+          aiOperationId: "",
+        });
 
-        // Add AI response to chat
+        // Add final AI response to chat
         const aiMessage: AIMessage = {
           id: `${commandId}-response`,
           role: "assistant",
-          content: response.aiResponse,
+          content: `${finalResponse}\n\n_Completed in ${iteration} step(s) • ${totalToolsExecuted} tool(s) • ${reactTotalTime}ms_`,
           timestamp: Date.now(),
           status: "completed",
-          toolCalls: response.toolCalls,
+          toolCalls: allToolCalls,
         };
         addMessage(aiMessage);
 
@@ -310,7 +514,16 @@ export function AIProvider({ children }: AIProviderProps) {
         updateMessage(commandId, { status: "error", error: errorMessage });
       }
     },
-    [user, messages, commandQueue, canvasContext, addMessage, updateMessage]
+    [
+      user,
+      messages,
+      commandQueue,
+      canvasContext,
+      addMessage,
+      updateMessage,
+      usedQueryTools,
+      formatToolResultsForAI,
+    ]
   );
 
   /**

@@ -15,12 +15,15 @@ export interface ConversationMessage {
 
 /**
  * AI Command Request sent to the server
+ *
+ * PR #27: Added conversationContext for ReAct loop
  */
 export interface AICommand {
   message: string;
   canvasId: string;
   userId: string;
   conversationHistory?: ConversationMessage[];
+  conversationContext?: OpenAIMessage[]; // For ReAct loop iterations
 }
 
 /**
@@ -150,4 +153,57 @@ export interface AIState {
   isProcessing: boolean;
   currentCommand: QueuedAICommand | null;
   commandHistory: CommandHistoryEntry[];
+}
+
+// ============================================
+// ReAct Loop Types (PR #27)
+// ============================================
+
+/**
+ * Tool execution result with data for feedback to AI
+ * Used in ReAct loop to feed results back to GPT-4
+ */
+export interface ToolExecutionResult {
+  tool: string;
+  toolCallId?: string;
+  success: boolean;
+  message: string;
+  data?: unknown; // Structured data from query tools (findShapes, getCanvasState)
+  objectsCreated?: string[];
+  objectsModified?: string[];
+  error?: string;
+}
+
+/**
+ * Tool category for ReAct loop control
+ * Query tools trigger continuation, action tools are terminal
+ */
+export type ToolCategory = "query" | "action";
+
+/**
+ * OpenAI conversation message format (full spec)
+ * Includes tool calls and tool responses
+ */
+export interface OpenAIMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_call_id?: string; // For tool response messages
+  name?: string; // Tool name for tool response messages
+}
+
+/**
+ * ReAct loop configuration
+ */
+export interface ReActConfig {
+  maxIterations: number; // Max iterations per command (default: 5)
+  continueOnQueryTools: boolean; // Continue if query tools used (default: true)
+  showProgress: boolean; // Show iteration progress to user (default: true)
 }

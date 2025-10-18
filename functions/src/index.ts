@@ -128,6 +128,7 @@ export const aichat = onRequest(
           canvasId,
           userId,
           conversationHistory = [],
+          conversationContext,
         } = body as AICommand;
 
         logger.info("Processing AI command", {
@@ -135,6 +136,8 @@ export const aichat = onRequest(
           canvasId,
           messageLength: message.length,
           historyLength: conversationHistory.length,
+          hasConversationContext: !!conversationContext,
+          contextLength: conversationContext?.length || 0,
         });
 
         // Check for OpenAI API key
@@ -179,12 +182,15 @@ export const aichat = onRequest(
         // Build system prompt with canvas context
         const systemPrompt = buildSystemPrompt(canvasStateText);
 
-        // Call OpenAI GPT-4 with tools
-        logger.info("Calling OpenAI API");
+        // Call OpenAI GPT-4 with tools (with conversationContext for ReAct)
+        logger.info("Calling OpenAI API", {
+          hasConversationContext: !!conversationContext,
+        });
         const openaiResponse = await callOpenAI({
           systemPrompt,
           userMessage: message,
           conversationHistory,
+          conversationContext, // For ReAct loop iterations
           tools,
           temperature: 0.7,
           maxTokens: 2000,

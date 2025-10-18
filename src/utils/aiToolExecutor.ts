@@ -2,6 +2,8 @@
  * AI Tool Executor - Executes AI tool calls via Canvas Context
  *
  * Maps each tool name to corresponding Canvas Context functions
+ *
+ * PR #27: Added executeToolCallsWithResults for ReAct loop
  */
 
 import type { ToolCall } from "../types/ai.types";
@@ -104,12 +106,28 @@ export interface CanvasContextForTools {
 }
 
 /**
- * Tool execution result
+ * Internal tool execution result (without tool name)
  */
-export interface ToolExecutionResult {
+interface InternalToolResult {
   success: boolean;
   message: string;
-  data?: any; // For query tools: structured data (shape IDs, objects, etc.)
+  data?: unknown; // Structured data from query tools
+  objectsCreated?: string[];
+  objectsModified?: string[];
+  error?: string;
+}
+
+/**
+ * Tool execution result with tool name
+ *
+ * Note: This matches the ToolExecutionResult in ai.types.ts
+ * Keep both interfaces in sync!
+ */
+export interface ToolExecutionResult {
+  tool: string; // Tool name (required for ReAct loop context)
+  success: boolean;
+  message: string;
+  data?: unknown; // For query tools: structured data (shape IDs, objects, etc.)
   objectsCreated?: string[];
   objectsModified?: string[];
   error?: string;
@@ -122,14 +140,14 @@ export interface ToolExecutionResult {
  * @param context - Canvas context with necessary functions
  * @param userId - User ID for attribution
  * @param aiOperationId - AI operation ID for grouping
- * @returns Execution result
+ * @returns Execution result (without tool name - added in executeToolCallsWithResults)
  */
 export async function executeToolCall(
   toolCall: ToolCall,
   context: CanvasContextForTools,
   userId: string,
   aiOperationId: string
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   console.log("[AI Tool Executor] Executing tool", {
     tool: toolCall.tool,
     parameters: toolCall.parameters,
@@ -240,14 +258,14 @@ export async function executeToolCall(
  * @param context - Canvas context
  * @param userId - User ID
  * @param aiOperationId - AI operation ID
- * @returns Combined execution result
+ * @returns Combined execution result (without tool names)
  */
 export async function executeToolCalls(
   toolCalls: ToolCall[],
   context: CanvasContextForTools,
   userId: string,
   aiOperationId: string
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   console.log("[AI Tool Executor] Executing tool calls", {
     count: toolCalls.length,
     tools: toolCalls.map((tc) => tc.tool),
@@ -301,6 +319,76 @@ export async function executeToolCalls(
   };
 }
 
+/**
+ * Execute multiple tool calls sequentially and return individual results
+ *
+ * This function is used by the ReAct loop to feed results back to the AI
+ * for multi-step reasoning. Each tool call's result is returned separately
+ * with structured data that the AI can use in subsequent iterations.
+ *
+ * @param toolCalls - Array of tool calls to execute
+ * @param context - Canvas context with necessary functions
+ * @param userId - User ID for attribution
+ * @param aiOperationId - AI operation ID for grouping
+ * @returns Array of individual tool execution results (one per tool call)
+ */
+export async function executeToolCallsWithResults(
+  toolCalls: ToolCall[],
+  context: CanvasContextForTools,
+  userId: string,
+  aiOperationId: string
+): Promise<ToolExecutionResult[]> {
+  console.log("[AI Tool Executor] Executing tool calls with results", {
+    count: toolCalls.length,
+    tools: toolCalls.map((tc) => tc.tool),
+  });
+
+  const results: ToolExecutionResult[] = [];
+
+  for (let i = 0; i < toolCalls.length; i++) {
+    const toolCall = toolCalls[i];
+
+    console.log(
+      `[AI Tool Executor] Executing tool ${i + 1}/${toolCalls.length}: ${
+        toolCall.tool
+      }`
+    );
+
+    const result = await executeToolCall(
+      toolCall,
+      context,
+      userId,
+      aiOperationId
+    );
+
+    // Add tool name to result for AI context
+    const resultWithTool: ToolExecutionResult = {
+      tool: toolCall.tool,
+      ...result,
+    };
+
+    results.push(resultWithTool);
+
+    // Log result for debugging
+    console.log(`[AI Tool Executor] Tool ${toolCall.tool} result:`, {
+      success: result.success,
+      message: result.message,
+      hasData: !!result.data,
+      objectsCreated: result.objectsCreated?.length || 0,
+      objectsModified: result.objectsModified?.length || 0,
+    });
+
+    // Small delay between operations to allow state updates
+    if (i < toolCalls.length - 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
+  console.log(`[AI Tool Executor] Completed ${results.length} tool calls`);
+
+  return results;
+}
+
 // ===== TOOL IMPLEMENTATION FUNCTIONS =====
 
 async function executeCreateShape(
@@ -308,7 +396,7 @@ async function executeCreateShape(
   context: CanvasContextForTools,
   userId: string,
   aiOperationId: string
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const {
     type,
     x,
@@ -417,7 +505,7 @@ async function executeCreateText(
   context: CanvasContextForTools,
   userId: string,
   aiOperationId: string
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const {
     text,
     x,
@@ -490,7 +578,7 @@ async function executeCreateText(
 async function executeMoveShape(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId, x, y } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
@@ -520,7 +608,7 @@ async function executeMoveShape(
 async function executeResizeShape(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId, width, height } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
@@ -550,7 +638,7 @@ async function executeResizeShape(
 async function executeRotateShape(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId, degrees } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
@@ -585,7 +673,7 @@ async function executeRotateShape(
 async function executeDeleteShape(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
@@ -609,7 +697,7 @@ async function executeDeleteShape(
 async function executeUpdateShapeStyle(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId, color, stroke, strokeWidth, opacity } = toolCall.parameters;
 
   const object = context.objects.find((obj) => obj.id === shapeId);
@@ -644,7 +732,7 @@ async function executeUpdateShapeStyle(
 async function executeUpdateTextStyle(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeId, fontSize, fontWeight, fontFamily, textAlign } =
     toolCall.parameters;
 
@@ -663,12 +751,17 @@ async function executeUpdateTextStyle(
     lastEditedAt: Date.now(),
   };
 
+  // Add optional text properties (these may not exist on base CanvasObject)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (fontSize !== undefined) (updates as any).fontSize = fontSize as number;
   if (fontWeight !== undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (updates as any).fontWeight = fontWeight as string;
   if (fontFamily !== undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (updates as any).fontFamily = fontFamily as string;
   if (textAlign !== undefined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (updates as any).textAlign = textAlign as "left" | "center" | "right";
 
   await context.updateObject(shapeId as string, updates);
@@ -683,7 +776,7 @@ async function executeUpdateTextStyle(
 async function executeArrangeHorizontal(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeIds, spacing = 20 } = toolCall.parameters;
 
   const ids = shapeIds as string[];
@@ -734,7 +827,7 @@ async function executeArrangeHorizontal(
 async function executeArrangeVertical(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeIds, spacing = 20 } = toolCall.parameters;
 
   const ids = shapeIds as string[];
@@ -787,7 +880,7 @@ async function executeCreateGrid(
   context: CanvasContextForTools,
   userId: string,
   aiOperationId: string
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { rows, cols, cellWidth, cellHeight, spacing, color, startX, startY } =
     toolCall.parameters;
 
@@ -841,7 +934,7 @@ async function executeCreateGrid(
 async function executeAlignShapes(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeIds, alignment } = toolCall.parameters;
 
   const ids = shapeIds as string[];
@@ -902,7 +995,7 @@ async function executeAlignShapes(
 async function executeDistributeShapes(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): Promise<ToolExecutionResult> {
+): Promise<InternalToolResult> {
   const { shapeIds, direction } = toolCall.parameters;
 
   const ids = shapeIds as string[];
@@ -947,7 +1040,7 @@ async function executeDistributeShapes(
 
 function executeGetCanvasState(
   context: CanvasContextForTools
-): ToolExecutionResult {
+): InternalToolResult {
   const summary = {
     objectCount: context.objects.length,
     selectedCount: context.selectedIds.length,
@@ -973,7 +1066,7 @@ function executeGetCanvasState(
 function executeFindShapesByColor(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): ToolExecutionResult {
+): InternalToolResult {
   const { color } = toolCall.parameters;
   const normalizedColor = (color as string).toLowerCase();
 
@@ -1008,7 +1101,7 @@ function executeFindShapesByColor(
 function executeFindShapesByType(
   toolCall: ToolCall,
   context: CanvasContextForTools
-): ToolExecutionResult {
+): InternalToolResult {
   const { type } = toolCall.parameters;
 
   const matchingObjects = context.objects.filter((obj) => obj.type === type);

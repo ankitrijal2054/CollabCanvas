@@ -3,11 +3,13 @@
  *
  * Handles communication with OpenAI GPT-4 Turbo API, including
  * function calling, error handling, and retry logic.
+ *
+ * PR #27: Added conversationContext support for ReAct loop
  */
 
 import OpenAI from "openai";
 import * as logger from "firebase-functions/logger";
-import type { AIMessage, TokenUsage } from "../types/ai.types";
+import type { AIMessage, TokenUsage, OpenAIMessage } from "../types/ai.types";
 
 /**
  * OpenAI client instance
@@ -38,11 +40,14 @@ function getOpenAIClient(): OpenAI {
 
 /**
  * Options for OpenAI API call
+ *
+ * PR #27: Added conversationContext for ReAct loop
  */
 export interface OpenAICallOptions {
   systemPrompt: string;
   userMessage: string;
   conversationHistory: AIMessage[];
+  conversationContext?: OpenAIMessage[]; // For ReAct loop iterations
   tools: OpenAI.Chat.Completions.ChatCompletionTool[];
   temperature?: number;
   maxTokens?: number;
@@ -74,6 +79,7 @@ export async function callOpenAI(
     systemPrompt,
     userMessage,
     conversationHistory,
+    conversationContext,
     tools,
     temperature = 0.7,
     maxTokens = 2000,
@@ -83,16 +89,60 @@ export async function callOpenAI(
   let lastError: Error | null = null;
 
   // Build messages array
-  const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
-    ...conversationHistory.map(
-      (msg): OpenAI.Chat.Completions.ChatCompletionMessageParam => ({
-        role: msg.role as "user" | "assistant" | "system",
-        content: msg.content,
-      })
-    ),
-    { role: "user", content: userMessage },
-  ];
+  // For ReAct loop: if conversationContext exists, use it directly (already includes tool results)
+  // Otherwise: build from scratch with conversationHistory
+  let messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[];
+
+  if (conversationContext && conversationContext.length > 0) {
+    // ReAct iteration: use full conversation context (includes tool calls + results)
+    logger.info("Using conversation context for ReAct iteration", {
+      contextLength: conversationContext.length,
+    });
+    messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userMessage }, // Original user message
+      ...conversationContext.map(
+        (msg): OpenAI.Chat.Completions.ChatCompletionMessageParam => {
+          // Type-safe mapping based on role
+          if (msg.role === "tool") {
+            return {
+              role: "tool",
+              content: msg.content || "",
+              tool_call_id: msg.tool_call_id || "",
+            };
+          } else if (msg.role === "assistant") {
+            return {
+              role: "assistant",
+              content: msg.content,
+              tool_calls: msg.tool_calls,
+            };
+          } else if (msg.role === "user") {
+            return {
+              role: "user",
+              content: msg.content || "",
+            };
+          } else {
+            return {
+              role: "system",
+              content: msg.content || "",
+            };
+          }
+        }
+      ),
+    ];
+  } else {
+    // First iteration: standard message building
+    messages = [
+      { role: "system", content: systemPrompt },
+      ...conversationHistory.map(
+        (msg): OpenAI.Chat.Completions.ChatCompletionMessageParam => ({
+          role: msg.role as "user" | "assistant" | "system",
+          content: msg.content,
+        })
+      ),
+      { role: "user", content: userMessage },
+    ];
+  }
 
   // Retry with exponential backoff
   for (let attempt = 1; attempt <= maxRetries; attempt++) {

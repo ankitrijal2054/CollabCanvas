@@ -3,9 +3,22 @@
  *
  * Defines all 16 AI tools in OpenAI's function calling format.
  * These definitions tell GPT-4 what functions are available and how to use them.
+ *
+ * PR #27: Added tool categories for ReAct loop
+ * - Query tools: Return data for AI to use in subsequent steps
+ * - Action tools: Perform operations on the canvas
  */
 
 import type { OpenAI } from "openai";
+import type { ToolCategory } from "../types/ai.types";
+
+/**
+ * Extended tool definition with category for ReAct loop
+ */
+export interface ToolDefinitionWithCategory {
+  tool: OpenAI.Chat.Completions.ChatCompletionTool;
+  category: ToolCategory;
+}
 
 /**
  * All 16 tools for OpenAI function calling
@@ -517,7 +530,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "getCanvasState",
       description:
-        "Get the current state of the canvas (all objects, selection, etc.)",
+        "Get the current state of the canvas (all objects, selection, etc.). Returns array of objects that can be used in subsequent operations.",
       parameters: {
         type: "object",
         properties: {},
@@ -530,7 +543,8 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "findShapesByColor",
-      description: "Find all shapes with a specific color",
+      description:
+        "Find all shapes with a specific color. Returns array of shape IDs and details that can be used in subsequent operations like moveShape, deleteShape, or updateShapeStyle.",
       parameters: {
         type: "object",
         properties: {
@@ -548,7 +562,8 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "findShapesByType",
-      description: "Find all shapes of a specific type",
+      description:
+        "Find all shapes of a specific type. Returns array of shape IDs and details that can be used in subsequent operations like moveShape, deleteShape, or arrangeHorizontal.",
       parameters: {
         type: "object",
         properties: {
@@ -579,4 +594,99 @@ export const toolNames = tools
  */
 export function isValidToolName(name: string): boolean {
   return toolNames.includes(name);
+}
+
+// ============================================
+// Tool Categories for ReAct Loop (PR #27)
+// ============================================
+
+/**
+ * Tool category mapping for ReAct loop control
+ *
+ * Query tools: Gather information, trigger continuation
+ * - getCanvasState: Returns all canvas objects
+ * - findShapesByColor: Returns shapes matching color
+ * - findShapesByType: Returns shapes matching type
+ *
+ * Action tools: Perform operations, usually terminal
+ * - All creation, manipulation, styling, and layout tools
+ */
+export const toolCategories: Record<string, ToolCategory> = {
+  // Query tools (3) - Trigger continuation in ReAct loop
+  getCanvasState: "query",
+  findShapesByColor: "query",
+  findShapesByType: "query",
+
+  // Action tools (13) - Creation
+  createShape: "action",
+  createText: "action",
+
+  // Action tools - Manipulation
+  moveShape: "action",
+  resizeShape: "action",
+  rotateShape: "action",
+  deleteShape: "action",
+
+  // Action tools - Styling
+  updateShapeStyle: "action",
+  updateTextStyle: "action",
+
+  // Action tools - Layout
+  arrangeHorizontal: "action",
+  arrangeVertical: "action",
+  createGrid: "action",
+  alignShapes: "action",
+  distributeShapes: "action",
+};
+
+/**
+ * Get the category of a tool
+ *
+ * @param toolName - Name of the tool
+ * @returns Tool category ("query" or "action")
+ */
+export function getToolCategory(toolName: string): ToolCategory | undefined {
+  return toolCategories[toolName];
+}
+
+/**
+ * Check if a tool is a query tool
+ * Query tools return data and typically trigger continuation in ReAct loop
+ *
+ * @param toolName - Name of the tool
+ * @returns True if the tool is a query tool
+ */
+export function isQueryTool(toolName: string): boolean {
+  return toolCategories[toolName] === "query";
+}
+
+/**
+ * Check if a tool is an action tool
+ * Action tools perform operations and are usually terminal
+ *
+ * @param toolName - Name of the tool
+ * @returns True if the tool is an action tool
+ */
+export function isActionTool(toolName: string): boolean {
+  return toolCategories[toolName] === "action";
+}
+
+/**
+ * Get all query tool names
+ * @returns Array of query tool names
+ */
+export function getQueryTools(): string[] {
+  return Object.entries(toolCategories)
+    .filter(([_, category]) => category === "query")
+    .map(([name, _]) => name);
+}
+
+/**
+ * Get all action tool names
+ * @returns Array of action tool names
+ */
+export function getActionTools(): string[] {
+  return Object.entries(toolCategories)
+    .filter(([_, category]) => category === "action")
+    .map(([name, _]) => name);
 }
