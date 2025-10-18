@@ -85,7 +85,7 @@
   border: 1px solid #e5e7eb;
 }
 
-/* Error message styling */
+/* Error message styling - PR #27: Enhanced error display */
 .chat-message.error .message-content {
   background: #fef2f2;
   border: 1px solid #fecaca;
@@ -95,20 +95,75 @@
   color: #991b1b;
 }
 
-.message-error {
+/* Error box with better hierarchy */
+.message-error-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fee2e2;
+  border-left: 4px solid #dc2626;
+  border-radius: 6px;
+}
+
+.error-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 8px;
-  background: #fee2e2;
-  border-radius: 6px;
-  font-size: 13px;
-  color: #991b1b;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .error-icon {
-  font-size: 16px;
+  font-size: 18px;
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #991b1b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.error-message {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #7f1d1d;
+  margin-bottom: 8px;
+}
+
+/* Error suggestions */
+.error-suggestions {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #fca5a5;
+}
+
+.suggestions-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #991b1b;
+  margin-bottom: 6px;
+}
+
+.suggestions-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.suggestions-list li {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #7f1d1d;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.suggestions-list li::before {
+  content: "→";
+  position: absolute;
+  left: -16px;
+  color: #dc2626;
+  font-weight: bold;
 }
 
 /* Tool calls */

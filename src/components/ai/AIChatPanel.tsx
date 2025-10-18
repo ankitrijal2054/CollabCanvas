@@ -34,16 +34,37 @@ export default function AIChatPanel() {
 
   /**
    * Handle send command
+   * PR #27: Enhanced validation
    */
   const handleSend = async () => {
     const message = inputValue.trim();
-    if (!message) return;
+
+    // Validation checks
+    if (!message) {
+      return;
+    }
+
+    if (message.length > 1000) {
+      // Should not happen due to maxLength, but double-check
+      return;
+    }
 
     // Clear input immediately
     setInputValue("");
 
     // Send command
     await sendCommand(message);
+  };
+
+  /**
+   * Get character count class based on usage
+   * PR #27: Visual feedback for character limit
+   */
+  const getCharCountClass = (): string => {
+    const length = inputValue.length;
+    if (length > 900) return "char-count warning"; // 90%+
+    if (length > 800) return "char-count caution"; // 80%+
+    return "char-count";
   };
 
   /**
@@ -158,11 +179,14 @@ export default function AIChatPanel() {
               rows={2}
             />
             <div className="input-footer">
-              <div className="char-count">{inputValue.length} / 1000</div>
+              <div className={getCharCountClass()}>
+                {inputValue.length} / 1000
+              </div>
               <button
                 className="send-button"
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isProcessing}
+                title={isProcessing ? "AI is processing..." : "Send command"}
               >
                 <span>→</span>
               </button>

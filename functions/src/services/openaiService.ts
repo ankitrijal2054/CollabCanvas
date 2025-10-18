@@ -227,11 +227,46 @@ export async function callOpenAI(
         }
       );
 
-      // Check if it's a retryable error
+      // Check if it's a retryable error (PR #27: Enhanced error handling)
       if (error instanceof OpenAI.APIError) {
         const apiError = error;
 
-        // Don't retry on client errors (4xx)
+        // Rate limit errors (429) - retry with longer backoff
+        if (apiError.status === 429) {
+          logger.warn("OpenAI API rate limit hit", {
+            attempt,
+            message: apiError.message,
+          });
+          if (attempt < maxRetries) {
+            const waitTime = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
+            logger.info(`Rate limited - waiting ${waitTime}ms before retry...`);
+            await new Promise((resolve) => setTimeout(resolve, waitTime));
+            continue;
+          }
+          throw new Error(
+            "OpenAI API rate limit exceeded. Please try again in a moment."
+          );
+        }
+
+        // Authentication errors (401) - don't retry
+        if (apiError.status === 401) {
+          logger.error("OpenAI API authentication failed", {
+            message: apiError.message,
+          });
+          throw new Error(
+            "AI service authentication failed. Please contact support."
+          );
+        }
+
+        // Invalid request errors (400) - don't retry
+        if (apiError.status === 400) {
+          logger.error("OpenAI API invalid request", {
+            message: apiError.message,
+          });
+          throw new Error(`Invalid request to AI service: ${apiError.message}`);
+        }
+
+        // Don't retry on other client errors (4xx)
         if (
           apiError.status &&
           apiError.status >= 400 &&
@@ -243,6 +278,28 @@ export async function callOpenAI(
           });
           throw new Error(`OpenAI API error: ${apiError.message}`);
         }
+
+        // Server errors (5xx) - retry
+        if (apiError.status && apiError.status >= 500) {
+          logger.warn("OpenAI API server error (will retry)", {
+            status: apiError.status,
+            attempt,
+          });
+          // Continue to retry logic below
+        }
+      }
+
+      // Check for timeout errors
+      if (
+        lastError.message.includes("timeout") ||
+        lastError.message.includes("ETIMEDOUT") ||
+        lastError.message.includes("ECONNRESET")
+      ) {
+        logger.warn("OpenAI API timeout (will retry)", {
+          attempt,
+          error: lastError.message,
+        });
+        // Continue to retry logic below
       }
 
       // Wait before retry (exponential backoff: 1s, 2s, 4s)
@@ -254,16 +311,34 @@ export async function callOpenAI(
     }
   }
 
-  // All retries failed
+  // All retries failed (PR #27: Enhanced error messages)
   logger.error("All OpenAI API retry attempts failed", {
     lastError: lastError?.message,
   });
 
-  throw new Error(
-    `OpenAI API failed after ${maxRetries} attempts: ${
-      lastError?.message || "Unknown error"
-    }`
-  );
+  // Provide user-friendly error message based on error type
+  let userMessage =
+    "The AI service is temporarily unavailable. Please try again.";
+
+  if (lastError) {
+    if (lastError.message.includes("timeout")) {
+      userMessage =
+        "The AI took too long to respond. Please try a simpler command or try again.";
+    } else if (lastError.message.includes("rate limit")) {
+      userMessage =
+        "Too many requests to the AI service. Please wait a moment and try again.";
+    } else if (lastError.message.includes("authentication")) {
+      userMessage = "AI service authentication failed. Please contact support.";
+    } else if (
+      lastError.message.includes("network") ||
+      lastError.message.includes("ENOTFOUND")
+    ) {
+      userMessage =
+        "Unable to connect to AI service. Please check your internet connection and try again.";
+    }
+  }
+
+  throw new Error(userMessage);
 }
 
 /**

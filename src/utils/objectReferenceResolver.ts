@@ -283,3 +283,136 @@ export function isAmbiguousReference(
   // Check if top matches have equal confidence
   return matches[0].confidence === matches[1].confidence;
 }
+
+/**
+ * Format object coordinates for user-friendly display
+ * PR #27: Enhanced ambiguous reference handling
+ */
+function formatCoordinates(obj: CanvasObject): string {
+  return `(${Math.round(obj.x)}, ${Math.round(obj.y)})`;
+}
+
+/**
+ * Format object description for user display
+ * PR #27: Enhanced ambiguous reference handling
+ */
+export function formatObjectDescription(obj: CanvasObject): string {
+  const type = obj.type;
+  const color = obj.color || "default color";
+  const coords = formatCoordinates(obj);
+  const size = `${Math.round(obj.width)}x${Math.round(obj.height)}`;
+
+  if (obj.type === "text") {
+    const textObj = obj as any;
+    const preview = textObj.text
+      ? `"${textObj.text.substring(0, 20)}${
+          textObj.text.length > 20 ? "..." : ""
+        }"`
+      : "empty text";
+    return `${preview} at ${coords}`;
+  }
+
+  return `${color} ${type} at ${coords} (${size})`;
+}
+
+/**
+ * Generate helpful message for ambiguous references
+ * PR #27: Enhanced ambiguous reference handling
+ *
+ * @param reference - The ambiguous reference
+ * @param matches - The matching objects
+ * @returns User-friendly clarification message
+ */
+export function generateAmbiguityMessage(
+  reference: string,
+  matches: ObjectMatch[]
+): string {
+  if (matches.length === 0) {
+    return (
+      `I don't see any objects matching "${reference}". ` +
+      `Would you like to create one, or try referencing by color and type?`
+    );
+  }
+
+  if (matches.length === 1) {
+    return `Found 1 match: ${formatObjectDescription(matches[0].object)}`;
+  }
+
+  // Multiple matches - provide clarification
+  const descriptions = matches
+    .slice(0, 5) // Limit to first 5 to avoid overwhelming the user
+    .map(
+      (match, index) => `${index + 1}. ${formatObjectDescription(match.object)}`
+    )
+    .join("\n");
+
+  const totalCount = matches.length;
+  const shownCount = Math.min(5, totalCount);
+  const hiddenCount = totalCount - shownCount;
+
+  let message = `I found ${totalCount} objects matching "${reference}":\n\n${descriptions}`;
+
+  if (hiddenCount > 0) {
+    message += `\n...and ${hiddenCount} more`;
+  }
+
+  message += "\n\nWhich one would you like? You can:";
+  message += '\n• Specify by coordinates (e.g., "the circle at 100, 200")';
+  message += '\n• Add more details (e.g., "the large red circle")';
+  message += '\n• Select the object first, then use "the selected shape"';
+
+  return message;
+}
+
+/**
+ * Get all current objects on canvas as a summary string
+ * PR #27: Enhanced error messages
+ *
+ * @param objects - Array of canvas objects
+ * @returns Summary of all objects for AI context
+ */
+export function getCanvasSummary(objects: CanvasObject[]): string {
+  if (objects.length === 0) {
+    return "The canvas is empty.";
+  }
+
+  const byType: Record<string, number> = {};
+  const byColor: Record<string, number> = {};
+
+  for (const obj of objects) {
+    byType[obj.type] = (byType[obj.type] || 0) + 1;
+    if (obj.color) {
+      byColor[obj.color] = (byColor[obj.color] || 0) + 1;
+    }
+  }
+
+  const typeList = Object.entries(byType)
+    .map(([type, count]) => `${count} ${type}${count > 1 ? "s" : ""}`)
+    .join(", ");
+
+  const colorList = Object.entries(byColor)
+    .map(([color, count]) => `${count} ${color}`)
+    .join(", ");
+
+  return `Canvas has ${objects.length} object(s): ${typeList}. Colors: ${colorList}.`;
+}
+
+/**
+ * Find no match message with helpful alternatives
+ * PR #27: Enhanced error messages
+ *
+ * @param reference - The reference that didn't match
+ * @param objects - Current canvas objects
+ * @returns Helpful error message with current object list
+ */
+export function generateNoMatchMessage(
+  reference: string,
+  objects: CanvasObject[]
+): string {
+  const summary = getCanvasSummary(objects);
+
+  return (
+    `I don't see "${reference}" on the canvas. ${summary}\n\n` +
+    `Would you like to create it, or reference a different object?`
+  );
+}

@@ -39,7 +39,7 @@ import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
-  const { isAIPanelOpen } = useAI();
+  const { isAIPanelOpen, toggleAIPanel, closeAIPanel } = useAI(); // PR #27: Keyboard shortcuts
   const {
     viewport,
     canvasSize,
@@ -87,7 +87,7 @@ export default function Canvas() {
     }
   );
 
-  // Integrate keyboard shortcuts
+  // Integrate keyboard shortcuts (PR #27: Added AI panel shortcuts)
   useKeyboardShortcuts({
     enabled: !editingTextId, // Disable shortcuts when editing text
     handlers: {
@@ -101,6 +101,10 @@ export default function Canvas() {
       onDelete: deleteSelectedObjects,
       onSelectAll: selectAll,
       onDeselect: clearSelection,
+
+      // AI Panel
+      onToggleAI: toggleAIPanel,
+      onCloseAI: closeAIPanel,
 
       // Nudge operations (1px)
       onNudgeUp: () => nudgeSelectedObjects(0, -1),

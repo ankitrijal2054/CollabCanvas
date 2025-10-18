@@ -43,6 +43,10 @@ export interface KeyboardShortcutHandlers {
   onSelectAll?: () => void;
   onDeselect?: () => void;
 
+  // AI Panel (PR #27)
+  onToggleAI?: () => void;
+  onCloseAI?: () => void;
+
   // Nudge operations
   onNudgeUp?: () => void;
   onNudgeDown?: () => void;
@@ -137,6 +141,12 @@ export const useKeyboardShortcuts = ({
             handlers.onSelectAll?.();
             return;
 
+          case "k":
+            // PR #27: Toggle AI panel (Cmd/Ctrl+K)
+            event.preventDefault();
+            handlers.onToggleAI?.();
+            return;
+
           case "[":
             event.preventDefault();
             handlers.onSendBackward?.();
@@ -219,9 +229,14 @@ export const useKeyboardShortcuts = ({
         }
       }
 
-      // Deselect (Escape)
+      // Deselect (Escape) - PR #27: Close AI panel first if open
       if (event.key === "Escape") {
         event.preventDefault();
+        // Try to close AI panel first, if it returns true, panel was closed
+        // If it returns false or undefined, proceed with deselect
+        if (handlers.onCloseAI?.()) {
+          return;
+        }
         handlers.onDeselect?.();
         return;
       }
@@ -397,6 +412,18 @@ export const getKeyboardShortcuts = () => {
       category: "Alignment",
       keys: `${modKey}+${isMac() ? "Option" : "Alt"}+?`,
       description: "Align bottom",
+    },
+
+    // AI Panel (PR #27)
+    {
+      category: "AI Assistant",
+      keys: `${modKey}+K`,
+      description: "Toggle AI Assistant panel",
+    },
+    {
+      category: "AI Assistant",
+      keys: "Escape",
+      description: "Close AI panel (if open)",
     },
 
     // Help

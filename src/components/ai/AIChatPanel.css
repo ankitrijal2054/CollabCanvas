@@ -219,6 +219,18 @@
 .char-count {
   font-size: 12px;
   color: #9ca3af;
+  transition: color 0.2s;
+}
+
+/* PR #27: Visual feedback for character limit */
+.char-count.caution {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.char-count.warning {
+  color: #ef4444;
+  font-weight: 600;
 }
 
 .send-button {
