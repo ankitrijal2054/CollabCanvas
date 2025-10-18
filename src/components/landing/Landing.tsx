@@ -1,16 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+
 import "./Landing.css";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
-
-  // If already logged in, redirect to canvas
-  if (currentUser) {
-    navigate("/canvas");
-    return null;
-  }
 
   return (
     <div className="landing-container">

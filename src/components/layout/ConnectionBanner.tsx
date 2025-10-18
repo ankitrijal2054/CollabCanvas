@@ -68,10 +68,8 @@ export const ConnectionBanner: React.FC = () => {
           ),
           message:
             queuedOperationsCount > 0
-              ? `You're offline – ${queuedOperationsCount} ${
-                  queuedOperationsCount === 1 ? "change" : "changes"
-                } will sync when reconnected`
-              : "You're offline – reconnect to continue",
+              ? `Offline • ${queuedOperationsCount} queued`
+              : "Offline",
           className: "connection-banner-offline",
           showRetry: false,
         };
@@ -117,9 +115,7 @@ export const ConnectionBanner: React.FC = () => {
               />
             </svg>
           ),
-          message: `Syncing ${queuedOperationsCount} ${
-            queuedOperationsCount === 1 ? "change" : "changes"
-          }...`,
+          message: `Syncing ${queuedOperationsCount}...`,
           className: "connection-banner-syncing",
           showRetry: false,
         };
@@ -142,8 +138,7 @@ export const ConnectionBanner: React.FC = () => {
               />
             </svg>
           ),
-          message:
-            "You've been offline too long. Reconnect to continue working.",
+          message: "Offline too long",
           className: "connection-banner-timeout",
           showRetry: true,
         };
