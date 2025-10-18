@@ -8,6 +8,7 @@ import type {
 } from "../../types/canvas.types";
 import { useCanvas } from "../../hooks/useCanvas";
 import { useAuth } from "../../hooks/useAuth";
+import { useAI } from "../../contexts/AIContext";
 import { usePresence } from "../../hooks/usePresence";
 import { useKeyboardShortcuts } from "../../hooks/useKeyboardShortcuts";
 import { canvasHelpers } from "../../utils/canvasHelpers";
@@ -25,6 +26,7 @@ import TextEditor from "./TextEditor";
 import ShortcutHelp from "../layout/ShortcutHelp";
 import { ContextMenu } from "./ContextMenu";
 import { LayersPanel } from "../layout/LayersPanel";
+import AIChatPanel from "../ai/AIChatPanel";
 import { BottomBar } from "../layout/BottomBar";
 import { ExportModal } from "./ExportModal";
 import "./Canvas.css";
@@ -37,6 +39,7 @@ import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
+  const { isAIPanelOpen, toggleAIPanel } = useAI(); // PR #27: Keyboard shortcuts
   const {
     viewport,
     canvasSize,
@@ -84,7 +87,7 @@ export default function Canvas() {
     }
   );
 
-  // Integrate keyboard shortcuts
+  // Integrate keyboard shortcuts (PR #27: Added AI panel shortcuts)
   useKeyboardShortcuts({
     enabled: !editingTextId, // Disable shortcuts when editing text
     handlers: {
@@ -98,6 +101,9 @@ export default function Canvas() {
       onDelete: deleteSelectedObjects,
       onSelectAll: selectAll,
       onDeselect: clearSelection,
+
+      // AI Panel
+      onToggleAI: toggleAIPanel,
 
       // Nudge operations (1px)
       onNudgeUp: () => nudgeSelectedObjects(0, -1),
@@ -692,11 +698,8 @@ export default function Canvas() {
 
       {/* Main Content Area */}
       <div className="canvas-main-content">
-        {/* Left Sidebar: Online Users + Properties */}
-        <Sidebar
-          hasSelection={selectedIds.length === 1}
-          selectedObjectType={selectedObjectType}
-        />
+        {/* Left Sidebar: Layers Panel */}
+        <LayersPanel />
 
         {/* Center: Canvas Area */}
         <div className="canvas-center">
@@ -934,8 +937,15 @@ export default function Canvas() {
           <AlignmentToolbar />
         </div>
 
-        {/* Right Sidebar: Layers Panel */}
-        <LayersPanel />
+        {/* Right Sidebar: AI Chat Panel OR Properties Panel */}
+        {isAIPanelOpen ? (
+          <AIChatPanel />
+        ) : (
+          <Sidebar
+            hasSelection={selectedIds.length === 1}
+            selectedObjectType={selectedObjectType}
+          />
+        )}
       </div>
 
       {/* Bottom Bar */}

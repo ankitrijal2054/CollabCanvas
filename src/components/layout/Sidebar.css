@@ -1,9 +1,9 @@
-/* Left Sidebar styling */
+/* Right Sidebar styling - Properties Panel */
 
 .sidebar {
   width: 280px; /* Slightly wider since we have more space */
   background-color: #fff;
-  border-right: 1px solid #e0e0e0;
+  border-left: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
   overflow: hidden;

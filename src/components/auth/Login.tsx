@@ -52,10 +52,42 @@ export default function Login() {
 
   return (
     <div className="auth-container">
+      {/* Animated background shapes */}
+      <div className="auth-bg-shapes">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+        <div className="shape shape-4"></div>
+      </div>
+
       <div className="auth-content">
         <div className="auth-page-title">
-          <h1>CollabCanvas</h1>
-          <p>Real‑time collaborative canvas</p>
+          <div className="auth-logo">
+            <div className="auth-logo-icon">
+              <svg viewBox="0 0 40 40" fill="none">
+                <rect
+                  x="4"
+                  y="4"
+                  width="14"
+                  height="14"
+                  rx="2"
+                  fill="#3B82F6"
+                />
+                <circle cx="29" cy="11" r="7" fill="#8B5CF6" />
+                <path d="M4 25 L18 32 L18 25 Z" fill="#10B981" />
+                <rect
+                  x="24"
+                  y="24"
+                  width="12"
+                  height="12"
+                  rx="2"
+                  fill="#F59E0B"
+                />
+              </svg>
+            </div>
+            <h1>CollabCanvas</h1>
+          </div>
+          <p>Real‑time collaborative canvas with AI</p>
         </div>
 
         <div className="auth-card">

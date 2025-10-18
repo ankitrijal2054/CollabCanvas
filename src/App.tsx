@@ -5,11 +5,13 @@ import {
   Navigate,
 } from "react-router-dom";
 import "./App.css";
+import Landing from "./components/landing/Landing";
 import Login from "./components/auth/Login";
 import Signup from "./components/auth/Signup";
 import Canvas from "./components/canvas/Canvas.tsx";
 import AuthGuard from "./components/auth/AuthGuard";
 import { CanvasProvider } from "./contexts/CanvasContext";
+import { AIProvider } from "./contexts/AIContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ConnectionBanner } from "./components/layout/ConnectionBanner";
 
@@ -17,8 +19,8 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Default route redirects to login */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        {/* Default route shows landing page */}
+        <Route path="/" element={<Landing />} />
 
         {/* Auth routes - accessible to everyone */}
         <Route path="/login" element={<Login />} />
@@ -31,8 +33,10 @@ function App() {
             <AuthGuard>
               <ErrorBoundary>
                 <CanvasProvider>
-                  <ConnectionBanner />
-                  <Canvas />
+                  <AIProvider>
+                    <ConnectionBanner />
+                    <Canvas />
+                  </AIProvider>
                 </CanvasProvider>
               </ErrorBoundary>
             </AuthGuard>

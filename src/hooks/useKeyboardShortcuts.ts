@@ -43,6 +43,9 @@ export interface KeyboardShortcutHandlers {
   onSelectAll?: () => void;
   onDeselect?: () => void;
 
+  // AI Panel (PR #27)
+  onToggleAI?: () => void;
+
   // Nudge operations
   onNudgeUp?: () => void;
   onNudgeDown?: () => void;
@@ -137,6 +140,12 @@ export const useKeyboardShortcuts = ({
             handlers.onSelectAll?.();
             return;
 
+          case "k":
+            // PR #27: Toggle AI panel (Cmd/Ctrl+K)
+            event.preventDefault();
+            handlers.onToggleAI?.();
+            return;
+
           case "[":
             event.preventDefault();
             handlers.onSendBackward?.();
@@ -169,7 +178,6 @@ export const useKeyboardShortcuts = ({
       }
       // Alignment shortcuts with Shift (Cmd/Ctrl + Shift + key)
       if (isModifier && event.altKey && !isShift) {
-        console.log("Alignment shortcuts", event.key);
         switch (event.key.toLowerCase()) {
           // Alignment shortcuts (for PR #20)
           case "n":
@@ -398,6 +406,13 @@ export const getKeyboardShortcuts = () => {
       category: "Alignment",
       keys: `${modKey}+${isMac() ? "Option" : "Alt"}+?`,
       description: "Align bottom",
+    },
+
+    // AI Panel (PR #27)
+    {
+      category: "AI Assistant",
+      keys: `${modKey}+K`,
+      description: "Open/Close AI Assistant panel",
     },
 
     // Help

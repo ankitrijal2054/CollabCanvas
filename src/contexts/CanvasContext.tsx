@@ -37,6 +37,10 @@ import {
 } from "../services/transactionService";
 import { clipboardManager } from "../utils/clipboardManager";
 import { alignmentHelpers } from "../utils/alignmentHelpers";
+import type {
+  CreateShapeOptions,
+  CreateTextOptions,
+} from "../utils/aiToolExecutor";
 
 /**
  * Canvas Context Interface
@@ -54,11 +58,11 @@ interface CanvasContextType extends CanvasState {
   toggleSelection: (id: string) => void; // Add/remove from selection
   clearSelection: () => void; // Clear all selections
   selectAll: () => void; // Select all objects
-  createRectangle: () => Promise<void>;
-  createCircle: () => Promise<void>;
-  createStar: () => Promise<void>;
-  createLine: () => Promise<void>;
-  createText: () => Promise<void>;
+  createRectangle: (options?: CreateShapeOptions) => Promise<string | void>;
+  createCircle: (options?: CreateShapeOptions) => Promise<string | void>;
+  createStar: (options?: CreateShapeOptions) => Promise<string | void>;
+  createLine: (options?: CreateShapeOptions) => Promise<string | void>;
+  createText: (options?: CreateTextOptions) => Promise<string | void>;
   isCanvasDisabled: boolean;
   pauseSync: () => void;
   resumeSync: () => void;
@@ -304,6 +308,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
           : obj
       ),
     }));
+
+    // Skip Firebase sync if paused (for batching operations)
+    if (isSyncPaused) {
+      return;
+    }
 
     // Sync to Firebase
     try {
@@ -559,7 +568,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
    * Create a new rectangle at canvas center with default size and color
    * Saves to Firebase for real-time sync (or queues if offline)
    */
-  const createRectangle = async () => {
+  const createRectangle = async (
+    options?: CreateShapeOptions
+  ): Promise<string | void> => {
     // Don't allow creation if canvas is disabled
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot create objects");
@@ -569,52 +580,66 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     // Generate unique ID using timestamp + random string
     const id = syncHelpers.generateObjectId("rect");
 
-    // Get canvas container size (fallback to window if not available)
-    const container = document.getElementById("canvas-container");
-    const stageWidth = container?.offsetWidth ?? window.innerWidth;
-    const stageHeight = container?.offsetHeight ?? window.innerHeight;
-
-    // Compute visible center in screen coords, convert to canvas coords
-    const screenCenterX = stageWidth / 2;
-    const screenCenterY = stageHeight / 2;
-    const centerPos = canvasHelpers.screenToCanvas(
-      screenCenterX,
-      screenCenterY,
-      canvasState.viewport.scale,
-      { x: canvasState.viewport.x, y: canvasState.viewport.y }
-    );
-
-    // Position rectangle so its center is at viewport center
-    const x = centerPos.x - DEFAULT_RECTANGLE.width / 2;
-    const y = centerPos.y - DEFAULT_RECTANGLE.height / 2;
-
     const now = Date.now();
     const userName = user?.name || user?.email || "Unknown User";
+
+    // Calculate position if not provided in options
+    let x = options?.x;
+    let y = options?.y;
+
+    if (x === undefined || y === undefined) {
+      // Get canvas container size (fallback to window if not available)
+      const container = document.getElementById("canvas-container");
+      const stageWidth = container?.offsetWidth ?? window.innerWidth;
+      const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+      // Compute visible center in screen coords, convert to canvas coords
+      const screenCenterX = stageWidth / 2;
+      const screenCenterY = stageHeight / 2;
+      const centerPos = canvasHelpers.screenToCanvas(
+        screenCenterX,
+        screenCenterY,
+        canvasState.viewport.scale,
+        { x: canvasState.viewport.x, y: canvasState.viewport.y }
+      );
+
+      // Position rectangle so its center is at viewport center
+      const width = options?.width ?? DEFAULT_RECTANGLE.width;
+      const height = options?.height ?? DEFAULT_RECTANGLE.height;
+      x = centerPos.x - width / 2;
+      y = centerPos.y - height / 2;
+    }
 
     const newRectangle: CanvasObject = {
       id,
       type: "rectangle",
       x,
       y,
-      width: DEFAULT_RECTANGLE.width,
-      height: DEFAULT_RECTANGLE.height,
-      color: DEFAULT_RECTANGLE.color,
-      stroke: DEFAULT_RECTANGLE.stroke,
-      strokeWidth: DEFAULT_RECTANGLE.strokeWidth,
-      rotation: 0, // Default rotation (no rotation)
-      createdBy: user?.id || "anonymous",
+      width: options?.width ?? DEFAULT_RECTANGLE.width,
+      height: options?.height ?? DEFAULT_RECTANGLE.height,
+      color: options?.color ?? DEFAULT_RECTANGLE.color,
+      stroke: options?.stroke ?? DEFAULT_RECTANGLE.stroke,
+      strokeWidth: options?.strokeWidth ?? DEFAULT_RECTANGLE.strokeWidth,
+      rotation: options?.rotation ?? 0,
+      opacity: options?.opacity ?? 1,
+      createdBy: options?.createdBy ?? user?.id ?? "anonymous",
       timestamp: now,
       zIndex: now, // Use timestamp as initial zIndex
       // Attribution for new objects
-      lastEditedBy: user?.id,
-      lastEditedByName: userName,
+      lastEditedBy: options?.lastEditedBy ?? user?.id,
+      lastEditedByName: options?.lastEditedByName ?? userName,
       lastEditedAt: now,
+      // AI attribution (if provided)
+      ...(options?.aiRequestedBy && { aiRequestedBy: options.aiRequestedBy }),
+      ...(options?.aiOperationId && { aiOperationId: options.aiOperationId }),
     };
 
     // Add to local state immediately (optimistic update)
     addObject(newRectangle);
-    // Auto-select the newly created object
-    selectObject(id);
+    // Auto-select the newly created object (only if not created by AI)
+    if (!options?.aiRequestedBy) {
+      selectObject(id);
+    }
 
     // Save to Firebase for real-time sync or queue if offline
     try {
@@ -642,6 +667,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             objects: prev.objects.filter((obj) => obj.id !== id),
             selectedIds: [],
           }));
+          return;
         }
       }
     } catch (error) {
@@ -652,14 +678,20 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         objects: prev.objects.filter((obj) => obj.id !== id),
         selectedIds: [],
       }));
+      return;
     }
+
+    // Return the ID so AI can track what was created
+    return id;
   };
 
   /**
    * Create a new circle at canvas center with default size and color
    * Saves to Firebase for real-time sync (or queues if offline)
    */
-  const createCircle = async () => {
+  const createCircle = async (
+    options?: CreateShapeOptions
+  ): Promise<string | void> => {
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot create objects");
       return;
@@ -667,49 +699,65 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     const id = syncHelpers.generateObjectId("circle");
 
-    // Get canvas container size
-    const container = document.getElementById("canvas-container");
-    const stageWidth = container?.offsetWidth ?? window.innerWidth;
-    const stageHeight = container?.offsetHeight ?? window.innerHeight;
-
-    // Compute visible center in screen coords, convert to canvas coords
-    const screenCenterX = stageWidth / 2;
-    const screenCenterY = stageHeight / 2;
-    const centerPos = canvasHelpers.screenToCanvas(
-      screenCenterX,
-      screenCenterY,
-      canvasState.viewport.scale,
-      { x: canvasState.viewport.x, y: canvasState.viewport.y }
-    );
-
-    // Position circle so its center is at viewport center
-    const x = centerPos.x - DEFAULT_CIRCLE.width / 2;
-    const y = centerPos.y - DEFAULT_CIRCLE.height / 2;
-
     const now = Date.now();
     const userName = user?.name || user?.email || "Unknown User";
+
+    // Calculate position if not provided in options
+    let x = options?.x;
+    let y = options?.y;
+
+    if (x === undefined || y === undefined) {
+      // Get canvas container size
+      const container = document.getElementById("canvas-container");
+      const stageWidth = container?.offsetWidth ?? window.innerWidth;
+      const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+      // Compute visible center in screen coords, convert to canvas coords
+      const screenCenterX = stageWidth / 2;
+      const screenCenterY = stageHeight / 2;
+      const centerPos = canvasHelpers.screenToCanvas(
+        screenCenterX,
+        screenCenterY,
+        canvasState.viewport.scale,
+        { x: canvasState.viewport.x, y: canvasState.viewport.y }
+      );
+
+      // Position circle so its center is at viewport center
+      const width = options?.width ?? DEFAULT_CIRCLE.width;
+      const height = options?.height ?? DEFAULT_CIRCLE.height;
+      x = centerPos.x - width / 2;
+      y = centerPos.y - height / 2;
+    }
 
     const newCircle: CanvasObject = {
       id,
       type: "circle",
       x,
       y,
-      width: DEFAULT_CIRCLE.width,
-      height: DEFAULT_CIRCLE.height,
-      color: DEFAULT_CIRCLE.color,
-      stroke: DEFAULT_CIRCLE.stroke,
-      strokeWidth: DEFAULT_CIRCLE.strokeWidth,
-      createdBy: user?.id || "anonymous",
+      width: options?.width ?? DEFAULT_CIRCLE.width,
+      height: options?.height ?? DEFAULT_CIRCLE.height,
+      color: options?.color ?? DEFAULT_CIRCLE.color,
+      stroke: options?.stroke ?? DEFAULT_CIRCLE.stroke,
+      strokeWidth: options?.strokeWidth ?? DEFAULT_CIRCLE.strokeWidth,
+      rotation: options?.rotation ?? 0,
+      opacity: options?.opacity ?? 1,
+      createdBy: options?.createdBy ?? user?.id ?? "anonymous",
       timestamp: now,
-      zIndex: now, // Use timestamp as initial zIndex
-      lastEditedBy: user?.id,
-      lastEditedByName: userName,
+      zIndex: now,
+      lastEditedBy: options?.lastEditedBy ?? user?.id,
+      lastEditedByName: options?.lastEditedByName ?? userName,
       lastEditedAt: now,
+      // AI attribution (if provided)
+      ...(options?.aiRequestedBy && { aiRequestedBy: options.aiRequestedBy }),
+      ...(options?.aiOperationId && { aiOperationId: options.aiOperationId }),
     };
 
     // Add to local state immediately
     addObject(newCircle);
-    selectObject(id);
+    // Auto-select the newly created object (only if not created by AI)
+    if (!options?.aiRequestedBy) {
+      selectObject(id);
+    }
 
     // Save to Firebase or queue if offline
     try {
@@ -732,6 +780,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             objects: prev.objects.filter((obj) => obj.id !== id),
             selectedIds: [],
           }));
+          return;
         }
       }
     } catch (error) {
@@ -741,14 +790,20 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         objects: prev.objects.filter((obj) => obj.id !== id),
         selectedIds: [],
       }));
+      return;
     }
+
+    // Return the ID so AI can track what was created
+    return id;
   };
 
   /**
    * Create a new star at canvas center with default size and color
    * Saves to Firebase for real-time sync (or queues if offline)
    */
-  const createStar = async () => {
+  const createStar = async (
+    options?: CreateShapeOptions
+  ): Promise<string | void> => {
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot create objects");
       return;
@@ -756,50 +811,70 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     const id = syncHelpers.generateObjectId("star");
 
-    // Get canvas container size
-    const container = document.getElementById("canvas-container");
-    const stageWidth = container?.offsetWidth ?? window.innerWidth;
-    const stageHeight = container?.offsetHeight ?? window.innerHeight;
-
-    // Compute visible center in screen coords, convert to canvas coords
-    const screenCenterX = stageWidth / 2;
-    const screenCenterY = stageHeight / 2;
-    const centerPos = canvasHelpers.screenToCanvas(
-      screenCenterX,
-      screenCenterY,
-      canvasState.viewport.scale,
-      { x: canvasState.viewport.x, y: canvasState.viewport.y }
-    );
-
-    // Position star so its center is at viewport center
-    const x = centerPos.x - DEFAULT_STAR.width / 2;
-    const y = centerPos.y - DEFAULT_STAR.height / 2;
-
     const now = Date.now();
     const userName = user?.name || user?.email || "Unknown User";
+
+    // Calculate position if not provided in options
+    let x = options?.x;
+    let y = options?.y;
+
+    if (x === undefined || y === undefined) {
+      // Get canvas container size
+      const container = document.getElementById("canvas-container");
+      const stageWidth = container?.offsetWidth ?? window.innerWidth;
+      const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+      // Compute visible center in screen coords, convert to canvas coords
+      const screenCenterX = stageWidth / 2;
+      const screenCenterY = stageHeight / 2;
+      const centerPos = canvasHelpers.screenToCanvas(
+        screenCenterX,
+        screenCenterY,
+        canvasState.viewport.scale,
+        { x: canvasState.viewport.x, y: canvasState.viewport.y }
+      );
+
+      // Position star so its center is at viewport center
+      const width = options?.width ?? DEFAULT_STAR.width;
+      const height = options?.height ?? DEFAULT_STAR.height;
+      x = centerPos.x - width / 2;
+      y = centerPos.y - height / 2;
+    }
 
     const newStar: CanvasObject = {
       id,
       type: "star",
       x,
       y,
-      width: DEFAULT_STAR.width,
-      height: DEFAULT_STAR.height,
-      color: DEFAULT_STAR.color,
-      stroke: DEFAULT_STAR.stroke,
-      strokeWidth: DEFAULT_STAR.strokeWidth,
-      rotation: 0, // Default rotation (no rotation)
-      createdBy: user?.id || "anonymous",
+      width: options?.width ?? DEFAULT_STAR.width,
+      height: options?.height ?? DEFAULT_STAR.height,
+      color: options?.color ?? DEFAULT_STAR.color,
+      stroke: options?.stroke ?? DEFAULT_STAR.stroke,
+      strokeWidth: options?.strokeWidth ?? DEFAULT_STAR.strokeWidth,
+      rotation: options?.rotation ?? 0,
+      opacity: options?.opacity ?? 1,
+      createdBy: options?.createdBy ?? user?.id ?? "anonymous",
       timestamp: now,
-      zIndex: now, // Use timestamp as initial zIndex
-      lastEditedBy: user?.id,
-      lastEditedByName: userName,
+      zIndex: now,
+      lastEditedBy: options?.lastEditedBy ?? user?.id,
+      lastEditedByName: options?.lastEditedByName ?? userName,
       lastEditedAt: now,
-    };
+      // AI attribution (if provided)
+      ...(options?.aiRequestedBy && { aiRequestedBy: options.aiRequestedBy }),
+      ...(options?.aiOperationId && { aiOperationId: options.aiOperationId }),
+    } as CanvasObject;
+
+    // Add star-specific properties
+    (newStar as any).numPoints = options?.numPoints ?? DEFAULT_STAR.numPoints;
+    (newStar as any).innerRadius =
+      options?.innerRadius ?? DEFAULT_STAR.innerRadius;
 
     // Add to local state immediately
     addObject(newStar);
-    selectObject(id);
+    // Auto-select the newly created object (only if not created by AI)
+    if (!options?.aiRequestedBy) {
+      selectObject(id);
+    }
 
     // Save to Firebase or queue if offline
     try {
@@ -822,6 +897,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             objects: prev.objects.filter((obj) => obj.id !== id),
             selectedIds: [],
           }));
+          return;
         }
       }
     } catch (error) {
@@ -831,14 +907,20 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         objects: prev.objects.filter((obj) => obj.id !== id),
         selectedIds: [],
       }));
+      return;
     }
+
+    // Return the ID so AI can track what was created
+    return id;
   };
 
   /**
    * Create a new line at canvas center with default length
    * Saves to Firebase for real-time sync (or queues if offline)
    */
-  const createLine = async () => {
+  const createLine = async (
+    options?: CreateShapeOptions
+  ): Promise<string | void> => {
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot create objects");
       return;
@@ -846,50 +928,71 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     const id = syncHelpers.generateObjectId("line");
 
-    // Get canvas container size
-    const container = document.getElementById("canvas-container");
-    const stageWidth = container?.offsetWidth ?? window.innerWidth;
-    const stageHeight = container?.offsetHeight ?? window.innerHeight;
-
-    // Compute visible center in screen coords, convert to canvas coords
-    const screenCenterX = stageWidth / 2;
-    const screenCenterY = stageHeight / 2;
-    const centerPos = canvasHelpers.screenToCanvas(
-      screenCenterX,
-      screenCenterY,
-      canvasState.viewport.scale,
-      { x: canvasState.viewport.x, y: canvasState.viewport.y }
-    );
-
-    // Position line so its center is at viewport center
-    const lineWidth = DEFAULT_LINE.width || 100;
-    const x = centerPos.x - lineWidth / 2;
-    const y = centerPos.y;
-
     const now = Date.now();
     const userName = user?.name || user?.email || "Unknown User";
 
+    // Calculate position if not provided in options
+    let x = options?.x;
+    let y = options?.y;
+
+    if (x === undefined || y === undefined) {
+      // Get canvas container size
+      const container = document.getElementById("canvas-container");
+      const stageWidth = container?.offsetWidth ?? window.innerWidth;
+      const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+      // Compute visible center in screen coords, convert to canvas coords
+      const screenCenterX = stageWidth / 2;
+      const screenCenterY = stageHeight / 2;
+      const centerPos = canvasHelpers.screenToCanvas(
+        screenCenterX,
+        screenCenterY,
+        canvasState.viewport.scale,
+        { x: canvasState.viewport.x, y: canvasState.viewport.y }
+      );
+
+      // Position line so its center is at viewport center
+      const lineWidth = options?.width ?? DEFAULT_LINE.width ?? 100;
+      x = centerPos.x - lineWidth / 2;
+      y = centerPos.y;
+    }
+
+    const lineWidth = options?.width ?? DEFAULT_LINE.width ?? 100;
     const newLine: CanvasObject = {
       id,
       type: "line",
       x,
       y,
       width: lineWidth,
-      height: DEFAULT_LINE.height,
-      color: DEFAULT_LINE.color,
-      stroke: DEFAULT_LINE.stroke,
-      strokeWidth: DEFAULT_LINE.strokeWidth,
-      createdBy: user?.id || "anonymous",
+      height: options?.height ?? DEFAULT_LINE.height,
+      color: options?.color ?? DEFAULT_LINE.color,
+      stroke: options?.stroke ?? DEFAULT_LINE.stroke,
+      strokeWidth: options?.strokeWidth ?? DEFAULT_LINE.strokeWidth,
+      rotation: options?.rotation ?? 0,
+      opacity: options?.opacity ?? 1,
+      createdBy: options?.createdBy ?? user?.id ?? "anonymous",
       timestamp: now,
-      zIndex: now, // Use timestamp as initial zIndex
-      lastEditedBy: user?.id,
-      lastEditedByName: userName,
+      zIndex: now,
+      lastEditedBy: options?.lastEditedBy ?? user?.id,
+      lastEditedByName: options?.lastEditedByName ?? userName,
       lastEditedAt: now,
-    };
+      // AI attribution (if provided)
+      ...(options?.aiRequestedBy && { aiRequestedBy: options.aiRequestedBy }),
+      ...(options?.aiOperationId && { aiOperationId: options.aiOperationId }),
+    } as CanvasObject;
+
+    // Add line-specific properties
+    (newLine as any).points = options?.points ?? [0, 0, lineWidth, 0];
+    (newLine as any).arrowStart =
+      options?.arrowStart ?? DEFAULT_LINE.arrowStart;
+    (newLine as any).arrowEnd = options?.arrowEnd ?? DEFAULT_LINE.arrowEnd;
 
     // Add to local state immediately
     addObject(newLine);
-    selectObject(id);
+    // Auto-select the newly created object (only if not created by AI)
+    if (!options?.aiRequestedBy) {
+      selectObject(id);
+    }
 
     // Save to Firebase or queue if offline
     try {
@@ -912,6 +1015,7 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             objects: prev.objects.filter((obj) => obj.id !== id),
             selectedIds: [],
           }));
+          return;
         }
       }
     } catch (error) {
@@ -921,7 +1025,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         objects: prev.objects.filter((obj) => obj.id !== id),
         selectedIds: [],
       }));
+      return;
     }
+
+    // Return the ID so AI can track what was created
+    return id;
   };
 
   /**
@@ -929,7 +1037,9 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
    * Saves to Firebase for real-time sync (or queues if offline)
    * Automatically enters edit mode after creation
    */
-  const createText = async () => {
+  const createText = async (
+    options?: CreateTextOptions
+  ): Promise<string | void> => {
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot create objects");
       return;
@@ -937,27 +1047,33 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     const id = syncHelpers.generateObjectId("text");
 
-    // Get canvas container size
-    const container = document.getElementById("canvas-container");
-    const stageWidth = container?.offsetWidth ?? window.innerWidth;
-    const stageHeight = container?.offsetHeight ?? window.innerHeight;
-
-    // Compute visible center in screen coords, convert to canvas coords
-    const screenCenterX = stageWidth / 2;
-    const screenCenterY = stageHeight / 2;
-    const centerPos = canvasHelpers.screenToCanvas(
-      screenCenterX,
-      screenCenterY,
-      canvasState.viewport.scale,
-      { x: canvasState.viewport.x, y: canvasState.viewport.y }
-    );
-
-    // Position text so its center is at viewport center
-    const x = centerPos.x - DEFAULT_TEXT.width / 2;
-    const y = centerPos.y - DEFAULT_TEXT.height / 2;
-
     const now = Date.now();
     const userName = user?.name || user?.email || "Unknown User";
+
+    // Calculate position if not provided in options
+    let x = options?.x;
+    let y = options?.y;
+
+    if (x === undefined || y === undefined) {
+      // Get canvas container size
+      const container = document.getElementById("canvas-container");
+      const stageWidth = container?.offsetWidth ?? window.innerWidth;
+      const stageHeight = container?.offsetHeight ?? window.innerHeight;
+
+      // Compute visible center in screen coords, convert to canvas coords
+      const screenCenterX = stageWidth / 2;
+      const screenCenterY = stageHeight / 2;
+      const centerPos = canvasHelpers.screenToCanvas(
+        screenCenterX,
+        screenCenterY,
+        canvasState.viewport.scale,
+        { x: canvasState.viewport.x, y: canvasState.viewport.y }
+      );
+
+      // Position text so its center is at viewport center
+      x = centerPos.x - DEFAULT_TEXT.width / 2;
+      y = centerPos.y - DEFAULT_TEXT.height / 2;
+    }
 
     const newText: TextObject = {
       id,
@@ -966,30 +1082,37 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
       y,
       width: DEFAULT_TEXT.width,
       height: DEFAULT_TEXT.height,
-      color: DEFAULT_TEXT.color,
-      rotation: 0, // Default rotation (no rotation)
+      color: options?.color ?? DEFAULT_TEXT.color,
+      rotation: options?.rotation ?? 0,
+      opacity: options?.opacity ?? 1,
       // Note: stroke and strokeWidth are omitted for text objects (Firebase doesn't accept undefined)
-      createdBy: user?.id || "anonymous",
+      createdBy: options?.createdBy ?? user?.id ?? "anonymous",
       timestamp: now,
-      zIndex: now, // Use timestamp as initial zIndex
-      lastEditedBy: user?.id,
-      lastEditedByName: userName,
+      zIndex: now,
+      lastEditedBy: options?.lastEditedBy ?? user?.id,
+      lastEditedByName: options?.lastEditedByName ?? userName,
       lastEditedAt: now,
       // Text-specific properties
-      text: DEFAULT_TEXT.text,
-      fontFamily: DEFAULT_TEXT.fontFamily,
-      fontSize: DEFAULT_TEXT.fontSize,
-      fontWeight: DEFAULT_TEXT.fontWeight,
-      fontStyle: DEFAULT_TEXT.fontStyle,
-      textAlign: DEFAULT_TEXT.textAlign,
+      text: options?.text ?? DEFAULT_TEXT.text,
+      fontFamily: options?.fontFamily ?? DEFAULT_TEXT.fontFamily,
+      fontSize: options?.fontSize ?? DEFAULT_TEXT.fontSize,
+      fontWeight: (options?.fontWeight as any) ?? DEFAULT_TEXT.fontWeight,
+      fontStyle: (options?.fontStyle as any) ?? DEFAULT_TEXT.fontStyle,
+      textAlign: (options?.textAlign as any) ?? DEFAULT_TEXT.textAlign,
+      // AI attribution (if provided)
+      ...(options?.aiRequestedBy && { aiRequestedBy: options.aiRequestedBy }),
+      ...(options?.aiOperationId && { aiOperationId: options.aiOperationId }),
     };
 
     // Add to local state immediately
     addObject(newText);
-    selectObject(id);
 
-    // Enter edit mode immediately after creation
-    setEditingTextId(id);
+    // Auto-select and enter edit mode (only if not created by AI)
+    if (!options?.aiRequestedBy) {
+      selectObject(id);
+      // Enter edit mode immediately after creation
+      setEditingTextId(id);
+    }
 
     // Save to Firebase or queue if offline
     try {
@@ -1013,7 +1136,10 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
             selectedIds: [],
           }));
           // Exit edit mode if save failed
-          setEditingTextId(null);
+          if (!options?.aiRequestedBy) {
+            setEditingTextId(null);
+          }
+          return;
         }
       }
     } catch (error) {
@@ -1024,8 +1150,14 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         selectedIds: [],
       }));
       // Exit edit mode if save failed
-      setEditingTextId(null);
+      if (!options?.aiRequestedBy) {
+        setEditingTextId(null);
+      }
+      return;
     }
+
+    // Return the ID so AI can track what was created
+    return id;
   };
 
   /**
@@ -1043,7 +1175,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     }
 
     clipboardManager.copy(selectedObjects);
-    console.log(`📋 Copied ${selectedObjects.length} object(s)`);
   };
 
   /**
@@ -1147,7 +1278,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
 
     // Copy to clipboard first
     clipboardManager.cut(selectedObjects);
-    console.log(`✂️ Cut ${selectedObjects.length} object(s)`);
 
     // Delete selected objects
     const idsToDelete = [...canvasState.selectedIds];
@@ -1234,8 +1364,6 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
     } catch (error) {
       console.error("❌ Failed to duplicate objects:", error);
     }
-
-    console.log(`🔄 Duplicated ${duplicates.length} object(s)`);
   };
 
   /**
@@ -1266,13 +1394,11 @@ export function CanvasProvider({ children }: CanvasProviderProps) {
         `Are you sure you want to delete ${selectedIds.length} objects? This action cannot be undone.`
       );
       if (!confirmed) {
-        console.log("❌ Delete cancelled by user");
         return;
       }
     }
 
     // Delete all selected objects
-    console.log(`🗑️ Deleting ${selectedIds.length} object(s)...`);
     for (const id of selectedIds) {
       await deleteObject(id);
     }
