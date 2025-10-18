@@ -39,7 +39,7 @@ import { exportToSVG } from "../../utils/svgGenerator";
 
 export default function Canvas() {
   const { user } = useAuth();
-  const { isAIPanelOpen, toggleAIPanel, closeAIPanel } = useAI(); // PR #27: Keyboard shortcuts
+  const { isAIPanelOpen, toggleAIPanel } = useAI(); // PR #27: Keyboard shortcuts
   const {
     viewport,
     canvasSize,
@@ -104,7 +104,6 @@ export default function Canvas() {
 
       // AI Panel
       onToggleAI: toggleAIPanel,
-      onCloseAI: closeAIPanel,
 
       // Nudge operations (1px)
       onNudgeUp: () => nudgeSelectedObjects(0, -1),

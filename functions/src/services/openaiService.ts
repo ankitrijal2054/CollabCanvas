@@ -317,28 +317,29 @@ export async function callOpenAI(
   });
 
   // Provide user-friendly error message based on error type
-  let userMessage =
+  let errorMessage =
     "The AI service is temporarily unavailable. Please try again.";
 
   if (lastError) {
     if (lastError.message.includes("timeout")) {
-      userMessage =
+      errorMessage =
         "The AI took too long to respond. Please try a simpler command or try again.";
     } else if (lastError.message.includes("rate limit")) {
-      userMessage =
+      errorMessage =
         "Too many requests to the AI service. Please wait a moment and try again.";
     } else if (lastError.message.includes("authentication")) {
-      userMessage = "AI service authentication failed. Please contact support.";
+      errorMessage =
+        "AI service authentication failed. Please contact support.";
     } else if (
       lastError.message.includes("network") ||
       lastError.message.includes("ENOTFOUND")
     ) {
-      userMessage =
+      errorMessage =
         "Unable to connect to AI service. Please check your internet connection and try again.";
     }
   }
 
-  throw new Error(userMessage);
+  throw new Error(errorMessage);
 }
 
 /**

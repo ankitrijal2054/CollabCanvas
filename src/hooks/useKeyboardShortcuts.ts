@@ -45,7 +45,6 @@ export interface KeyboardShortcutHandlers {
 
   // AI Panel (PR #27)
   onToggleAI?: () => void;
-  onCloseAI?: () => void;
 
   // Nudge operations
   onNudgeUp?: () => void;
@@ -229,14 +228,9 @@ export const useKeyboardShortcuts = ({
         }
       }
 
-      // Deselect (Escape) - PR #27: Close AI panel first if open
+      // Deselect (Escape)
       if (event.key === "Escape") {
         event.preventDefault();
-        // Try to close AI panel first, if it returns true, panel was closed
-        // If it returns false or undefined, proceed with deselect
-        if (handlers.onCloseAI?.()) {
-          return;
-        }
         handlers.onDeselect?.();
         return;
       }
@@ -418,12 +412,7 @@ export const getKeyboardShortcuts = () => {
     {
       category: "AI Assistant",
       keys: `${modKey}+K`,
-      description: "Toggle AI Assistant panel",
-    },
-    {
-      category: "AI Assistant",
-      keys: "Escape",
-      description: "Close AI panel (if open)",
+      description: "Open/Close AI Assistant panel",
     },
 
     // Help

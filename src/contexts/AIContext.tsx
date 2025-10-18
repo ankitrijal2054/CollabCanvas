@@ -51,8 +51,7 @@ interface AIContextType extends AIState {
   };
   isAIPanelOpen: boolean;
   setIsAIPanelOpen: (open: boolean) => void;
-  toggleAIPanel: () => void; // PR #27: Keyboard shortcut support
-  closeAIPanel: () => boolean; // PR #27: Returns true if panel was open and closed
+  toggleAIPanel: () => void; // PR #27: Keyboard shortcut support (Cmd/Ctrl+K)
 }
 
 // Create context
@@ -581,24 +580,11 @@ export function AIProvider({ children }: AIProviderProps) {
 
   /**
    * Toggle AI panel open/closed
-   * PR #27: Keyboard shortcut support
+   * PR #27: Keyboard shortcut support (Cmd/Ctrl+K)
    */
   const toggleAIPanel = useCallback(() => {
     setIsAIPanelOpen((prev) => !prev);
   }, []);
-
-  /**
-   * Close AI panel if open
-   * PR #27: Keyboard shortcut support
-   * @returns true if panel was open and closed, false otherwise
-   */
-  const closeAIPanel = useCallback((): boolean => {
-    if (isAIPanelOpen) {
-      setIsAIPanelOpen(false);
-      return true;
-    }
-    return false;
-  }, [isAIPanelOpen]);
 
   // Context value
   const value: AIContextType = {
@@ -613,7 +599,6 @@ export function AIProvider({ children }: AIProviderProps) {
     isAIPanelOpen,
     setIsAIPanelOpen,
     toggleAIPanel,
-    closeAIPanel,
   };
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
