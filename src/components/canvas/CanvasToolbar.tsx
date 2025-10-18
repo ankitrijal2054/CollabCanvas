@@ -62,7 +62,7 @@ export default function CanvasToolbar({
       {/* Add Rectangle Button */}
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
-        onClick={createRectangle}
+        onClick={() => createRectangle()}
         title="Add Rectangle"
       >
         <svg
@@ -81,7 +81,7 @@ export default function CanvasToolbar({
       {/* Add Circle Button */}
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
-        onClick={createCircle}
+        onClick={() => createCircle()}
         title="Add Circle"
       >
         <svg
@@ -100,7 +100,7 @@ export default function CanvasToolbar({
       {/* Add Star Button */}
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
-        onClick={createStar}
+        onClick={() => createStar()}
         title="Add Star"
       >
         <svg
@@ -122,7 +122,7 @@ export default function CanvasToolbar({
       {/* Add Line Button */}
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
-        onClick={createLine}
+        onClick={() => createLine()}
         title="Add Line"
       >
         <svg
@@ -144,7 +144,7 @@ export default function CanvasToolbar({
       {/* Add Text Button */}
       <button
         className="toolbar-button toolbar-icon-only toolbar-button-primary"
-        onClick={createText}
+        onClick={() => createText()}
         title="Add Text"
       >
         <svg
