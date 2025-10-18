@@ -109,6 +109,7 @@ export interface CanvasContextForTools {
 export interface ToolExecutionResult {
   success: boolean;
   message: string;
+  data?: any; // For query tools: structured data (shape IDs, objects, etc.)
   objectsCreated?: string[];
   objectsModified?: string[];
   error?: string;
@@ -959,11 +960,13 @@ function executeGetCanvasState(
       height: obj.height,
       color: obj.color,
     })),
+    selectedIds: context.selectedIds,
   };
 
   return {
     success: true,
     message: `Canvas has ${summary.objectCount} objects`,
+    data: summary, // Add structured data for AI to use
   };
 }
 
@@ -972,14 +975,33 @@ function executeFindShapesByColor(
   context: CanvasContextForTools
 ): ToolExecutionResult {
   const { color } = toolCall.parameters;
+  const normalizedColor = (color as string).toLowerCase();
 
-  const matches = context.objects.filter((obj) => obj.color === color);
+  // Match both exact color and partial matches (e.g., "red" matches "#FF0000")
+  const matchingObjects = context.objects.filter((obj) => {
+    const objColor = obj.color?.toLowerCase() || "";
+    return objColor === normalizedColor || objColor.includes(normalizedColor);
+  });
+
+  const shapeIds = matchingObjects.map((obj) => obj.id);
+  const details = matchingObjects.map((obj) => ({
+    id: obj.id,
+    type: obj.type,
+    x: obj.x,
+    y: obj.y,
+    width: obj.width,
+    height: obj.height,
+    color: obj.color,
+  }));
 
   return {
     success: true,
-    message: `Found ${matches.length} shape(s) with color ${color}: ${matches
-      .map((obj) => `${obj.type} at (${obj.x}, ${obj.y})`)
-      .join(", ")}`,
+    message: `Found ${shapeIds.length} shape(s) with color ${color}`,
+    data: {
+      shapeIds, // For easy iteration in AI
+      shapes: details, // Full details for context
+      count: shapeIds.length,
+    },
   };
 }
 
@@ -989,12 +1011,26 @@ function executeFindShapesByType(
 ): ToolExecutionResult {
   const { type } = toolCall.parameters;
 
-  const matches = context.objects.filter((obj) => obj.type === type);
+  const matchingObjects = context.objects.filter((obj) => obj.type === type);
+
+  const shapeIds = matchingObjects.map((obj) => obj.id);
+  const details = matchingObjects.map((obj) => ({
+    id: obj.id,
+    type: obj.type,
+    x: obj.x,
+    y: obj.y,
+    width: obj.width,
+    height: obj.height,
+    color: obj.color,
+  }));
 
   return {
     success: true,
-    message: `Found ${matches.length} ${type}(s): ${matches
-      .map((obj) => `at (${obj.x}, ${obj.y})`)
-      .join(", ")}`,
+    message: `Found ${shapeIds.length} ${type}(s)`,
+    data: {
+      shapeIds, // For easy iteration in AI
+      shapes: details, // Full details for context
+      count: shapeIds.length,
+    },
   };
 }

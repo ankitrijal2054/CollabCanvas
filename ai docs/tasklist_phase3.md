@@ -470,6 +470,759 @@
 
 ---
 
+### PR #27a: ReAct Loop for Multi-Step Reasoning
+
+**Goal:** Enable query-dependent multi-step AI operations using the ReAct (Reason + Act) pattern
+
+**Dependencies:** PR #23, #24, #25, #26 (all previous PRs must be complete)
+
+**Estimated Effort:** 8-12 hours (split over 2-3 days)
+
+---
+
+#### Task 27a.1: Update Type Definitions for ReAct
+
+**Files to create/update:**
+
+- `src/types/ai.types.ts`
+- `functions/src/types/ai.types.ts`
+
+**Frontend Types (`src/types/ai.types.ts`):**
+
+```typescript
+/**
+ * Tool execution result with data for feedback to AI
+ */
+export interface ToolExecutionResult {
+  tool: string;
+  toolCallId?: string;
+  success: boolean;
+  message: string;
+  data?: any;
+  objectsCreated?: string[];
+  objectsModified?: string[];
+  error?: string;
+}
+
+/**
+ * Tool category for loop control
+ */
+export type ToolCategory = "query" | "action";
+
+/**
+ * OpenAI conversation message format
+ */
+export interface ConversationMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_calls?: any[];
+  tool_call_id?: string;
+  name?: string;
+}
+
+/**
+ * ReAct loop configuration
+ */
+export interface ReActConfig {
+  maxIterations: number;
+  continueOnQueryTools: boolean;
+  showProgress: boolean;
+}
+```
+
+**Backend Types (`functions/src/types/ai.types.ts`):**
+
+```typescript
+export interface AICommand {
+  message: string;
+  canvasId: string;
+  userId: string;
+  conversationHistory?: ConversationMessage[];
+  toolResults?: ToolExecutionResult[];
+}
+
+export interface AIAPIResponse {
+  success: true;
+  aiResponse: string;
+  toolCalls: ToolCall[];
+  aiOperationId: string;
+  conversationContext: ConversationMessage[];
+  requiresContinuation: boolean;
+}
+```
+
+**Testing:**
+
+- [ ] All type definitions compile without errors
+- [ ] Types are exported correctly
+- [ ] Frontend and backend types are compatible
+
+---
+
+#### Task 27a.2: Mark Tools as Query or Action
+
+**Files to update:**
+
+- `functions/src/tools/toolDefinitions.ts`
+
+**Changes:**
+
+1. Add `ToolDefinition` interface:
+
+```typescript
+export interface ToolDefinition {
+  name: string;
+  description: string;
+  category: "query" | "action";
+  parameters: any;
+}
+```
+
+2. Update all tool definitions with `category`:
+
+**Query Tools:**
+
+- `findShapesByColor` → category: "query"
+- `findShapesByType` → category: "query"
+- `getCanvasState` → category: "query"
+- `getSelectedShapes` → category: "query" (if not implemented yet)
+
+**Action Tools:**
+
+- All creation tools → category: "action"
+- All manipulation tools → category: "action"
+- All styling tools → category: "action"
+- All layout tools → category: "action"
+
+3. Update descriptions to mention ReAct:
+
+```typescript
+{
+  name: "findShapesByColor",
+  category: "query",
+  description: "Find all shapes with a specific fill color. Returns array of shape IDs. Use the returned IDs in subsequent operations like moveShape or deleteShape.",
+  // ...
+}
+```
+
+**Testing:**
+
+- [ ] All tools have `category` field
+- [ ] Query tool descriptions mention follow-up usage
+- [ ] No compilation errors
+
+---
+
+#### Task 27a.3: Update System Prompt with ReAct Guidelines
+
+**Files to update:**
+
+- `functions/src/utils/systemPrompt.ts`
+
+**Add ReAct section to system prompt:**
+
+```typescript
+export function buildSystemPrompt(canvasState: any): string {
+  return `You are an AI assistant for CollabCanvas, a collaborative design tool.
+You help users create and manipulate shapes on a shared canvas using natural language.
+
+Available shapes: rectangle, circle, star, line, text
+Canvas size: 10000x10000px (origin at top-left: 0,0)
+Default colors: #3B82F6 (blue), #EF4444 (red), #10B981 (green), #F59E0B (amber), #8B5CF6 (purple)
+
+**Multi-Step Reasoning (ReAct Pattern):**
+You can perform operations in multiple steps. The results of each step will be provided for your next decision.
+
+**Query Tools** (gather information first):
+- findShapesByColor(color) → Returns array of shape IDs and details
+- findShapesByType(type) → Returns array of matching objects
+- getCanvasState() → Returns all canvas objects
+- getSelectedShapes() → Returns currently selected IDs
+
+**Action Tools** (perform operations):
+- All creation, manipulation, styling, and layout tools
+
+**Example Multi-Step Workflows:**
+
+User: "Delete all green shapes"
+Step 1: Call findShapesByColor("green") to get shape IDs
+Step 2: Call deleteShape() for each returned ID
+Step 3: Confirm completion with friendly message
+
+User: "Move all circles 100px to the right"
+Step 1: Call findShapesByType("circle") to get all circles
+Step 2: For each circle, call moveShape(id, x + 100, y)
+Step 3: Confirm how many shapes were moved
+
+User: "Make all small rectangles red"
+Step 1: Call findShapesByType("rectangle")
+Step 2: Filter results for width < 100 and height < 100
+Step 3: Call updateShapeStyle() for each small rectangle
+Step 4: Confirm changes
+
+**Important:**
+- You have up to 5 iterations to complete a task
+- Always use query tools first when dealing with "all X" or "find X" patterns
+- Provide progress updates: "Found 5 circles, now moving them..."
+- If the task requires more than 5 steps, ask the user to break it down
+- When no more actions are needed, return an empty tool calls array
+
+Current Canvas State:
+${JSON.stringify(canvasState, null, 2)}
+`;
+}
+```
+
+**Testing:**
+
+- [ ] System prompt includes ReAct section
+- [ ] Examples are clear and helpful
+- [ ] Token count is reasonable (<1000 tokens)
+
+---
+
+#### Task 27a.4: Update Tool Executor to Return Detailed Results
+
+**Files to update:**
+
+- `src/utils/aiToolExecutor.ts`
+
+**Note:** Query tools (`findShapesByColor`, `findShapesByType`, `getCanvasState`) have already been fixed in PR #26 to return structured data with the `data` field. Verify that all action tools also return proper `ToolExecutionResult` format.
+
+**Create new function for batch execution with results:**
+
+```typescript
+export async function executeToolCallsWithResults(
+  toolCalls: ToolCall[],
+  context: CanvasContextForTools,
+  userId: string,
+  aiOperationId: string
+): Promise<ToolExecutionResult[]> {
+  const results: ToolExecutionResult[] = [];
+
+  for (const toolCall of toolCalls) {
+    const result = await executeToolCall(
+      toolCall,
+      context,
+      userId,
+      aiOperationId
+    );
+    results.push(result);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+
+  return results;
+}
+```
+
+**Testing:**
+
+- [ ] All tools return `ToolExecutionResult`
+- [ ] Query tools return useful `data` field
+- [ ] Action tools return `objectsCreated`/`objectsModified`
+- [ ] Error cases return `success: false` and `error` message
+- [ ] No regression in existing functionality
+
+---
+
+#### Task 27a.5: Implement ReAct Loop in AIContext
+
+**Files to update:**
+
+- `src/contexts/AIContext.tsx`
+
+**Changes:**
+
+1. Add ReAct configuration:
+
+```typescript
+const REACT_CONFIG: ReActConfig = {
+  maxIterations: 5,
+  continueOnQueryTools: true,
+  showProgress: true,
+};
+```
+
+2. Create `executeWithReActLoop` function:
+
+```typescript
+const executeWithReActLoop = async (
+  command: AICommand,
+  commandId: string
+): Promise<void> => {
+  let iteration = 0;
+  let conversationHistory: ConversationMessage[] = [];
+  let shouldContinue = true;
+
+  // Add user message
+  conversationHistory.push({
+    role: "user",
+    content: command.message,
+  });
+
+  while (shouldContinue && iteration < REACT_CONFIG.maxIterations) {
+    iteration++;
+    console.log(`[ReAct] Iteration ${iteration}/${REACT_CONFIG.maxIterations}`);
+
+    // Show progress
+    if (iteration > 1 && REACT_CONFIG.showProgress) {
+      updateMessage(commandId, {
+        status: "processing",
+        content: `Processing step ${iteration}...`,
+      });
+    }
+
+    try {
+      // Send to backend with conversation history
+      const response = await sendAICommand(
+        {
+          ...command,
+          conversationHistory,
+        },
+        await authService.getIdToken()
+      );
+
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+
+      // Add assistant response to conversation
+      conversationHistory.push({
+        role: "assistant",
+        content: null,
+        tool_calls: response.toolCalls.map((tc, idx) => ({
+          id: `call_${iteration}_${idx}`,
+          type: "function",
+          function: {
+            name: tc.tool,
+            arguments: JSON.stringify(tc.parameters),
+          },
+        })),
+      });
+
+      // Execute tool calls and get results
+      const results = await executeToolCallsWithResults(
+        response.toolCalls,
+        canvasContext as CanvasContextForTools,
+        user!.id,
+        response.aiOperationId
+      );
+
+      // Add tool results to conversation
+      response.toolCalls.forEach((tc, idx) => {
+        conversationHistory.push({
+          role: "tool",
+          tool_call_id: `call_${iteration}_${idx}`,
+          name: tc.tool,
+          content: JSON.stringify(results[idx]),
+        });
+      });
+
+      // Determine if we should continue
+      const hasQueryTools = response.toolCalls.some((tc) =>
+        [
+          "findShapesByColor",
+          "findShapesByType",
+          "getCanvasState",
+          "getSelectedShapes",
+        ].includes(tc.tool)
+      );
+
+      const allSucceeded = results.every((r) => r.success);
+      const noToolsCalled = response.toolCalls.length === 0;
+
+      shouldContinue =
+        hasQueryTools &&
+        allSucceeded &&
+        !noToolsCalled &&
+        iteration < REACT_CONFIG.maxIterations;
+
+      // If done, add final message
+      if (!shouldContinue) {
+        const aiMessage: AIMessage = {
+          id: `${commandId}-response`,
+          role: "assistant",
+          content: response.aiResponse || `Completed in ${iteration} step(s)`,
+          timestamp: Date.now(),
+          status: "completed",
+          toolCalls: response.toolCalls,
+        };
+        addMessage(aiMessage);
+      }
+    } catch (error) {
+      console.error(`[ReAct] Iteration ${iteration} failed`, error);
+      throw error;
+    }
+  }
+
+  // Handle max iterations
+  if (iteration >= REACT_CONFIG.maxIterations && shouldContinue) {
+    addMessage({
+      id: `${commandId}-warning`,
+      role: "assistant",
+      content:
+        "The operation was partially completed but reached the maximum number of steps. Try breaking this into smaller commands.",
+      timestamp: Date.now(),
+      status: "completed",
+    });
+  }
+};
+```
+
+3. Update `sendCommand` to use ReAct loop:
+
+```typescript
+const sendCommand = useCallback(
+  async (message: string) => {
+    // ... validation ...
+
+    const commandId = generateCommandId();
+    // ... add user message ...
+
+    try {
+      commandQueue.enqueue(queuedCommand);
+      updateMessage(commandId, { status: "processing" });
+      await waitForCommandProcessing(commandId);
+
+      // Build conversation history
+      const conversationHistory = messages.slice(-10).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      // Execute with ReAct loop
+      await executeWithReActLoop(
+        {
+          message,
+          canvasId: DEFAULT_CANVAS_ID,
+          userId: user.id,
+          conversationHistory,
+        },
+        commandId
+      );
+
+      commandQueue.completeCommand(commandId, {
+        success: true,
+        aiResponse: "Command completed",
+        toolCalls: [],
+        aiOperationId: generateCommandId(),
+      });
+
+      updateMessage(commandId, { status: "completed" });
+    } catch (error) {
+      // ... error handling ...
+    }
+  },
+  [user, messages, canvasContext, commandQueue, addMessage, updateMessage]
+);
+```
+
+**Testing:**
+
+- [ ] Single-step commands still work (no regression)
+- [ ] Multi-step commands execute multiple iterations
+- [ ] Progress shows to user during multi-step execution
+- [ ] Max iterations prevents infinite loops
+- [ ] Error handling works correctly
+- [ ] Conversation history is maintained
+
+---
+
+#### Task 27a.6: Update Backend to Support Conversation History
+
+**Files to update:**
+
+- `functions/src/index.ts`
+- `functions/src/services/openaiService.ts`
+
+**Changes in `functions/src/index.ts`:**
+
+```typescript
+// Accept conversation history in request
+const {
+  message,
+  canvasId,
+  userId,
+  conversationHistory = [],
+} = body as AICommand;
+
+// Build messages for OpenAI
+const messages: any[] = [
+  {
+    role: "system",
+    content: buildSystemPrompt(formattedCanvasState),
+  },
+  ...conversationHistory, // Include full conversation
+];
+
+// If this is a new conversation, add user message
+if (
+  !conversationHistory.some(
+    (msg) => msg.role === "user" && msg.content === message
+  )
+) {
+  messages.push({
+    role: "user",
+    content: message,
+  });
+}
+
+// Call OpenAI with full conversation
+const aiResult = await callOpenAI(messages, tools);
+```
+
+**Changes in `functions/src/services/openaiService.ts`:**
+
+```typescript
+export async function callOpenAI(
+  messages: any[], // Changed from single message to array
+  tools: any[]
+): Promise<any> {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    messages: messages, // Use provided messages array
+    tools: tools,
+    tool_choice: "auto",
+    temperature: 0.7,
+    max_tokens: 1000,
+  });
+
+  return completion.choices[0].message;
+}
+```
+
+**Testing:**
+
+- [ ] Backend accepts conversation history
+- [ ] OpenAI receives full conversation context
+- [ ] Tool results are properly formatted in conversation
+- [ ] System prompt is only added once
+- [ ] No duplicate messages in conversation
+
+---
+
+#### Task 27a.7: Add Feature Flag and Logging
+
+**Files to update:**
+
+- `src/contexts/AIContext.tsx`
+- `src/constants/canvas.ts` (add feature flags)
+
+**Add feature flag:**
+
+```typescript
+// constants/canvas.ts
+export const FEATURE_FLAGS = {
+  ENABLE_REACT_LOOP: true, // Can be toggled for testing
+  REACT_MAX_ITERATIONS: 5,
+  REACT_SHOW_PROGRESS: true,
+};
+```
+
+**Add comprehensive logging:**
+
+```typescript
+// In AIContext.tsx
+console.log("[ReAct] Starting loop", {
+  command: message,
+  maxIterations: REACT_CONFIG.maxIterations,
+});
+
+console.log("[ReAct] Iteration complete", {
+  iteration,
+  toolsExecuted: results.length,
+  hasQueryTools,
+  willContinue: shouldContinue,
+  results: results.map((r) => ({
+    tool: r.tool,
+    success: r.success,
+    message: r.message,
+  })),
+});
+
+console.log("[ReAct] Loop complete", {
+  totalIterations: iteration,
+  finalStatus: shouldContinue ? "max_iterations" : "natural_completion",
+});
+```
+
+**Testing:**
+
+- [ ] Feature flag can enable/disable ReAct loop
+- [ ] Logging provides clear execution trace
+- [ ] Logs include tool results and decisions
+- [ ] No sensitive data in logs
+
+---
+
+#### Task 27a.8: Test Multi-Step Commands
+
+**Test Scenarios:**
+
+**Simple Query-Then-Act:**
+
+- [ ] "Delete all green shapes" → findShapesByColor → deleteShape for each
+- [ ] "Move all circles to the right" → findShapesByType → moveShape for each
+- [ ] "Make all rectangles red" → findShapesByType → updateShapeStyle for each
+
+**Conditional Operations:**
+
+- [ ] "Delete green circles" → findShapesByColor + findShapesByType (intersection) → delete
+- [ ] "Move small shapes to the left" → getCanvasState → filter → moveShape
+- [ ] "Change color of large rectangles" → findShapesByType → filter → updateShapeStyle
+
+**Complex Multi-Step:**
+
+- [ ] "Find all blue shapes and arrange them horizontally" → find → arrangeHorizontal
+- [ ] "Get all stars and move them to the top" → findShapesByType → moveShape each
+- [ ] "Select all green objects then align them left" → findShapesByColor → select → alignLeft
+
+**Error Handling:**
+
+- [ ] "Delete all purple shapes" (none exist) → returns friendly "no shapes found" message
+- [ ] Command requiring >5 steps → shows max iterations warning
+- [ ] Tool execution fails mid-loop → error handled gracefully
+
+**Edge Cases:**
+
+- [ ] Empty canvas → query returns empty array → AI responds appropriately
+- [ ] Single shape → query works, action works
+- [ ] 100+ shapes → query returns all, actions complete successfully
+
+**Performance:**
+
+- [ ] Single-step commands: <2s (no regression)
+- [ ] 2-step commands: 3-5s
+- [ ] 3-step commands: 6-8s
+- [ ] Max 5 iterations: <12s
+
+---
+
+#### Task 27a.9: Documentation and Examples
+
+**Files to create/update:**
+
+- Update `README.md` with ReAct capabilities
+
+**Add to README:**
+
+```markdown
+## AI Assistant - Multi-Step Reasoning
+
+The AI assistant now supports multi-step operations using the ReAct pattern:
+
+### Simple Commands (1 iteration)
+
+- "Create a red circle at 100, 200"
+- "Move shape-123 to 500, 500"
+- "Delete the selected shape"
+
+### Query-Then-Act (2 iterations)
+
+- "Delete all green shapes"
+- "Move all circles 100px right"
+- "Make all rectangles larger"
+
+### Multi-Step Operations (3+ iterations)
+
+- "Find blue shapes and arrange them in a row"
+- "Select all small objects and change them to red"
+- "Get circles, align them left, then distribute evenly"
+
+### Complex Workflows (4-5 iterations)
+
+- "Find all green rectangles, make them blue, move to top, then rotate 45 degrees"
+- "Get shapes by color, filter by size, arrange in grid, then align to center"
+```
+
+**Testing:**
+
+- [ ] README is updated with ReAct features
+- [ ] All examples are clear and accurate
+
+---
+
+### PR #27a Testing Checklist
+
+**Functional Requirements:**
+
+- [ ] Query tools return structured data
+- [ ] Action tools work with query results
+- [ ] ReAct loop executes multiple iterations
+- [ ] Max iterations prevents infinite loops
+- [ ] Error handling works at each step
+- [ ] Single-step commands still work (no regression)
+
+**Performance Requirements:**
+
+- [ ] Single-step commands: <2s latency
+- [ ] Multi-step commands: <10s latency
+- [ ] No memory leaks from conversation history
+- [ ] Conversation context stays under token limits
+
+**User Experience:**
+
+- [ ] Progress indicators show during multi-step
+- [ ] Error messages are clear and actionable
+- [ ] Final confirmation includes step count
+- [ ] Other users see standard "AI working" message
+
+**Integration:**
+
+- [ ] Works with offline queue
+- [ ] Works with command queue (multi-user)
+- [ ] Real-time sync works for all operations
+- [ ] AI attribution tracks all operations
+
+---
+
+### PR Title
+
+`feat: implement ReAct loop for multi-step AI reasoning`
+
+### PR Description
+
+```markdown
+## Summary
+
+Implements the ReAct (Reason + Act) pattern to enable multi-step AI reasoning. The AI can now query the canvas state and perform follow-up actions based on the results.
+
+## Key Changes
+
+- Added `ToolExecutionResult` type for structured tool feedback
+- Marked tools as "query" or "action" categories
+- Updated system prompt with ReAct guidelines
+- Implemented multi-iteration loop in AIContext
+- Updated backend to support conversation history
+- Query tools return detailed data for follow-up operations
+
+## New Capabilities
+
+- "Delete all green shapes" - finds shapes, then deletes them
+- "Move all circles 100px right" - queries circles, then moves each
+- "Make all small rectangles red" - finds + filters, then updates style
+- Supports up to 5 iterations for complex multi-step operations
+
+## Testing
+
+- ✅ All existing single-step commands work (no regression)
+- ✅ Query-then-act commands execute correctly
+- ✅ Max iterations prevents infinite loops
+- ✅ Error handling at each step
+- ✅ Progress shown to users
+- ✅ Performance: <10s for complex commands
+
+## Breaking Changes
+
+None - fully backward compatible
+
+## Estimated Effort
+
+13-20 hours (split over 2-3 days)
+```
+
+---
+
 ### PR #27: Error Handling & Polish
 
 **Goal:** Refine error handling, add helpful messages, and test edge cases

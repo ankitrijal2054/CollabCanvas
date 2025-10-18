@@ -646,6 +646,406 @@ Complex commands:
 
 ---
 
+### 4.4 ReAct Pattern for Multi-Step Reasoning
+
+**Problem Statement:**
+
+Single-pass AI execution cannot handle query-dependent operations where the AI needs to:
+
+1. First query the canvas state (find objects by criteria)
+2. Then act on the query results (delete, move, or modify those objects)
+
+**Example Limitations (Current System):**
+
+- "Delete all green shapes" → AI calls `findShapesByColor` but cannot follow up with `deleteShape`
+- "Move all circles to the right" → AI finds circles but cannot move them
+- "Make all red rectangles blue" → AI finds shapes but cannot change their color
+
+**Solution: ReAct (Reason + Act) Loop**
+
+Implement an iterative feedback loop where:
+
+1. AI reasons about the task and calls tools
+2. Tools execute and return results
+3. Results feed back into AI for next reasoning step
+4. Loop continues until task is complete or max iterations reached
+
+---
+
+#### 4.4.1 ReAct Architecture
+
+**Execution Flow:**
+
+```
+User: "Delete all green shapes"
+
+┌─────────────────────────────────────────────────────────────┐
+│ Iteration 1: Query Phase                                     │
+├─────────────────────────────────────────────────────────────┤
+│ AI analyzes: "I need to find green shapes first"            │
+│ Tool calls: [findShapesByColor("green")]                    │
+│ Executes: Returns ["shape-1", "shape-2", "shape-3"]        │
+│ Result → Feed back to AI                                     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Iteration 2: Action Phase                                    │
+├─────────────────────────────────────────────────────────────┤
+│ AI receives: ["shape-1", "shape-2", "shape-3"]             │
+│ AI analyzes: "Now I'll delete each shape"                   │
+│ Tool calls: [                                                │
+│   deleteShape("shape-1"),                                    │
+│   deleteShape("shape-2"),                                    │
+│   deleteShape("shape-3")                                     │
+│ ]                                                            │
+│ Executes: All shapes deleted successfully                    │
+│ Result → Feed back to AI                                     │
+└─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Iteration 3: Completion Phase                                │
+├─────────────────────────────────────────────────────────────┤
+│ AI receives: All deletions successful                        │
+│ AI analyzes: "Task complete"                                │
+│ Tool calls: []                                               │
+│ Response: "I've deleted 3 green shapes"                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Components:**
+
+1. **Tool Categories:**
+
+   - **Query Tools:** Return data, require follow-up (findShapesByColor, findShapesByType, getCanvasState, getSelectedShapes)
+   - **Action Tools:** Perform operations, usually terminal (create, move, delete, style, layout)
+
+2. **Conversation Context:**
+
+   - Full OpenAI message history maintained across iterations
+   - Tool results stored as `role: "tool"` messages
+   - AI sees complete reasoning chain
+
+3. **Iteration Control:**
+   - Max 5 iterations per command (prevents infinite loops)
+   - Auto-stop when no more tool calls returned
+   - Auto-stop after all action tools complete successfully
+
+---
+
+#### 4.4.2 Tool Result Format
+
+All tools return structured results for AI feedback:
+
+```typescript
+interface ToolExecutionResult {
+  tool: string; // Tool name
+  success: boolean; // Execution status
+  message: string; // Human-readable message
+  data?: any; // Query results (for query tools)
+  objectsCreated?: string[]; // IDs of created objects
+  objectsModified?: string[]; // IDs of modified objects
+  error?: string; // Error message if failed
+}
+```
+
+**Query Tool Example:**
+
+```json
+{
+  "tool": "findShapesByColor",
+  "success": true,
+  "message": "Found 3 shape(s) with color #10B981",
+  "data": {
+    "shapeIds": ["shape-1", "shape-2", "shape-3"],
+    "shapes": [
+      {
+        "id": "shape-1",
+        "type": "rectangle",
+        "x": 100,
+        "y": 200,
+        "color": "#10B981"
+      },
+      {
+        "id": "shape-2",
+        "type": "circle",
+        "x": 300,
+        "y": 400,
+        "color": "#10B981"
+      },
+      {
+        "id": "shape-3",
+        "type": "star",
+        "x": 500,
+        "y": 600,
+        "color": "#10B981"
+      }
+    ],
+    "count": 3
+  }
+}
+```
+
+**Action Tool Example:**
+
+```json
+{
+  "tool": "deleteShape",
+  "success": true,
+  "message": "Deleted shape shape-1",
+  "objectsModified": ["shape-1"]
+}
+```
+
+---
+
+#### 4.4.3 Updated System Prompt Guidelines
+
+**ReAct Instructions for AI:**
+
+```
+Multi-Step Reasoning (ReAct Pattern):
+You can perform operations in multiple steps. The results of each step will be provided for your next decision.
+
+Query Tools (gather information first):
+- findShapesByColor(color) → Returns array of shape IDs matching the color
+- findShapesByType(type) → Returns array of objects matching the type
+- getCanvasState() → Returns all canvas objects
+- getSelectedShapes() → Returns currently selected object IDs
+
+Action Tools (perform operations on found objects):
+- All creation, manipulation, styling, and layout tools
+
+Example Workflows:
+
+User: "Delete all green shapes"
+Step 1: Call findShapesByColor("green") → Receive shape IDs
+Step 2: Call deleteShape() for each ID → Delete them
+Step 3: Respond with confirmation message
+
+User: "Move all circles 100px to the right"
+Step 1: Call findShapesByType("circle") → Receive circle objects
+Step 2: For each circle, call moveShape(id, x + 100, y)
+Step 3: Confirm completion
+
+User: "Make all small rectangles red"
+Step 1: Call findShapesByType("rectangle") → Receive rectangles
+Step 2: Filter results for width < 100 && height < 100
+Step 3: Call updateShapeStyle() for each small rectangle
+Step 4: Confirm completion
+
+Important:
+- You have up to 5 iterations to complete a task
+- Always use query tools first when dealing with "all X" or "find X"
+- Provide clear progress updates: "Found 5 circles, now moving them..."
+- If task is too complex for 5 steps, ask user to break it down
+```
+
+---
+
+#### 4.4.4 Loop Control & Safety
+
+**Max Iterations:** 5 per command
+
+**Rationale:**
+
+- Iteration 1: Initial query
+- Iteration 2-3: Primary actions
+- Iteration 4-5: Follow-up actions or verification
+- Prevents infinite loops from AI reasoning errors
+- Sufficient for 95% of multi-step operations
+
+**Stop Conditions:**
+
+1. **Natural Completion:** AI returns no tool calls (task done)
+2. **Max Iterations:** 5 iterations reached (warn user)
+3. **Error Threshold:** 2 consecutive failed tool calls (abort)
+4. **User Cancellation:** User stops the command mid-execution
+
+**Timeout:** 60 seconds total (10-12 seconds per iteration)
+
+---
+
+#### 4.4.5 User Experience
+
+**Progress Indicators:**
+
+- **Iteration 1:** "Processing your request..." (standard)
+- **Iteration 2+:** "Processing step 2..." (shows multi-step progress)
+- **Completion:** "Completed in 3 steps" (summary)
+
+**Progress Visibility:**
+
+- **Requesting user:** Sees "Step X/Y" progress
+- **Other users:** See standard "AI is working..." (keeps UI clean)
+
+**Error Messages:**
+
+```
+- "Found 0 green shapes. Current shapes: 2 blue rectangles, 1 red circle."
+- "Operation partially completed (5/8 shapes). Please select remaining shapes manually."
+- "Task too complex for automatic execution. Try: 'Delete green circles' then 'Delete green rectangles' separately."
+```
+
+---
+
+#### 4.4.6 Performance Characteristics
+
+**Latency:**
+
+| Command Type                  | Iterations | Latency | Token Usage  |
+| ----------------------------- | ---------- | ------- | ------------ |
+| Single-step (create, move)    | 1          | 1-2s    | ~750 tokens  |
+| Query-then-act (delete all X) | 2-3        | 3-6s    | ~2000 tokens |
+| Complex multi-step            | 3-5        | 6-10s   | ~3500 tokens |
+
+**Cost Impact:**
+
+- Single-step commands: No change (~$0.008/command)
+- Multi-step commands: 3-4x increase (~$0.028/command)
+- Average across all commands: ~2x increase (~$0.015/command)
+
+**Acceptable for Phase 3** (personal project, quality > cost)
+
+---
+
+#### 4.4.7 Example Commands Enabled by ReAct
+
+**Simple Query-Act:**
+
+- "Delete all green shapes"
+- "Move all circles to the center"
+- "Make all rectangles larger"
+- "Change all red shapes to blue"
+
+**Conditional Operations:**
+
+- "If there are any green circles, delete them"
+- "Find all small shapes and arrange them in a row"
+- "Select all shapes created by Sarah"
+
+**Multi-Stage Operations:**
+
+- "Find all blue shapes, align them left, then distribute them vertically"
+- "Get all circles, make them red, then move them to the top"
+- "Find rectangles larger than 200px, change their color to green, then rotate them 45 degrees"
+
+**Smart Filtering:**
+
+- "Delete all shapes except the blue ones"
+- "Move only the large circles to the right"
+- "Find green rectangles taller than 100px and make them red"
+
+---
+
+#### 4.4.8 Conversation Context Management
+
+**OpenAI Message Format:**
+
+```javascript
+[
+  { role: "system", content: "You are an AI assistant..." },
+  { role: "user", content: "Delete all green shapes" },
+  { role: "assistant", content: null, tool_calls: [{name: "findShapesByColor", ...}] },
+  { role: "tool", tool_call_id: "call_1", name: "findShapesByColor", content: '{"shapeIds": ["shape-1", "shape-2"]}' },
+  { role: "assistant", content: null, tool_calls: [{name: "deleteShape", ...}] },
+  { role: "tool", tool_call_id: "call_2", name: "deleteShape", content: '{"success": true}' },
+  { role: "assistant", content: "I've deleted 2 green shapes." }
+]
+```
+
+**Context Window Management:**
+
+- Keep last 10 user-assistant exchanges (~20 messages)
+- Include all tool results from current command
+- Summarize old tool results to save tokens
+- Full reset after command completion
+
+---
+
+#### 4.4.9 Integration with Existing System
+
+**No Breaking Changes:**
+
+✅ Single-step commands work exactly as before
+✅ Existing tools unchanged (just return more detailed results)
+✅ Canvas Context functions unchanged
+✅ Real-time sync unchanged
+✅ Offline queue unchanged
+
+**Additive Enhancements:**
+
+- Tools now return structured results
+- Client tracks conversation across iterations
+- Backend accepts conversation history
+- System prompt includes ReAct guidelines
+
+**Backward Compatibility:**
+
+```typescript
+// Old behavior (still works)
+User: "Create a red circle"
+→ 1 iteration, immediate response
+
+// New behavior (seamless)
+User: "Delete all red circles"
+→ 2-3 iterations, multi-step execution
+```
+
+---
+
+#### 4.4.10 Testing & Validation
+
+**Unit Tests:**
+
+- Query tool result format validation
+- Action tool result format validation
+- Loop termination conditions
+- Max iteration handling
+- Error propagation
+
+**Integration Tests:**
+
+- Single query → multiple actions
+- Multiple queries → single action
+- Query → action → verify pattern
+- Error recovery during loop
+- Timeout handling
+
+**E2E Test Scenarios:**
+
+| Command                                  | Expected Iterations | Expected Outcome    |
+| ---------------------------------------- | ------------------- | ------------------- |
+| "Create a red circle"                    | 1                   | Circle created      |
+| "Delete all green shapes"                | 2                   | Query → Delete      |
+| "Move all circles right"                 | 2-3                 | Query → Move each   |
+| "Find blue rectangles and make them red" | 2-3                 | Query → Update each |
+| "Arrange all stars in a grid"            | 2-3                 | Query → Create grid |
+
+---
+
+**Success Criteria**
+
+✅ Query-dependent commands work reliably
+✅ Multi-step commands complete in <10 seconds
+✅ No infinite loops (max 5 iterations enforced)
+✅ Single-step commands not impacted (no latency regression)
+✅ Clear progress feedback to users
+✅ Graceful error handling and recovery
+
+---
+
+**Risks & Mitigation**
+
+| Risk                | Impact | Probability | Mitigation                                 |
+| ------------------- | ------ | ----------- | ------------------------------------------ |
+| AI infinite loops   | High   | Low         | Hard 5-iteration limit                     |
+| Increased latency   | Medium | High        | Show progress, optimize token usage        |
+| Higher API costs    | Medium | High        | Acceptable for Phase 3, can optimize later |
+| Complex debugging   | Medium | Medium      | Comprehensive logging, visualization tools |
+| AI reasoning errors | High   | Low         | Validation on each tool result             |
+
+---
+
 ## Section 5: User Interface Design
 
 ### 5.1 AI Chat Panel
