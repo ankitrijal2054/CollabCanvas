@@ -4,12 +4,7 @@
  * Handles communication with Firebase Cloud Functions AI endpoint
  */
 
-import type {
-  AICommand,
-  AIResponse,
-  AIAPIResponse,
-  AIError,
-} from "../types/ai.types";
+import type { AICommand, AIResponse, AIError } from "../types/ai.types";
 
 /**
  * Base URL for Firebase Cloud Functions

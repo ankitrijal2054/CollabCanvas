@@ -61,7 +61,28 @@ export default function Header({ user }: HeaderProps) {
         {/* Center: Title */}
         <div className="header-center">
           <h1 className="header-title">
-            <span className="header-icon">🎨</span>
+            <div className="header-logo-icon">
+              <svg viewBox="0 0 40 40" fill="none">
+                <rect
+                  x="4"
+                  y="4"
+                  width="14"
+                  height="14"
+                  rx="2"
+                  fill="#3B82F6"
+                />
+                <circle cx="29" cy="11" r="7" fill="#8B5CF6" />
+                <path d="M4 25 L18 32 L18 25 Z" fill="#10B981" />
+                <rect
+                  x="24"
+                  y="24"
+                  width="12"
+                  height="12"
+                  rx="2"
+                  fill="#F59E0B"
+                />
+              </svg>
+            </div>
             CollabCanvas
           </h1>
         </div>
