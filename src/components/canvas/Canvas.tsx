@@ -140,6 +140,11 @@ export default function Canvas() {
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  // Track potential Shift+Click+Drag rubber-band start (to allow toggle on click, then drag)
+  const [selectionStart, setSelectionStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -503,10 +508,14 @@ export default function Canvas() {
     const pos = stage.getPointerPosition();
     if (!pos) return;
 
+    // Track Shift state for rubber-band without breaking Shift+Click multi-select
+    const isShiftPressed = (e.evt as MouseEvent)?.shiftKey === true;
+
     // Check if clicking on empty canvas (not an object)
     const clickedOnEmpty = e.target === stage;
 
-    // If in selection mode and clicking on empty canvas, start selection rectangle
+    // Start selection rectangle only when selection mode is active and clicked on empty
+    // For Shift, we'll keep original Shift+Click behavior (toggle) and only start box on movement
     if (isSelectionMode && clickedOnEmpty) {
       // Convert screen coordinates to canvas coordinates (accounting for viewport)
       const canvasX = (pos.x - viewport.x) / viewport.scale;
@@ -519,6 +528,12 @@ export default function Canvas() {
         height: 0,
       });
       setIsPanning(false); // Don't pan when in selection mode
+    } else if (isShiftPressed) {
+      // Record starting point for Shift+Click+Drag rubber-band (defer box creation to movement)
+      const canvasX = (pos.x - viewport.x) / viewport.scale;
+      const canvasY = (pos.y - viewport.y) / viewport.scale;
+      setSelectionStart({ x: canvasX, y: canvasY });
+      setIsPanning(false);
     } else if (!clickedOnEmpty) {
       // Don't pan if clicking on an object
       setIsPanning(false);
@@ -555,6 +570,19 @@ export default function Canvas() {
         height: canvasY - selectionRect.y,
       });
       return; // Don't pan when drawing selection rectangle
+    }
+
+    // If Shift+Click was pressed and user is moving, start rubber-band from recorded start
+    if (selectionStart) {
+      const canvasX = (pos.x - viewport.x) / viewport.scale;
+      const canvasY = (pos.y - viewport.y) / viewport.scale;
+      setSelectionRect({
+        x: selectionStart.x,
+        y: selectionStart.y,
+        width: canvasX - selectionStart.x,
+        height: canvasY - selectionStart.y,
+      });
+      return;
     }
 
     if (!isPanning) return;
@@ -636,6 +664,10 @@ export default function Canvas() {
       setSelectionRect(null);
       setIsSelectionMode(false);
     }
+    // Clear potential Shift+Click+Drag start
+    if (selectionStart) {
+      setSelectionStart(null);
+    }
   }, [
     selectionRect,
     objects,
@@ -643,6 +675,8 @@ export default function Canvas() {
     toggleSelection,
     setSelectionRect,
     setIsSelectionMode,
+    selectionStart,
+    setSelectionStart,
   ]);
 
   // Ensure selection finalizes even if mouseup occurs outside the Stage (e.g., over toolbar)
