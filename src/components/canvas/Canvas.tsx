@@ -139,6 +139,8 @@ export default function Canvas() {
 
   const stageRef = useRef<Konva.Stage>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  // Cursor coordinates (center-origin)
+  const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   // Track potential Shift+Click+Drag rubber-band start (to allow toggle on click, then drag)
@@ -566,6 +568,12 @@ export default function Canvas() {
 
     const pos = stage.getPointerPosition();
     if (!pos) return;
+    // Update bottom-left coordinate display (center-origin)
+    const cx = (pos.x - viewport.x) / viewport.scale;
+    const cy = (pos.y - viewport.y) / viewport.scale;
+    const centerX = cx - canvasSize.width / 2;
+    const centerY = canvasSize.height / 2 - cy;
+    setCursor({ x: Math.round(centerX), y: Math.round(centerY) });
 
     // If drawing selection rectangle, update its dimensions
     if (selectionRect) {
@@ -954,6 +962,27 @@ export default function Canvas() {
                 selfUserId={user?.id ?? null}
               />
             </Stage>
+            {/* Bottom-left cursor coordinate display (center-origin) */}
+            {cursor && (
+              <div
+                className="coord-overlay"
+                style={{
+                  position: "absolute",
+                  left: 8,
+                  bottom: 8,
+                  padding: "2px 6px",
+                  background: "rgba(0,0,0,0.55)",
+                  color: "#fff",
+                  fontSize: 12,
+                  borderRadius: 4,
+                  pointerEvents: "none",
+                  userSelect: "none",
+                  zIndex: 10,
+                }}
+              >
+                Cursor: {cursor.x}, {cursor.y}
+              </div>
+            )}
 
             {/* Edit Attribution Tooltip */}
             <EditAttributionTooltip

@@ -57,7 +57,7 @@
 }
 
 /* Konva stage container */
-.canvas-container > div:not(.text-editor-container) {
+.canvas-container > div:not(.text-editor-container):not(.coord-overlay) {
   width: 100%;
   height: 100%;
 }
