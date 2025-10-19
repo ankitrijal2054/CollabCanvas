@@ -317,7 +317,6 @@ export function AIProvider({ children }: AIProviderProps) {
           // Update UI with progress
           updateMessage(commandId, {
             status: "processing",
-            content: `Processing step ${iteration}/${REACT_CONFIG.maxIterations}...`,
           });
 
           // Send command to server (with conversation context for iterations > 1)
@@ -477,7 +476,7 @@ export function AIProvider({ children }: AIProviderProps) {
         const aiMessage: AIMessage = {
           id: `${commandId}-response`,
           role: "assistant",
-          content: `${finalResponse}\n\n_Completed in ${iteration} step(s) • ${totalToolsExecuted} tool(s) • ${reactTotalTime}ms_`,
+          content: `${finalResponse}\n\nCompleted in ${iteration} step(s) • ${totalToolsExecuted} tool(s) • ${reactTotalTime}ms`,
           timestamp: Date.now(),
           status: "completed",
           toolCalls: allToolCalls,
