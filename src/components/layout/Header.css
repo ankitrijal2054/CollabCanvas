@@ -221,6 +221,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
+  margin-left: 16px; /* extra separation from theme toggle */
 }
 
 .logout-button:hover {
@@ -253,6 +254,10 @@
 
   .user-name {
     max-width: 100px;
+  }
+
+  .logout-button {
+    margin-left: 8px; /* tighter on small screens */
   }
 }
 

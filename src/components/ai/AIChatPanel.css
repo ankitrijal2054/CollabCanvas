@@ -9,7 +9,9 @@
   height: 100%;
   background: var(--background-elevated);
   border-left: 1px solid var(--border-subtle);
-  box-shadow: 0 0 0 1px var(--panel-outline) inset;
+  box-shadow: 0 0 0 1px var(--panel-outline) inset, var(--shadow-md);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 /* Header */

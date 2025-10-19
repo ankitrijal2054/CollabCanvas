@@ -8,7 +8,8 @@
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px var(--panel-outline) inset;
+  box-shadow: 0 0 0 1px var(--panel-outline) inset, var(--shadow-md);
+  border-radius: var(--radius-lg);
 }
 
 .sidebar-section {

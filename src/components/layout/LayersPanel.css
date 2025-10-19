@@ -6,6 +6,9 @@
   border-right: 1px solid var(--border-subtle);
   width: 180px;
   flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--panel-outline);
 }
 
 .layers-panel-header {
