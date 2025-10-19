@@ -22,6 +22,8 @@ import type {
   OpenAIMessage,
   ToolExecutionResult,
   ReActConfig,
+  ToolCall,
+  CommandHistoryEntry,
 } from "../types/ai.types";
 import {
   sendAICommand,
@@ -125,7 +127,7 @@ export function AIProvider({ children }: AIProviderProps) {
   const [currentCommand, setCurrentCommand] = useState<QueuedAICommand | null>(
     null
   );
-  const [commandHistory, _setCommandHistory] = useState<any[]>([]);
+  const [commandHistory] = useState<CommandHistoryEntry[]>([]);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 
   // Command queue (per canvas)
@@ -210,6 +212,28 @@ export function AIProvider({ children }: AIProviderProps) {
   /**
    * Send AI command with ReAct loop support
    */
+  // Helper: Wait for command to start processing
+  const waitForCommandProcessing = useCallback(
+    (commandId: string): Promise<void> => {
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          const status = commandQueue.getStatus();
+          if (status.currentCommand?.id === commandId) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+
+        // Timeout after 60 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve();
+        }, 60000);
+      });
+    },
+    [commandQueue]
+  );
+
   const sendCommand = useCallback(
     async (message: string) => {
       if (!user) {
@@ -303,8 +327,8 @@ export function AIProvider({ children }: AIProviderProps) {
 
         let iteration = 0;
         let shouldContinue = true;
-        let conversationContext: OpenAIMessage[] = [];
-        let allToolCalls: any[] = [];
+        const conversationContext: OpenAIMessage[] = [];
+        const allToolCalls: ToolCall[] = [];
         let finalResponse = "";
         let totalToolsExecuted = 0;
 
@@ -337,6 +361,9 @@ export function AIProvider({ children }: AIProviderProps) {
               conversationHistory,
               conversationContext:
                 iteration > 1 ? conversationContext : undefined,
+              selectedIds:
+                (canvasContext as unknown as CanvasContextForTools)
+                  .selectedIds || [],
             },
             idToken
           );
@@ -391,7 +418,7 @@ export function AIProvider({ children }: AIProviderProps) {
           totalToolsExecuted += response.toolCalls.length;
 
           // Check if we should continue (ReAct logic)
-          const toolNames = response.toolCalls.map((tc: any) => tc.tool);
+          const toolNames = response.toolCalls.map((tc: ToolCall) => tc.tool);
           const hadQueryTools = usedQueryTools(toolNames);
 
           console.log("[AI Context] ReAct decision", {
@@ -416,14 +443,16 @@ export function AIProvider({ children }: AIProviderProps) {
             conversationContext.push({
               role: "assistant",
               content: response.aiResponse,
-              tool_calls: response.toolCalls.map((tc: any, idx: number) => ({
-                id: `call_${iteration}_${idx}`,
-                type: "function",
-                function: {
-                  name: tc.tool,
-                  arguments: JSON.stringify(tc.parameters),
-                },
-              })),
+              tool_calls: response.toolCalls.map(
+                (tc: ToolCall, idx: number) => ({
+                  id: `call_${iteration}_${idx}`,
+                  type: "function",
+                  function: {
+                    name: tc.tool,
+                    arguments: JSON.stringify(tc.parameters),
+                  },
+                })
+              ),
             });
 
             // Add tool results as "tool" messages
@@ -456,7 +485,9 @@ export function AIProvider({ children }: AIProviderProps) {
           totalIterations: iteration,
           maxIterations: REACT_CONFIG.maxIterations,
           totalToolsExecuted,
-          uniqueTools: [...new Set(allToolCalls.map((tc: any) => tc.tool))],
+          uniqueTools: [
+            ...new Set(allToolCalls.map((tc: ToolCall) => tc.tool)),
+          ],
           totalExecutionTime: `${reactTotalTime}ms`,
           averageTimePerIteration: `${Math.round(
             reactTotalTime / iteration
@@ -465,7 +496,7 @@ export function AIProvider({ children }: AIProviderProps) {
         });
         console.log("Tool Breakdown:");
         const toolCounts: Record<string, number> = {};
-        allToolCalls.forEach((tc: any) => {
+        allToolCalls.forEach((tc: ToolCall) => {
           toolCounts[tc.tool] = (toolCounts[tc.tool] || 0) + 1;
         });
         Object.entries(toolCounts).forEach(([tool, count]) => {
@@ -543,29 +574,11 @@ export function AIProvider({ children }: AIProviderProps) {
       updateMessage,
       usedQueryTools,
       formatToolResultsForAI,
+      waitForCommandProcessing,
     ]
   );
 
-  /**
-   * Wait for command to start processing
-   */
-  const waitForCommandProcessing = async (commandId: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        const status = commandQueue.getStatus();
-        if (status.currentCommand?.id === commandId) {
-          clearInterval(checkInterval);
-          resolve();
-        }
-      }, 100);
-
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        resolve();
-      }, 60000);
-    });
-  };
+  // (moved above) waitForCommandProcessing
 
   /**
    * Clear message history

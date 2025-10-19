@@ -16,6 +16,7 @@ export interface AICommand {
   userId: string;
   conversationHistory: AIMessage[];
   conversationContext?: OpenAIMessage[]; // For ReAct loop iterations
+  selectedIds?: string[]; // Optional: client-provided selection for context
 }
 
 /**
