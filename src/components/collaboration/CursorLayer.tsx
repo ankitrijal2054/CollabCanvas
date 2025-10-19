@@ -6,7 +6,7 @@ import type { CursorData } from "../../types/collaboration.types";
 
 export interface CursorLayerProps {
   cursors: CursorData[];
-  scale?: number; // Viewport scale for inverse scaling
+  scale?: number; // Viewport scale (used only to transform positions)
   offsetX?: number; // Viewport x offset (pan)
   offsetY?: number; // Viewport y offset (pan)
   className?: string;
@@ -39,7 +39,6 @@ const CursorLayer: React.FC<CursorLayerProps> = ({
           <Cursor
             key={cursor.userId}
             cursor={{ ...cursor, position: { x: screenX, y: screenY } }}
-            scale={scale}
           />
         );
       })}
@@ -108,7 +107,6 @@ export const SimpleCursorLayer: React.FC<CursorLayerProps> = ({
           <Cursor
             key={cursor.userId}
             cursor={{ ...cursor, position: { x: screenX, y: screenY } }}
-            scale={scale}
           />
         );
       })}

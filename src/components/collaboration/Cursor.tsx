@@ -5,7 +5,6 @@ import type { CursorData } from "../../types/collaboration.types";
 
 export interface CursorProps {
   cursor: CursorData;
-  scale?: number; // Viewport scale for inverse scaling
 }
 
 /**
@@ -13,13 +12,10 @@ export interface CursorProps {
  * Displays a user's cursor position with their name label
  *
  * @param cursor - Cursor data (userId, name, position, color)
- * @param scale - Canvas viewport scale (for inverse scaling labels)
+ * Note: Cursor size remains constant regardless of canvas zoom.
  */
-const Cursor: React.FC<CursorProps> = ({ cursor, scale = 1 }) => {
+const Cursor: React.FC<CursorProps> = ({ cursor }) => {
   const { name, position, color } = cursor;
-
-  // Inverse scale factor to keep cursor size constant
-  const inverseScale = 1 / scale;
 
   return (
     <div
@@ -27,7 +23,6 @@ const Cursor: React.FC<CursorProps> = ({ cursor, scale = 1 }) => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        transform: `scale(${inverseScale})`,
       }}
     >
       {/* SVG Cursor Icon */}
@@ -69,9 +64,8 @@ export default Cursor;
  * Alternative cursor icon variant - simple arrow style
  * Can be used instead of the default cursor for a cleaner look
  */
-export const SimpleCursor: React.FC<CursorProps> = ({ cursor, scale = 1 }) => {
+export const SimpleCursor: React.FC<CursorProps> = ({ cursor }) => {
   const { name, position, color } = cursor;
-  const inverseScale = 1 / scale;
 
   return (
     <div
@@ -79,7 +73,6 @@ export const SimpleCursor: React.FC<CursorProps> = ({ cursor, scale = 1 }) => {
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        transform: `scale(${inverseScale})`,
       }}
     >
       {/* Simple Arrow SVG */}
