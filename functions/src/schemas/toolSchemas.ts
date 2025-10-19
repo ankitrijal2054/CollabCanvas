@@ -12,9 +12,10 @@ import { z } from "zod";
 // ============================================
 
 /**
- * Canvas bounds (0-10000)
+ * Canvas coordinate bounds (-10000 .. 10000)
+ * Center-origin coordinates are supported: (0,0) at canvas center
  */
-const MIN_CANVAS = 0;
+const MIN_CANVAS = -10000;
 const MAX_CANVAS = 10000;
 
 /**
@@ -134,8 +135,9 @@ export const createShapeSchema = z.object({
   type: z.enum(["rectangle", "circle", "star", "line"], {
     message: "Shape type must be rectangle, circle, star, or line",
   }),
-  x: z.number().min(MIN_CANVAS).max(MAX_CANVAS),
-  y: z.number().min(MIN_CANVAS).max(MAX_CANVAS),
+  // x/y optional: if omitted, client will place at current viewport center
+  x: z.number().min(MIN_CANVAS).max(MAX_CANVAS).optional(),
+  y: z.number().min(MIN_CANVAS).max(MAX_CANVAS).optional(),
   width: z.number().min(MIN_SIZE).max(MAX_SIZE),
   height: z.number().min(MIN_SIZE).max(MAX_SIZE),
   color: colorSchema,
@@ -167,8 +169,9 @@ export const createTextSchema = z.object({
     .max(MAX_TEXT_LENGTH, {
       message: `Text must be between 1 and ${MAX_TEXT_LENGTH} characters`,
     }),
-  x: z.number().min(MIN_CANVAS).max(MAX_CANVAS),
-  y: z.number().min(MIN_CANVAS).max(MAX_CANVAS),
+  // x/y optional: if omitted, client will place at current viewport center
+  x: z.number().min(MIN_CANVAS).max(MAX_CANVAS).optional(),
+  y: z.number().min(MIN_CANVAS).max(MAX_CANVAS).optional(),
   fontSize: z.number().min(MIN_FONT_SIZE).max(MAX_FONT_SIZE).optional(),
   fontFamily: z.enum(FONT_FAMILIES as [string, ...string[]]).optional(),
   fontWeight: z.enum(["normal", "bold"]).optional(),
@@ -242,6 +245,19 @@ export const updateTextStyleSchema = z.object({
   fontStyle: z.enum(["normal", "italic"]).optional(),
   textAlign: z.enum(["left", "center", "right"]).optional(),
   color: colorSchema.optional(),
+});
+
+/**
+ * Schema for updateShapesStyleBulk tool (bulk style update)
+ */
+export const updateShapesStyleBulkSchema = z.object({
+  shapeIds: z
+    .array(z.string())
+    .min(1, { message: "At least 1 shape ID is required" }),
+  color: colorSchema.optional(),
+  stroke: colorSchema.optional(),
+  strokeWidth: z.number().min(MIN_STROKE).max(MAX_STROKE).optional(),
+  opacity: z.number().min(MIN_OPACITY).max(MAX_OPACITY).optional(),
 });
 
 // ============================================
@@ -359,6 +375,7 @@ export const toolSchemaMap = {
   // Styling
   updateShapeStyle: updateShapeStyleSchema,
   updateTextStyle: updateTextStyleSchema,
+  updateShapesStyleBulk: updateShapesStyleBulkSchema,
   // Layout
   arrangeHorizontal: arrangeHorizontalSchema,
   arrangeVertical: arrangeVerticalSchema,

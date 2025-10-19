@@ -9,6 +9,7 @@ import type {
   UserPresenceExtended,
   CursorData,
   OnlineUser,
+  RemoteTransformsMap,
 } from "../types/collaboration.types";
 
 /**
@@ -29,6 +30,7 @@ export interface UsePresenceReturn {
   onlineUsers: OnlineUser[];
   cursors: CursorData[];
   isInitialized: boolean;
+  remoteTransforms: RemoteTransformsMap;
 
   // Actions
   updateCursor: (position: CursorPosition) => void;
@@ -49,6 +51,9 @@ export function usePresence(
 
   // State
   const [presenceMap, setPresenceMap] = useState<PresenceMap>({});
+  const [remoteTransforms, setRemoteTransforms] = useState<RemoteTransformsMap>(
+    {}
+  );
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Refs
@@ -125,6 +130,31 @@ export function usePresence(
     };
   }, [userId, canvasId, enabled]);
 
+  /** Subscribe to transform snapshots for ghost rendering */
+  useEffect(() => {
+    if (!enabled) return;
+    const unsubscribe = presenceService.subscribeToTransforms(
+      canvasId,
+      (map) => {
+        if (import.meta.env.DEV) {
+          const total = Object.values(map).reduce(
+            (acc, userMap) => acc + Object.keys(userMap).length,
+            0
+          );
+          console.debug("[usePresence] transforms update", {
+            users: Object.keys(map).length,
+            total,
+          });
+        }
+        setRemoteTransforms(map);
+      }
+    );
+    if (import.meta.env.DEV) {
+      console.debug("[usePresence] subscribeToTransforms active", { canvasId });
+    }
+    return () => unsubscribe();
+  }, [canvasId, enabled]);
+
   /** Create throttled update */
   useEffect(() => {
     if (!userId) return;
@@ -199,6 +229,7 @@ export function usePresence(
     onlineUsers,
     cursors,
     isInitialized,
+    remoteTransforms,
     updateCursor,
     removeCursor,
     updatePresence,

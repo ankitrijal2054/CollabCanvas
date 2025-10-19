@@ -22,6 +22,8 @@ import type {
   OpenAIMessage,
   ToolExecutionResult,
   ReActConfig,
+  ToolCall,
+  CommandHistoryEntry,
 } from "../types/ai.types";
 import {
   sendAICommand,
@@ -125,7 +127,7 @@ export function AIProvider({ children }: AIProviderProps) {
   const [currentCommand, setCurrentCommand] = useState<QueuedAICommand | null>(
     null
   );
-  const [commandHistory, _setCommandHistory] = useState<any[]>([]);
+  const [commandHistory] = useState<CommandHistoryEntry[]>([]);
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 
   // Command queue (per canvas)
@@ -210,6 +212,28 @@ export function AIProvider({ children }: AIProviderProps) {
   /**
    * Send AI command with ReAct loop support
    */
+  // Helper: Wait for command to start processing
+  const waitForCommandProcessing = useCallback(
+    (commandId: string): Promise<void> => {
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          const status = commandQueue.getStatus();
+          if (status.currentCommand?.id === commandId) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+
+        // Timeout after 60 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve();
+        }, 60000);
+      });
+    },
+    [commandQueue]
+  );
+
   const sendCommand = useCallback(
     async (message: string) => {
       if (!user) {
@@ -303,8 +327,9 @@ export function AIProvider({ children }: AIProviderProps) {
 
         let iteration = 0;
         let shouldContinue = true;
-        let conversationContext: OpenAIMessage[] = [];
-        let allToolCalls: any[] = [];
+        let actionOnlyContinued = false; // allow one extra iteration after action-only step
+        const conversationContext: OpenAIMessage[] = [];
+        const allToolCalls: ToolCall[] = [];
         let finalResponse = "";
         let totalToolsExecuted = 0;
 
@@ -317,7 +342,15 @@ export function AIProvider({ children }: AIProviderProps) {
           // Update UI with progress
           updateMessage(commandId, {
             status: "processing",
-            content: `Processing step ${iteration}/${REACT_CONFIG.maxIterations}...`,
+          });
+
+          // Add non-destructive assistant progress message for this iteration
+          addMessage({
+            id: `${commandId}-progress-${iteration}`,
+            role: "assistant",
+            content: `Processing step ${iteration}...`,
+            timestamp: Date.now(),
+            status: "processing",
           });
 
           // Send command to server (with conversation context for iterations > 1)
@@ -329,6 +362,9 @@ export function AIProvider({ children }: AIProviderProps) {
               conversationHistory,
               conversationContext:
                 iteration > 1 ? conversationContext : undefined,
+              selectedIds:
+                (canvasContext as unknown as CanvasContextForTools)
+                  .selectedIds || [],
             },
             idToken
           );
@@ -341,24 +377,36 @@ export function AIProvider({ children }: AIProviderProps) {
               error: response,
             });
 
-            // Mark command as failed
-            commandQueue.failCommand(commandId, response);
+            if (totalToolsExecuted > 0) {
+              // Partial success: stop loop gracefully and finalize based on previous successful steps
+              console.warn(
+                "[AI Context] Partial success detected; stopping loop without failing command."
+              );
+              shouldContinue = false;
+              break;
+            } else {
+              // Mark command as failed (no successful actions yet)
+              commandQueue.failCommand(commandId, response);
 
-            // Add error message to chat
-            const errorMessage = formatErrorMessage(response);
-            addMessage({
-              id: `${commandId}-error`,
-              role: "assistant",
-              content: errorMessage,
-              timestamp: Date.now(),
-              status: "error",
-              error: errorMessage,
-            });
+              // Add error message to chat
+              const errorMessage = formatErrorMessage(response);
+              addMessage({
+                id: `${commandId}-error`,
+                role: "assistant",
+                content: errorMessage,
+                timestamp: Date.now(),
+                status: "error",
+                error: errorMessage,
+              });
 
-            // Update user message status
-            updateMessage(commandId, { status: "error", error: errorMessage });
+              // Update user message status
+              updateMessage(commandId, {
+                status: "error",
+                error: errorMessage,
+              });
 
-            return;
+              return;
+            }
           }
 
           // Store AI's response
@@ -383,7 +431,7 @@ export function AIProvider({ children }: AIProviderProps) {
           totalToolsExecuted += response.toolCalls.length;
 
           // Check if we should continue (ReAct logic)
-          const toolNames = response.toolCalls.map((tc: any) => tc.tool);
+          const toolNames = response.toolCalls.map((tc: ToolCall) => tc.tool);
           const hadQueryTools = usedQueryTools(toolNames);
 
           console.log("[AI Context] ReAct decision", {
@@ -394,28 +442,45 @@ export function AIProvider({ children }: AIProviderProps) {
           });
 
           // Decide whether to continue
-          if (
-            REACT_CONFIG.continueOnQueryTools &&
-            hadQueryTools &&
-            iteration < REACT_CONFIG.maxIterations
-          ) {
-            console.log(
-              `[AI Context] Continuing ReAct loop (query tools used)`
-            );
+          const hasToolCalls = response.toolCalls.length > 0;
+          if (iteration < REACT_CONFIG.maxIterations) {
+            if (REACT_CONFIG.continueOnQueryTools && hadQueryTools) {
+              console.log(
+                "[AI Context] Continuing ReAct loop (query tools used)"
+              );
+            } else if (hasToolCalls && !hadQueryTools && !actionOnlyContinued) {
+              // Allow a single additional iteration for action-only sequences
+              console.log(
+                "[AI Context] Continuing ReAct loop (single action-only continuation)"
+              );
+              actionOnlyContinued = true;
+            } else {
+              console.log(`[AI Context] Stopping ReAct loop`, {
+                reason: hadQueryTools
+                  ? "max iterations"
+                  : actionOnlyContinued
+                  ? "action-only already continued once"
+                  : "no query tools",
+              });
+              shouldContinue = false;
+              continue; // break this decision block
+            }
 
             // Build conversation context for next iteration
             // Add assistant's tool calls
             conversationContext.push({
               role: "assistant",
               content: response.aiResponse,
-              tool_calls: response.toolCalls.map((tc: any, idx: number) => ({
-                id: `call_${iteration}_${idx}`,
-                type: "function",
-                function: {
-                  name: tc.tool,
-                  arguments: JSON.stringify(tc.parameters),
-                },
-              })),
+              tool_calls: response.toolCalls.map(
+                (tc: ToolCall, idx: number) => ({
+                  id: `call_${iteration}_${idx}`,
+                  type: "function",
+                  function: {
+                    name: tc.tool,
+                    arguments: JSON.stringify(tc.parameters),
+                  },
+                })
+              ),
             });
 
             // Add tool results as "tool" messages
@@ -448,7 +513,9 @@ export function AIProvider({ children }: AIProviderProps) {
           totalIterations: iteration,
           maxIterations: REACT_CONFIG.maxIterations,
           totalToolsExecuted,
-          uniqueTools: [...new Set(allToolCalls.map((tc: any) => tc.tool))],
+          uniqueTools: [
+            ...new Set(allToolCalls.map((tc: ToolCall) => tc.tool)),
+          ],
           totalExecutionTime: `${reactTotalTime}ms`,
           averageTimePerIteration: `${Math.round(
             reactTotalTime / iteration
@@ -457,7 +524,7 @@ export function AIProvider({ children }: AIProviderProps) {
         });
         console.log("Tool Breakdown:");
         const toolCounts: Record<string, number> = {};
-        allToolCalls.forEach((tc: any) => {
+        allToolCalls.forEach((tc: ToolCall) => {
           toolCounts[tc.tool] = (toolCounts[tc.tool] || 0) + 1;
         });
         Object.entries(toolCounts).forEach(([tool, count]) => {
@@ -477,12 +544,23 @@ export function AIProvider({ children }: AIProviderProps) {
         const aiMessage: AIMessage = {
           id: `${commandId}-response`,
           role: "assistant",
-          content: `${finalResponse}\n\n_Completed in ${iteration} step(s) • ${totalToolsExecuted} tool(s) • ${reactTotalTime}ms_`,
+          content: `${finalResponse}\n\nCompleted in ${iteration} step(s) • ${totalToolsExecuted} tool(s) • ${reactTotalTime}ms`,
           timestamp: Date.now(),
           status: "completed",
           toolCalls: allToolCalls,
         };
         addMessage(aiMessage);
+
+        // Remove interim assistant progress messages for this command
+        setMessages((prev) =>
+          prev.filter(
+            (m) =>
+              !(
+                m.role === "assistant" &&
+                m.id.startsWith(`${commandId}-progress-`)
+              )
+          )
+        );
 
         // Update user message status
         updateMessage(commandId, { status: "completed" });
@@ -524,29 +602,11 @@ export function AIProvider({ children }: AIProviderProps) {
       updateMessage,
       usedQueryTools,
       formatToolResultsForAI,
+      waitForCommandProcessing,
     ]
   );
 
-  /**
-   * Wait for command to start processing
-   */
-  const waitForCommandProcessing = async (commandId: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const checkInterval = setInterval(() => {
-        const status = commandQueue.getStatus();
-        if (status.currentCommand?.id === commandId) {
-          clearInterval(checkInterval);
-          resolve();
-        }
-      }, 100);
-
-      // Timeout after 60 seconds
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        resolve();
-      }, 60000);
-    });
-  };
+  // (moved above) waitForCommandProcessing
 
   /**
    * Clear message history

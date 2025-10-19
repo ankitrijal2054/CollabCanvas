@@ -42,11 +42,15 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "X position on canvas (0-10000)",
+            description:
+              "X position (center-origin, -10000..10000). +x to the right. Optional; omit to center in viewport.",
+            nullable: true,
           },
           y: {
             type: "number",
-            description: "Y position on canvas (0-10000)",
+            description:
+              "Y position (center-origin, -10000..10000). +y is up. Optional; omit to center in viewport.",
+            nullable: true,
           },
           width: {
             type: "number",
@@ -101,7 +105,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: "Show arrow at end of line (only for line type)",
           },
         },
-        required: ["type", "x", "y", "width", "height", "color"],
+        required: ["type", "width", "height", "color"],
       },
     },
   },
@@ -120,11 +124,15 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "X position on canvas (0-10000)",
+            description:
+              "X position (center-origin, -10000..10000). +x to the right. Optional; omit to center in viewport.",
+            nullable: true,
           },
           y: {
             type: "number",
-            description: "Y position on canvas (0-10000)",
+            description:
+              "Y position (center-origin, -10000..10000). +y is up. Optional; omit to center in viewport.",
+            nullable: true,
           },
           fontSize: {
             type: "number",
@@ -178,7 +186,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: "Opacity level (0.0-1.0, optional)",
           },
         },
-        required: ["text", "x", "y"],
+        required: ["text"],
       },
     },
   },
@@ -199,11 +207,13 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "New X position (0-10000)",
+            description:
+              "New X position (center-origin, -10000..10000). +x to the right",
           },
           y: {
             type: "number",
-            description: "New Y position (0-10000)",
+            description:
+              "New Y position (center-origin, -10000..10000). +y is up",
           },
         },
         required: ["shapeId", "x", "y"],
@@ -279,6 +289,41 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 
   // ===== STYLING TOOLS =====
 
+  {
+    type: "function",
+    function: {
+      name: "updateShapesStyleBulk",
+      description:
+        "Update visual styling (color, stroke, opacity) for many shapes at once",
+      parameters: {
+        type: "object",
+        properties: {
+          shapeIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "Array of shape IDs to update",
+          },
+          color: {
+            type: "string",
+            description: "New fill color (hex code or named color, optional)",
+          },
+          stroke: {
+            type: "string",
+            description: "New stroke/border color (hex code, optional)",
+          },
+          strokeWidth: {
+            type: "number",
+            description: "New stroke/border width (0-50, optional)",
+          },
+          opacity: {
+            type: "number",
+            description: "New opacity level (0.0-1.0, optional)",
+          },
+        },
+        required: ["shapeIds"],
+      },
+    },
+  },
   {
     type: "function",
     function: {
@@ -630,6 +675,7 @@ export const toolCategories: Record<string, ToolCategory> = {
   // Action tools - Styling
   updateShapeStyle: "action",
   updateTextStyle: "action",
+  updateShapesStyleBulk: "action",
 
   // Action tools - Layout
   arrangeHorizontal: "action",

@@ -11,7 +11,10 @@ import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
 import { TransactionErrorType } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
+import { presenceService } from "../../../services/presenceService";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
+import { syncHelpers } from "../../../utils/syncHelpers";
+import type { TransformSnapshot } from "../../../types/collaboration.types";
 
 interface TextShapeProps {
   object: TextObject;
@@ -43,6 +46,29 @@ function TextShape({
   const shapeRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const throttledEmitTransform = useRef<
+    | ((snap: {
+        objectId: string;
+        type: "text";
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        rotation?: number;
+        color?: string;
+        stroke?: string;
+        strokeWidth?: number;
+        opacity?: number;
+        zIndex?: number;
+        text?: string;
+        fontFamily?: string;
+        fontSize?: number;
+        fontWeight?: string;
+        fontStyle?: string;
+        textAlign?: string;
+      }) => void)
+    | null
+  >(null);
   const { updateObject, canvasSize, isCanvasDisabled } = useCanvas();
   const syncOps = useSyncOperations();
   const { user } = useAuth();
@@ -55,12 +81,61 @@ function TextShape({
     }
   }, [isSelected]);
 
+  // Initialize throttled emitter for transform events (resize/rotate)
+  useEffect(() => {
+    if (!user?.id) return;
+    const emit = syncHelpers.throttle(
+      (snap: {
+        objectId: string;
+        type: "text";
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        rotation?: number;
+        color?: string;
+        stroke?: string;
+        strokeWidth?: number;
+        opacity?: number;
+        zIndex?: number;
+        text?: string;
+        fontFamily?: string;
+        fontSize?: number;
+        fontWeight?: string;
+        fontStyle?: string;
+        textAlign?: string;
+      }) => {
+        presenceService
+          .setTransform(user.id!, snap.objectId, snap)
+          .catch(() => {});
+      },
+      80 // ~12fps for network stability
+    );
+    throttledEmitTransform.current = emit;
+    return () => {
+      throttledEmitTransform.current = null;
+    };
+  }, [user?.id]);
+
   /**
    * Handle drag start - store initial position for group move
    */
   const handleDragStart = () => {
     // Store the initial position at drag start
     dragStartPosRef.current = { x: object.x, y: object.y };
+    // Hide tooltip during drag for cleaner UI
+    if (onHoverChange) {
+      onHoverChange(false, null, { x: 0, y: 0 });
+    }
+
+    // Emit initial snapshot for immediate ghost
+    const node = shapeRef.current;
+    if (node && user?.id) {
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user.id, object.id, snapshot)
+        .catch(() => {});
+    }
   };
 
   /**
@@ -144,6 +219,51 @@ function TextShape({
 
       // Redraw the layer
       node.getLayer()?.batchDraw();
+
+      // Emit live snapshots for all selected objects
+      const snaps: Array<Omit<TransformSnapshot, "lastUpdated">> = [];
+      selectedObjects.forEach((selObj) => {
+        const p = newPositions.get(selObj.id);
+        if (!p) return;
+        const base = {
+          objectId: selObj.id,
+          type: selObj.type as TransformSnapshot["type"],
+          x: p.x,
+          y: p.y,
+          width: (selObj.width as number | undefined) ?? 1,
+          height: (selObj.height as number | undefined) ?? 1,
+          rotation: selObj.rotation || 0,
+          color: selObj.color,
+          stroke: selObj.stroke,
+          strokeWidth: selObj.strokeWidth,
+          opacity: selObj.opacity,
+          zIndex: selObj.zIndex,
+        } as Omit<TransformSnapshot, "lastUpdated">;
+        if (selObj.type === "text") {
+          const t = selObj as TextObject;
+          snaps.push({
+            ...base,
+            text: t.text,
+            fontFamily: t.fontFamily,
+            fontSize: t.fontSize,
+            fontWeight: t.fontWeight,
+            fontStyle: t.fontStyle,
+            textAlign: t.textAlign,
+          });
+        } else {
+          snaps.push(base);
+        }
+      });
+      snaps.forEach((s) => {
+        presenceService.setTransform(user!.id!, s.objectId, s).catch(() => {});
+      });
+    } else {
+      // Single text drag snapshot
+      const node = e.target as Konva.Text;
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user!.id!, snapshot.objectId, snapshot)
+        .catch(() => {});
     }
   };
 
@@ -262,6 +382,30 @@ function TextShape({
         }
       }
     }
+
+    // Show tooltip again after drag ends with updated attribution
+    if (onHoverChange) {
+      const stage = e.target.getStage();
+      const pointerPos = stage?.getPointerPosition();
+      const updatedObject = {
+        ...object,
+        lastEditedBy: user?.id,
+        lastEditedByName: userName,
+        lastEditedAt: Date.now(),
+      };
+      if (pointerPos) {
+        onHoverChange(true, updatedObject, pointerPos);
+      }
+    }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
   };
 
   /**
@@ -328,6 +472,53 @@ function TextShape({
         }
       }
     }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
+  };
+
+  // Emit during transform (resize/rotate) for live ghost updates
+  const handleTransform = () => {
+    const node = shapeRef.current;
+    if (!node || !user?.id) return;
+    const snapshot = buildSnapshot(node);
+    if (throttledEmitTransform.current) {
+      throttledEmitTransform.current(snapshot);
+    }
+  };
+
+  // Build snapshot from current node state
+  const buildSnapshot = (node: Konva.Text) => {
+    const scaleX = node.scaleX() || 1;
+    const scaleY = node.scaleY() || 1;
+    const width = Math.max(20, node.width() * scaleX);
+    const height = Math.max(20, node.height() * scaleY);
+    return {
+      objectId: object.id,
+      type: object.type,
+      x: node.x(),
+      y: node.y(),
+      width,
+      height,
+      rotation: node.rotation() || object.rotation || 0,
+      color: object.color,
+      stroke: object.stroke,
+      strokeWidth: object.strokeWidth,
+      opacity: object.opacity,
+      zIndex: object.zIndex,
+      text: object.text,
+      fontFamily: object.fontFamily,
+      fontSize: object.fontSize,
+      fontWeight: object.fontWeight,
+      fontStyle: object.fontStyle,
+      textAlign: object.textAlign,
+    } as const;
   };
 
   /**
@@ -425,8 +616,9 @@ function TextShape({
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}
-        onDrag={handleDrag}
+        onDragMove={handleDrag}
         onDragEnd={handleDragEnd}
+        onTransform={handleTransform}
         onTransformEnd={handleTransformEnd}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}

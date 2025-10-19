@@ -48,7 +48,7 @@ export const FontProperties: React.FC = () => {
   // Refs for debouncing
   const debounceTimerRef = useRef<number | null>(null);
 
-  // Update local state when selection changes
+  // Update local state when selection or selected text object's properties change
   useEffect(() => {
     if (textObject) {
       setFontFamily(textObject.fontFamily || "Arial");
@@ -60,7 +60,18 @@ export const FontProperties: React.FC = () => {
       setOpacity(textObject.opacity ?? DEFAULT_OPACITY);
       setBlendMode(textObject.blendMode ?? DEFAULT_BLEND_MODE);
     }
-  }, [textObject?.id]); // Only run when selection changes
+  }, [
+    textObject,
+    textObject?.id,
+    textObject?.fontFamily,
+    textObject?.fontSize,
+    textObject?.fontWeight,
+    textObject?.fontStyle,
+    textObject?.textAlign,
+    textObject?.color,
+    textObject?.opacity,
+    textObject?.blendMode,
+  ]);
 
   /**
    * Debounced sync function to update Firebase

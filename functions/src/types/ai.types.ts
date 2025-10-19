@@ -16,6 +16,7 @@ export interface AICommand {
   userId: string;
   conversationHistory: AIMessage[];
   conversationContext?: OpenAIMessage[]; // For ReAct loop iterations
+  selectedIds?: string[]; // Optional: client-provided selection for context
 }
 
 /**
@@ -131,8 +132,8 @@ export type FontStyle = "normal" | "italic";
  */
 export interface CreateShapeParams {
   type: ShapeType;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   width: number;
   height: number;
   color: string;
@@ -154,8 +155,8 @@ export interface CreateShapeParams {
  */
 export interface CreateTextParams {
   text: string;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   fontSize?: number;
   fontFamily?: string;
   fontWeight?: FontWeight;

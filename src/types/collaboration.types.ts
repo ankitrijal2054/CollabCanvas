@@ -66,6 +66,41 @@ export interface OnlineUser {
 }
 
 /**
+ * Live transform snapshot for "ghost" previews during drag/resize/rotate
+ * Stored transiently under presence path: /presence/{canvasId}/{userId}/transforms/{objectId}
+ */
+export interface TransformSnapshot {
+  objectId: string;
+  type: "rectangle" | "circle" | "star" | "line" | "text";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation?: number;
+  // Minimal styling for faithful ghost rendering
+  color?: string;
+  stroke?: string;
+  strokeWidth?: number;
+  opacity?: number;
+  zIndex?: number;
+  // Text-specific (optional)
+  text?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  textAlign?: string;
+  lastUpdated: number;
+}
+
+/**
+ * Remote transforms map
+ * - Keyed by userId, then by objectId → TransformSnapshot
+ */
+export type UserTransforms = Record<string, TransformSnapshot>;
+export type RemoteTransformsMap = Record<string, UserTransforms>;
+
+/**
  * Presence service configuration
  */
 export interface PresenceConfig {

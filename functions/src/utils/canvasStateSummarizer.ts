@@ -47,6 +47,7 @@ interface RawCanvasObject {
 export interface RawCanvasState {
   objects?: Record<string, RawCanvasObject>;
   selectedIds?: string[];
+  clientSelectedIds?: string[]; // client-provided selection (fallback)
   viewport?: {
     x: number;
     y: number;
@@ -67,12 +68,17 @@ export interface RawCanvasState {
 export function summarizeCanvasState(
   rawState: RawCanvasState
 ): CanvasStateSummary {
+  // Determine selectedIds priority: server-side selectedIds or client-provided
+  const effectiveSelectedIds = rawState.selectedIds?.length
+    ? rawState.selectedIds
+    : rawState.clientSelectedIds || [];
+
   // Handle empty or missing objects
   if (!rawState.objects || Object.keys(rawState.objects).length === 0) {
     return {
       objectCount: 0,
       objects: [],
-      selectedIds: rawState.selectedIds || [],
+      selectedIds: effectiveSelectedIds,
       canvasSize: rawState.canvasSize || { width: 10000, height: 10000 },
     };
   }
@@ -93,18 +99,14 @@ export function summarizeCanvasState(
     return {
       objectCount,
       objects,
-      selectedIds: rawState.selectedIds || [],
+      selectedIds: effectiveSelectedIds,
       canvasSize: rawState.canvasSize || { width: 10000, height: 10000 },
     };
   }
 
   // Summarized state for large canvases
   const canvasSize = rawState.canvasSize || { width: 10000, height: 10000 };
-  const summary = createSummary(
-    objectsArray,
-    rawState.selectedIds || [],
-    canvasSize
-  );
+  const summary = createSummary(objectsArray, effectiveSelectedIds, canvasSize);
 
   logger.info("Canvas state summarized", {
     originalObjectCount: objectCount,

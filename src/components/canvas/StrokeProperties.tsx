@@ -43,7 +43,7 @@ export const StrokeProperties: React.FC = () => {
   // Refs for debouncing
   const debounceTimerRef = useRef<number | null>(null);
 
-  // Update local state when selection changes
+  // Update local state when selection or selected object's properties change
   useEffect(() => {
     if (selectedObject) {
       setFillColor(selectedObject.color);
@@ -52,7 +52,15 @@ export const StrokeProperties: React.FC = () => {
       setOpacity(selectedObject.opacity ?? DEFAULT_OPACITY);
       setBlendMode(selectedObject.blendMode ?? DEFAULT_BLEND_MODE);
     }
-  }, [selectedObject?.id]); // Only run when selection changes
+  }, [
+    selectedObject,
+    selectedObject?.id,
+    selectedObject?.color,
+    selectedObject?.stroke,
+    selectedObject?.strokeWidth,
+    selectedObject?.opacity,
+    selectedObject?.blendMode,
+  ]);
 
   /**
    * Debounced sync function to update Firebase

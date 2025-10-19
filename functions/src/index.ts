@@ -129,6 +129,7 @@ export const aichat = onRequest(
           userId,
           conversationHistory = [],
           conversationContext,
+          selectedIds: clientSelectedIds,
         } = body as AICommand;
 
         logger.info("Processing AI command", {
@@ -169,6 +170,14 @@ export const aichat = onRequest(
         }
 
         const rawCanvasState = canvasSnapshot.val() as RawCanvasState;
+        // Inject client-provided selection for prompt context if server-side selection is empty
+        if (
+          clientSelectedIds &&
+          (!rawCanvasState.selectedIds ||
+            rawCanvasState.selectedIds.length === 0)
+        ) {
+          (rawCanvasState as any).clientSelectedIds = clientSelectedIds;
+        }
 
         // Summarize canvas state for AI context
         const canvasStateSummary = summarizeCanvasState(rawCanvasState);

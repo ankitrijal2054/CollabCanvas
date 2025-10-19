@@ -17,6 +17,8 @@ import type {
   PresenceUpdate,
   PresenceMap,
   UserPresenceExtended,
+  TransformSnapshot,
+  RemoteTransformsMap,
 } from "../types/collaboration.types";
 
 /**
@@ -66,6 +68,101 @@ export const presenceService = {
     return () => {
       off(connectedRef, "value", handleConnected);
     };
+  },
+
+  /**
+   * Set or update a live transform snapshot for ghost rendering
+   * Path: /presence/{canvasId}/{userId}/transforms/{objectId}
+   */
+  setTransform: async (
+    userId: string,
+    objectId: string,
+    snapshot: Omit<TransformSnapshot, "lastUpdated">,
+    canvasId: string = DEFAULT_CANVAS_ID
+  ): Promise<void> => {
+    try {
+      const transformRef = ref(
+        database,
+        `/presence/${canvasId}/${userId}/transforms/${objectId}`
+      );
+      const payload: Record<string, unknown> = {
+        ...snapshot,
+        objectId,
+        lastUpdated: Date.now(),
+      };
+      // Remove undefined values – Firebase RTDB rejects undefined fields
+      const cleaned = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined)
+      );
+      await set(transformRef, cleaned);
+      if (import.meta.env.DEV) {
+        console.debug("[presenceService] setTransform", {
+          userId,
+          canvasId,
+          objectId,
+        });
+      }
+    } catch (error) {
+      console.error("Error setting transform snapshot:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Clear a live transform snapshot (on transform end)
+   */
+  clearTransform: async (
+    userId: string,
+    objectId: string,
+    canvasId: string = DEFAULT_CANVAS_ID
+  ): Promise<void> => {
+    try {
+      const transformRef = ref(
+        database,
+        `/presence/${canvasId}/${userId}/transforms/${objectId}`
+      );
+      await set(transformRef, null);
+      if (import.meta.env.DEV) {
+        console.debug("[presenceService] clearTransform", {
+          userId,
+          canvasId,
+          objectId,
+        });
+      }
+    } catch (error) {
+      console.error("Error clearing transform snapshot:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Subscribe to all users' transform snapshots for a canvas
+   */
+  subscribeToTransforms: (
+    canvasId: string = DEFAULT_CANVAS_ID,
+    callback: (remoteTransforms: RemoteTransformsMap) => void
+  ) => {
+    const transformsRef = ref(database, `/presence/${canvasId}`);
+
+    const handleTransforms = (snapshot: any) => {
+      const presenceData = snapshot.val() || {};
+      const result: RemoteTransformsMap = {};
+
+      Object.entries(presenceData).forEach(([userId, presence]) => {
+        const userPresence = presence as any;
+        if (userPresence && userPresence.transforms) {
+          result[userId] = userPresence.transforms as Record<
+            string,
+            TransformSnapshot
+          >;
+        }
+      });
+
+      callback(result);
+    };
+
+    onValue(transformsRef, handleTransforms);
+    return () => off(transformsRef, "value", handleTransforms);
   },
 
   /**
