@@ -18,8 +18,11 @@ export default function CanvasGrid({
   scale,
 }: CanvasGridProps) {
   const strokeWidth = 1 / scale; // Scale-independent line width
-  const strokeColor = "#f3f4f6"; // Light gray
-  const lines = [];
+  const root = document.documentElement;
+  const styles = getComputedStyle(root);
+  const strokeColor =
+    styles.getPropertyValue("--canvas-grid-muted").trim() || "#f3f4f6";
+  const lines = [] as JSX.Element[];
 
   // Vertical lines
   for (let x = gridSize; x < width; x += gridSize) {

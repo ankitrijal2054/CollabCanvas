@@ -48,19 +48,19 @@
 .message-author {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .message-time {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 /* Text */
 .message-text {
   font-size: 14px;
   line-height: 1.5;
-  color: #374151;
+  color: var(--text-secondary);
   word-wrap: break-word;
   white-space: pre-wrap;
 }
@@ -69,7 +69,7 @@
 .chat-message.user .message-content {
   background: #eff6ff;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid #dbeafe;
 }
 
@@ -79,10 +79,11 @@
 
 /* Assistant message styling */
 .chat-message.assistant .message-content {
-  background: #f9fafb;
+  background: var(--background-muted);
   padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 0 0 1px var(--panel-outline) inset;
 }
 
 /* Error message styling - PR #27: Enhanced error display */
@@ -101,7 +102,7 @@
   padding: 12px;
   background: #fee2e2;
   border-left: 4px solid #dc2626;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .error-header {
@@ -171,7 +172,7 @@
   margin-top: 8px;
   padding: 6px 10px;
   background: #e0f2fe;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   color: #0c4a6e;
   display: inline-block;
@@ -184,7 +185,7 @@
 /* Markdown-like formatting */
 .message-text strong {
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .message-text em {
@@ -192,10 +193,10 @@
 }
 
 .message-text code {
-  background: #f3f4f6;
+  background: var(--background-muted);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: "Courier New", monospace;
   font-size: 13px;
-  color: #374151;
+  color: var(--text-secondary);
 }

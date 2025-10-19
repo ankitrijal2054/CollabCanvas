@@ -1,13 +1,14 @@
 /* Right Sidebar styling - Properties Panel */
 
 .sidebar {
-  width: 280px; /* Slightly wider since we have more space */
-  background-color: #fff;
-  border-left: 1px solid #e0e0e0;
+  width: var(--sidebar-width); /* Slightly wider since we have more space */
+  background-color: var(--background-elevated);
+  border-left: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--panel-outline) inset;
 }
 
 .sidebar-section {
@@ -27,11 +28,12 @@
   padding: 14px 16px;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--background-muted);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 0 0 var(--panel-outline);
   flex-shrink: 0;
 }
 

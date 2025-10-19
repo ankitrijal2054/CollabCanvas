@@ -14,10 +14,10 @@
 .controls-group {
   display: flex;
   gap: 0.25rem;
-  background-color: white;
+  background-color: var(--background-elevated);
   border-radius: 10px;
   padding: 0.4rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
   border: 1px solid rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(8px);
 }
@@ -30,7 +30,7 @@
   height: 36px;
   border: none;
   background-color: transparent;
-  color: #374151;
+  color: var(--text-secondary);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -42,13 +42,13 @@
 }
 
 .control-button:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  color: #111827;
+  background-color: var(--background-muted);
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
 .control-button:active:not(:disabled) {
-  background-color: #e5e7eb;
+  background-color: var(--border-subtle);
   transform: translateY(0);
 }
 
@@ -66,21 +66,21 @@
   padding: 0 0.5rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-secondary);
   user-select: none;
 }
 
 .reset-button {
-  background-color: white;
+  background-color: var(--background-elevated);
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-md);
   border: 1px solid rgba(0, 0, 0, 0.06);
   backdrop-filter: blur(8px);
 }
 
 .reset-button:hover:not(:disabled) {
-  background-color: #f9fafb;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.04);
+  background-color: var(--background-muted);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Responsive design */

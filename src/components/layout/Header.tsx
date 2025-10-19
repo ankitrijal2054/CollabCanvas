@@ -5,6 +5,7 @@ import { useAI } from "../../contexts/AIContext";
 import type { User } from "../../types/user.types";
 import { ConnectionStatusDot } from "./ConnectionStatusDot";
 import { OnlineUsersDropdown } from "../collaboration/OnlineUsersDropdown";
+import { useTheme } from "../../hooks/useTheme";
 import "./Header.css";
 
 interface HeaderProps {
@@ -15,6 +16,7 @@ export default function Header({ user }: HeaderProps) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { isAIPanelOpen, setIsAIPanelOpen } = useAI();
+  const { isDark, nextTheme, toggleTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -87,7 +89,7 @@ export default function Header({ user }: HeaderProps) {
           </h1>
         </div>
 
-        {/* Right: AI Assistant toggle + Logout button */}
+        {/* Right: AI Assistant toggle + Theme toggle + Logout button */}
         <div className="header-right">
           {user && (
             <>
@@ -98,6 +100,14 @@ export default function Header({ user }: HeaderProps) {
               >
                 <span className="ai-icon">⚡</span>
                 <span className="ai-label">AI Assistant</span>
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="theme-toggle-button"
+                title={`Switch to ${nextTheme} mode`}
+                aria-label="Toggle color theme"
+              >
+                {isDark ? "🌙" : "☀️"}
               </button>
               <button onClick={handleLogout} className="logout-button">
                 Logout

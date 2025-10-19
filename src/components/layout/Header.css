@@ -1,9 +1,9 @@
 /* Header styling */
 
 .app-header {
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--background-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--panel-outline);
   z-index: 1000;
   flex-shrink: 0;
 }
@@ -31,9 +31,10 @@
   align-items: center;
   gap: 10px;
   padding: 6px 12px;
-  background-color: #f9fafb;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  background-color: var(--background-muted);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 0 0 1px var(--panel-outline) inset;
   min-width: 0;
   transition: all 0.2s ease;
   min-height: 48px; /* Explicit height for consistency */
@@ -41,8 +42,15 @@
 }
 
 .user-section:hover {
-  background-color: #f3f4f6;
-  border-color: #d1d5db;
+  background-color: var(--background-elevated);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0)
+  );
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--panel-outline) inset;
+  transform: translateY(-1px);
 }
 
 .user-avatar {
@@ -51,7 +59,7 @@
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-sm);
   flex-shrink: 0;
 }
 
@@ -70,7 +78,7 @@
 
 .user-name {
   font-size: 14px;
-  color: #111827;
+  color: var(--text-primary);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -88,7 +96,7 @@
   margin: 0;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -124,10 +132,11 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  background-color: var(--background-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 1px var(--panel-outline) inset;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -136,19 +145,27 @@
 }
 
 .ai-toggle-button:hover {
-  background-color: #e5e7eb;
-  border-color: #d1d5db;
+  background-color: var(--background-muted);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0)
+  );
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--panel-outline) inset;
+  transform: translateY(-1px);
 }
 
 .ai-toggle-button.active {
-  background-color: #3b82f6;
+  background-color: var(--primary-color);
   color: white;
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
+  box-shadow: var(--ring);
 }
 
 .ai-toggle-button.active:hover {
-  background-color: #2563eb;
-  border-color: #2563eb;
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .ai-toggle-button .ai-icon {
@@ -159,12 +176,46 @@
   font-size: 14px;
 }
 
+/* Theme toggle */
+.theme-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--background-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 0 1px var(--panel-outline) inset;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-toggle-button:hover {
+  background: var(--background-muted);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0)
+  );
+  border-color: var(--border-color);
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--panel-outline) inset;
+  transform: translateY(-1px);
+}
+
+.theme-toggle-button:focus {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: var(--primary-color);
+}
+
 .logout-button {
   padding: 8px 20px;
   background-color: #ef4444;
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;

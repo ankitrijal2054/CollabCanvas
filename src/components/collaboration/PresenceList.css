@@ -8,7 +8,7 @@
   background: rgba(255, 255, 255, 0.7);
   border-radius: 10px;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .presence-header {
@@ -16,7 +16,7 @@
   align-items: center;
   justify-content: space-between;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .presence-title {
@@ -34,7 +34,7 @@
 .presence-loading,
 .presence-empty {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 /* Skeleton loader for presence while initializing */
@@ -53,14 +53,19 @@
   width: 10px;
   height: 10px;
   border-radius: 9999px;
-  background: #e5e7eb;
+  background: var(--border-subtle);
 }
 
 .presence-skeleton-bar {
   height: 10px;
   width: 120px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 37%, #e5e7eb 63%);
+  background: linear-gradient(
+    90deg,
+    var(--border-subtle) 25%,
+    var(--background-muted) 37%,
+    var(--border-subtle) 63%
+  );
   background-size: 400% 100%;
   animation: shimmer 1.2s ease-in-out infinite;
 }
@@ -98,5 +103,5 @@
 
 .presence-name {
   font-size: 13px;
-  color: #111827;
+  color: var(--text-primary);
 }

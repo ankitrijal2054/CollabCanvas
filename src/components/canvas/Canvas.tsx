@@ -1,5 +1,5 @@
 // Canvas component - Interactive collaborative canvas with Konva
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import type Konva from "konva";
 import type {
@@ -78,6 +78,38 @@ export default function Canvas() {
     alignSelectedVerticalMiddle,
     // Note: distributeSelected* functions are used by AlignmentToolbar, not directly here
   } = useCanvas();
+
+  // React instantly to theme changes (data-theme attribute mutations)
+  const [themeTick, setThemeTick] = useState(0);
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === "attributes" && m.attributeName === "data-theme") {
+          setThemeTick((t) => t + 1);
+          break;
+        }
+      }
+    });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  // Read CSS variables for canvas colors
+  const { canvasFill, gridColor, borderColor } = useMemo(() => {
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    const fill =
+      styles.getPropertyValue("--canvas-surface").trim() || "#ffffff";
+    const grid =
+      styles.getPropertyValue("--canvas-grid-muted").trim() || "#f3f4f6";
+    const border =
+      styles.getPropertyValue("--border-color").trim() || "#e5e7eb";
+    return { canvasFill: fill, gridColor: grid, borderColor: border };
+  }, [themeTick]);
 
   // Initialize presence tracking for multiplayer cursors
   const { cursors, updateCursor, removeCursor, remoteTransforms } = usePresence(
@@ -868,7 +900,7 @@ export default function Canvas() {
                   y={0}
                   width={canvasSize.width}
                   height={canvasSize.height}
-                  fill="#ffffff"
+                  fill={canvasFill}
                   shadowColor="rgba(0, 0, 0, 0.1)"
                   shadowBlur={10}
                   shadowOffset={{ x: 0, y: 2 }}
@@ -888,7 +920,7 @@ export default function Canvas() {
                   y={0}
                   width={canvasSize.width}
                   height={canvasSize.height}
-                  stroke="#e5e7eb"
+                  stroke={borderColor}
                   strokeWidth={2 / viewport.scale} // Scale-independent border
                   fill="transparent"
                   listening={false}
