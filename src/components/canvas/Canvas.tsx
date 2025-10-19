@@ -20,6 +20,7 @@ import CanvasControls from "./CanvasControls";
 import CanvasObject from "./CanvasObject";
 import CanvasGrid from "./CanvasGrid";
 import CursorLayer from "../collaboration/CursorLayer";
+import RemoteTransformGhosts from "../collaboration/RemoteTransformGhosts";
 import { EditAttributionTooltip } from "./EditAttributionTooltip";
 import { SelectionBox } from "./SelectionBox";
 import TextEditor from "./TextEditor";
@@ -79,7 +80,7 @@ export default function Canvas() {
   } = useCanvas();
 
   // Initialize presence tracking for multiplayer cursors
-  const { cursors, updateCursor, removeCursor } = usePresence(
+  const { cursors, updateCursor, removeCursor, remoteTransforms } = usePresence(
     user?.id ?? null,
     user?.name ?? user?.email ?? null,
     {
@@ -937,6 +938,11 @@ export default function Canvas() {
                   />
                 )}
               </Layer>
+              {/* Live Transform Ghosts Overlay (above objects) */}
+              <RemoteTransformGhosts
+                remoteTransforms={remoteTransforms}
+                selfUserId={user?.id ?? null}
+              />
             </Stage>
 
             {/* Edit Attribution Tooltip */}

@@ -67,6 +67,41 @@
               ".validate": "newData.isNumber()"
             }
           },
+          "transforms": {
+            "$objectId": {
+              ".validate": "newData.hasChildren(['objectId','x','y','width','height','lastUpdated'])",
+              "objectId": {
+                ".validate": "newData.isString() && newData.val() === $objectId"
+              },
+              "x": { ".validate": "newData.isNumber()" },
+              "y": { ".validate": "newData.isNumber()" },
+              "width": {
+                ".validate": "newData.isNumber() && newData.val() >= 0"
+              },
+              "height": {
+                ".validate": "newData.isNumber() && newData.val() >= 0"
+              },
+              "rotation": {
+                ".validate": "newData.isNumber() || !newData.exists()"
+              },
+              "color": {
+                ".validate": "newData.isString() || !newData.exists()"
+              },
+              "stroke": {
+                ".validate": "newData.isString() || !newData.exists()"
+              },
+              "strokeWidth": {
+                ".validate": "newData.isNumber() || !newData.exists()"
+              },
+              "opacity": {
+                ".validate": "newData.isNumber() || !newData.exists()"
+              },
+              "zIndex": {
+                ".validate": "newData.isNumber() || !newData.exists()"
+              },
+              "lastUpdated": { ".validate": "newData.isNumber()" }
+            }
+          },
           "lastSeen": {
             ".validate": "newData.isNumber()"
           },

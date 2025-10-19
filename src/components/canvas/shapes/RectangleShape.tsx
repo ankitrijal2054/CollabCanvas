@@ -14,6 +14,8 @@ import {
   getErrorMessage,
 } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
+import { presenceService } from "../../../services/presenceService";
+import { syncHelpers } from "../../../utils/syncHelpers";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
 
 interface RectangleShapeProps {
@@ -67,6 +69,21 @@ function RectangleShape({
     if (onHoverChange) {
       onHoverChange(false, null, { x: 0, y: 0 });
     }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[RectangleShape] dragStart", object.id);
+    }
+
+    // Emit an initial snapshot so viewers get an immediate ghost
+    const node = shapeRef.current;
+    if (node && user?.id) {
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user.id, object.id, snapshot)
+        .catch((e) =>
+          console.error("[RectangleShape] initial setTransform failed", e)
+        );
+    }
   };
 
   /**
@@ -74,6 +91,7 @@ function RectangleShape({
    * (Don't update state during drag to avoid re-render conflicts)
    */
   const handleDrag = (e: Konva.KonvaEventObject<DragEvent>) => {
+    // minimal sampling retained only in DEV if needed
     // Check if multiple objects are selected for group move
     const isGroupMove =
       selectedIds.length > 1 && selectedIds.includes(object.id);
@@ -151,12 +169,28 @@ function RectangleShape({
       // Redraw the layer
       node.getLayer()?.batchDraw();
     }
+
+    // Emit live transform snapshot (single object only to reduce noise)
+    try {
+      const node = e.target as Konva.Rect;
+      const snapshot = buildSnapshot(node);
+      if (throttledEmitTransform.current) {
+        throttledEmitTransform.current(snapshot);
+      } else {
+        console.warn("[RectangleShape] throttledEmitTransform missing");
+      }
+    } catch (err) {
+      console.error("[RectangleShape] emit drag snapshot failed", err);
+    }
   };
 
   /**
    * Handle drag end - sync to Firebase (with group move support)
    */
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[RectangleShape] dragEnd", object.id);
+    }
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot update objects");
       return;
@@ -284,6 +318,13 @@ function RectangleShape({
         onHoverChange(true, updatedObject, pointerPos);
       }
     }
+
+    // Clear live transform snapshot on drag end
+    if (user?.id) {
+      try {
+        await presenceService.clearTransform(user.id, object.id);
+      } catch {}
+    }
   };
 
   /**
@@ -350,7 +391,89 @@ function RectangleShape({
     } catch (error) {
       console.error("❌ Failed to sync rectangle resize:", error);
     }
+
+    // Clear live transform snapshot
+    if (user?.id) {
+      try {
+        await presenceService.clearTransform(user.id, object.id);
+      } catch {}
+    }
   };
+
+  // Emit during transform (resize/rotate) for live ghost updates
+  const handleTransform = () => {
+    if (process.env.NODE_ENV !== "production") {
+      if (Math.random() < 0.05) {
+        console.log("[RectangleShape] transform", object.id);
+      }
+    }
+    const node = shapeRef.current;
+    if (!node || !user?.id) return;
+    const snapshot = buildSnapshot(node);
+    if (throttledEmitTransform.current) {
+      throttledEmitTransform.current(snapshot);
+    }
+  };
+
+  // Build snapshot from current node state
+  const buildSnapshot = (node: Konva.Rect) => {
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const width = Math.max(5, node.width() * (scaleX || 1));
+    const height = Math.max(5, node.height() * (scaleY || 1));
+    return {
+      objectId: object.id,
+      type: object.type,
+      x: node.x(),
+      y: node.y(),
+      width,
+      height,
+      rotation: node.rotation() || object.rotation || 0,
+      color: object.color,
+      stroke: object.stroke,
+      strokeWidth: object.strokeWidth,
+      opacity: object.opacity,
+      zIndex: object.zIndex,
+    } as const;
+  };
+
+  // Throttled emitter for live transform snapshots
+  const throttledEmitTransform = useRef<
+    | ((snap: {
+        objectId: string;
+        type: "rectangle";
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        rotation?: number;
+        color?: string;
+        stroke?: string;
+        strokeWidth?: number;
+        opacity?: number;
+        zIndex?: number;
+      }) => void)
+    | null
+  >(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const emit = syncHelpers.throttle(
+      (snap: any) => {
+        presenceService
+          .setTransform(user.id, snap.objectId, snap)
+          .catch(() => {});
+      },
+      80 // ~12fps for network stability
+    );
+    throttledEmitTransform.current = emit;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[RectangleShape] emitter ready", user.id);
+    }
+    return () => {
+      throttledEmitTransform.current = null;
+    };
+  }, [user?.id]);
 
   /**
    * Handle mouse enter - notify parent to show tooltip
@@ -430,8 +553,9 @@ function RectangleShape({
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={handleDragStart}
-        onDrag={handleDrag}
+        onDragMove={handleDrag}
         onDragEnd={handleDragEnd}
+        onTransform={handleTransform}
         onTransformEnd={handleTransformEnd}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
