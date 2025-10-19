@@ -61,6 +61,10 @@ function CircleShape({
   const handleDragStart = () => {
     // Store the initial position at drag start
     dragStartPosRef.current = { x: object.x, y: object.y };
+    // Hide tooltip during drag for cleaner UI
+    if (onHoverChange) {
+      onHoverChange(false, null, { x: 0, y: 0 });
+    }
   };
 
   /**
@@ -264,6 +268,21 @@ function CircleShape({
         }
       } catch (error) {
         console.error("❌ Failed to sync circle position:", error);
+      }
+    }
+
+    // Show tooltip again after drag ends with updated attribution
+    if (onHoverChange) {
+      const stage = e.target.getStage();
+      const pointerPos = stage?.getPointerPosition();
+      const updatedObject = {
+        ...object,
+        lastEditedBy: user?.id,
+        lastEditedByName: userName,
+        lastEditedAt: Date.now(),
+      };
+      if (pointerPos) {
+        onHoverChange(true, updatedObject, pointerPos);
       }
     }
   };
