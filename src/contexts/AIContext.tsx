@@ -319,6 +319,15 @@ export function AIProvider({ children }: AIProviderProps) {
             status: "processing",
           });
 
+          // Add non-destructive assistant progress message for this iteration
+          addMessage({
+            id: `${commandId}-progress-${iteration}`,
+            role: "assistant",
+            content: `Processing step ${iteration}...`,
+            timestamp: Date.now(),
+            status: "processing",
+          });
+
           // Send command to server (with conversation context for iterations > 1)
           const response = await sendAICommand(
             {
@@ -482,6 +491,17 @@ export function AIProvider({ children }: AIProviderProps) {
           toolCalls: allToolCalls,
         };
         addMessage(aiMessage);
+
+        // Remove interim assistant progress messages for this command
+        setMessages((prev) =>
+          prev.filter(
+            (m) =>
+              !(
+                m.role === "assistant" &&
+                m.id.startsWith(`${commandId}-progress-`)
+              )
+          )
+        );
 
         // Update user message status
         updateMessage(commandId, { status: "completed" });
