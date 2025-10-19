@@ -832,6 +832,7 @@ export default function Canvas() {
               onMouseDown={handlePanStart}
               onMouseMove={handlePanMove}
               onMouseUp={handlePanEnd}
+              onDragMove={handleCursorMove}
               onMouseLeave={() => {
                 // Do not finalize selection on mouse leave; toolbar overlays can
                 // intercept mouseup outside the stage. We'll listen on window instead.
