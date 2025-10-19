@@ -1,5 +1,5 @@
 // Canvas component - Interactive collaborative canvas with Konva
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Stage, Layer, Rect } from "react-konva";
 import type Konva from "konva";
 import type {
@@ -587,7 +587,7 @@ export default function Canvas() {
   /**
    * Handle pan end (mouse up or touch end)
    */
-  const handlePanEnd = () => {
+  const handlePanEnd = useCallback(() => {
     setIsPanning(false);
 
     // If selection rectangle exists, select all objects within it
@@ -636,7 +636,29 @@ export default function Canvas() {
       setSelectionRect(null);
       setIsSelectionMode(false);
     }
-  };
+  }, [
+    selectionRect,
+    objects,
+    selectObject,
+    toggleSelection,
+    setSelectionRect,
+    setIsSelectionMode,
+  ]);
+
+  // Ensure selection finalizes even if mouseup occurs outside the Stage (e.g., over toolbar)
+  useEffect(() => {
+    const handleWindowMouseUp = () => {
+      if (selectionRect) {
+        handlePanEnd();
+      }
+    };
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    window.addEventListener("touchend", handleWindowMouseUp);
+    return () => {
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+      window.removeEventListener("touchend", handleWindowMouseUp);
+    };
+  }, [selectionRect, handlePanEnd]);
 
   /**
    * Handle wheel zoom (mouse wheel)
@@ -776,7 +798,8 @@ export default function Canvas() {
               onMouseMove={handlePanMove}
               onMouseUp={handlePanEnd}
               onMouseLeave={() => {
-                handlePanEnd();
+                // Do not finalize selection on mouse leave; toolbar overlays can
+                // intercept mouseup outside the stage. We'll listen on window instead.
                 handleCursorLeave();
               }}
               onTouchStart={handlePanStart}
