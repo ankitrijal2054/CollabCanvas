@@ -399,6 +399,15 @@ export default function Canvas() {
     };
   }, []);
 
+  // Hide edit attribution tooltip if the hovered object is deleted
+  useEffect(() => {
+    if (!hoveredObject) return;
+    const stillExists = objects.some((o) => o.id === hoveredObject.id);
+    if (!stillExists) {
+      setHoveredObject(null);
+    }
+  }, [objects, hoveredObject]);
+
   /**
    * Center the canvas on initial load
    */
