@@ -10,6 +10,7 @@ import {
   getErrorMessage,
 } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
+import { presenceService } from "../../../services/presenceService";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
 
 interface LineShapeProps {
@@ -123,6 +124,15 @@ function LineShape({
     if (onHoverChange) {
       onHoverChange(false, null, { x: 0, y: 0 });
     }
+
+    // Emit initial snapshot for immediate ghost
+    const node = shapeRef.current;
+    if (node && user?.id) {
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user.id, object.id, snapshot)
+        .catch(() => {});
+    }
   };
 
   /**
@@ -217,6 +227,34 @@ function LineShape({
 
       // Redraw the layer
       node.getLayer()?.batchDraw();
+
+      // Emit live snapshots for all selected objects
+      try {
+        const snaps: any[] = [];
+        selectedObjects.forEach((selObj) => {
+          const p = newPositions.get(selObj.id);
+          if (!p) return;
+          snaps.push({
+            objectId: selObj.id,
+            type: selObj.type,
+            x: p.x,
+            y: p.y,
+            width: selObj.width,
+            height: selObj.height,
+            rotation: 0,
+            color: selObj.color,
+            stroke: selObj.stroke,
+            strokeWidth: selObj.strokeWidth,
+            opacity: selObj.opacity,
+            zIndex: selObj.zIndex,
+          });
+        });
+        snaps.forEach((s) => {
+          presenceService
+            .setTransform(user!.id!, s.objectId, s)
+            .catch(() => {});
+        });
+      } catch {}
     } else {
       // Single line drag - also update anchors for smooth movement
       if (startAnchorRef.current && endAnchorRef.current) {
@@ -226,6 +264,14 @@ function LineShape({
         endAnchorRef.current.y(newPosition.y + endY - 4);
         node.getLayer()?.batchDraw();
       }
+
+      // Emit single line snapshot
+      try {
+        const snap = buildSnapshot(node as Konva.Line);
+        presenceService
+          .setTransform(user!.id!, snap.objectId, snap)
+          .catch(() => {});
+      } catch {}
     }
 
     // DON'T update state during drag - only update Konva nodes (prevents misalignment on subsequent drags)
@@ -345,6 +391,16 @@ function LineShape({
         console.error("❌ Failed to sync line position:", error);
       }
     }
+
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
   };
 
   /**
@@ -431,6 +487,28 @@ function LineShape({
 
     const newPoints = [startX, startY, newEndX, newEndY];
     await syncLineUpdate(newPoints);
+    // Clear snapshot for this line
+    if (user?.id) {
+      await presenceService.clearTransform(user.id, object.id).catch(() => {});
+    }
+  };
+
+  // Build snapshot for line (use its bounding box and style)
+  const buildSnapshot = (node: Konva.Line) => {
+    return {
+      objectId: object.id,
+      type: object.type,
+      x: node.x(),
+      y: node.y(),
+      width: object.width || 0,
+      height: object.height || 0,
+      rotation: 0,
+      color: object.color,
+      stroke: object.stroke,
+      strokeWidth: object.strokeWidth,
+      opacity: object.opacity,
+      zIndex: object.zIndex,
+    } as const;
   };
 
   /**

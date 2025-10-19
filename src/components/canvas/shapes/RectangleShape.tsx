@@ -168,19 +168,42 @@ function RectangleShape({
 
       // Redraw the layer
       node.getLayer()?.batchDraw();
-    }
-
-    // Emit live transform snapshot (single object only to reduce noise)
-    try {
-      const node = e.target as Konva.Rect;
-      const snapshot = buildSnapshot(node);
-      if (throttledEmitTransform.current) {
-        throttledEmitTransform.current(snapshot);
-      } else {
-        console.warn("[RectangleShape] throttledEmitTransform missing");
-      }
-    } catch (err) {
-      console.error("[RectangleShape] emit drag snapshot failed", err);
+      // Emit live snapshots for all selected objects (ghosts for each)
+      try {
+        const snaps: any[] = [];
+        selectedObjects.forEach((selObj) => {
+          const p = newPositions.get(selObj.id);
+          if (!p) return;
+          snaps.push({
+            objectId: selObj.id,
+            type: selObj.type,
+            x: p.x,
+            y: p.y,
+            width: selObj.width,
+            height: selObj.height,
+            rotation: selObj.rotation || 0,
+            color: selObj.color,
+            stroke: selObj.stroke,
+            strokeWidth: selObj.strokeWidth,
+            opacity: selObj.opacity,
+            zIndex: selObj.zIndex,
+          });
+        });
+        snaps.forEach((s) => {
+          presenceService
+            .setTransform(user!.id!, s.objectId, s)
+            .catch(() => {});
+        });
+      } catch {}
+    } else {
+      // Single-object drag snapshot
+      try {
+        const node = e.target as Konva.Rect;
+        const snapshot = buildSnapshot(node);
+        presenceService
+          .setTransform(user!.id!, snapshot.objectId, snapshot)
+          .catch(() => {});
+      } catch {}
     }
   };
 
@@ -319,11 +342,14 @@ function RectangleShape({
       }
     }
 
-    // Clear live transform snapshot on drag end
+    // Clear live transform snapshots for all selected (or self)
     if (user?.id) {
-      try {
-        await presenceService.clearTransform(user.id, object.id);
-      } catch {}
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
     }
   };
 
@@ -392,11 +418,14 @@ function RectangleShape({
       console.error("❌ Failed to sync rectangle resize:", error);
     }
 
-    // Clear live transform snapshot
+    // Clear live transform snapshots for all selected (or self)
     if (user?.id) {
-      try {
-        await presenceService.clearTransform(user.id, object.id);
-      } catch {}
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
     }
   };
 

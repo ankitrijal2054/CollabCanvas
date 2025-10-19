@@ -14,6 +14,8 @@ import {
   getErrorMessage,
 } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
+import { presenceService } from "../../../services/presenceService";
+import { syncHelpers } from "../../../utils/syncHelpers";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
 
 interface StarShapeProps {
@@ -70,6 +72,15 @@ function StarShape({
     // Hide tooltip during drag for cleaner UI
     if (onHoverChange) {
       onHoverChange(false, null, { x: 0, y: 0 });
+    }
+
+    // Emit an initial snapshot for immediate ghost
+    const node = shapeRef.current;
+    if (node && user?.id) {
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user.id, object.id, snapshot)
+        .catch(() => {});
     }
   };
 
@@ -158,6 +169,43 @@ function StarShape({
 
       // Redraw the layer
       node.getLayer()?.batchDraw();
+
+      // Emit live snapshots for all selected objects
+      try {
+        const snaps: any[] = [];
+        selectedObjects.forEach((selObj) => {
+          const p = newPositions.get(selObj.id);
+          if (!p) return;
+          snaps.push({
+            objectId: selObj.id,
+            type: selObj.type,
+            x: p.x,
+            y: p.y,
+            width: selObj.width,
+            height: selObj.height,
+            rotation: selObj.rotation || 0,
+            color: selObj.color,
+            stroke: selObj.stroke,
+            strokeWidth: selObj.strokeWidth,
+            opacity: selObj.opacity,
+            zIndex: selObj.zIndex,
+          });
+        });
+        snaps.forEach((s) => {
+          presenceService
+            .setTransform(user!.id!, s.objectId, s)
+            .catch(() => {});
+        });
+      } catch {}
+    } else {
+      // Single star drag snapshot
+      try {
+        const node = e.target as Konva.Star;
+        const snapshot = buildSnapshot(node);
+        presenceService
+          .setTransform(user!.id!, snapshot.objectId, snapshot)
+          .catch(() => {});
+      } catch {}
     }
   };
 
@@ -297,6 +345,15 @@ function StarShape({
         onHoverChange(true, updatedObject, pointerPos);
       }
     }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
   };
 
   /**
@@ -372,6 +429,45 @@ function StarShape({
     } catch (error) {
       console.error("❌ Failed to sync star resize:", error);
     }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
+  };
+
+  // Emit during transform (resize/rotate) for live ghost updates
+  const handleTransform = () => {
+    const node = shapeRef.current;
+    if (!node || !user?.id) return;
+    const snapshot = buildSnapshot(node);
+    presenceService
+      .setTransform(user.id, snapshot.objectId, snapshot)
+      .catch(() => {});
+  };
+
+  // Build snapshot from current node state (convert center to top-left)
+  const buildSnapshot = (node: Konva.Star) => {
+    const topLeftX = node.x() - object.width / 2;
+    const topLeftY = node.y() - object.height / 2;
+    return {
+      objectId: object.id,
+      type: object.type,
+      x: topLeftX,
+      y: topLeftY,
+      width: object.width,
+      height: object.height,
+      rotation: node.rotation() || object.rotation || 0,
+      color: object.color,
+      stroke: object.stroke,
+      strokeWidth: object.strokeWidth,
+      opacity: object.opacity,
+      zIndex: object.zIndex,
+    } as const;
   };
 
   /**
@@ -436,8 +532,9 @@ function StarShape({
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={handleDragStart}
-        onDrag={handleDrag}
+        onDragMove={handleDrag}
         onDragEnd={handleDragEnd}
+        onTransform={handleTransform}
         onTransformEnd={handleTransformEnd}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}

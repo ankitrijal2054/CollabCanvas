@@ -11,6 +11,7 @@ import { useSyncOperations } from "../../../hooks/useRealtimeSync";
 import { offlineQueue } from "../../../utils/offlineQueue";
 import { TransactionErrorType } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
+import { presenceService } from "../../../services/presenceService";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
 
 interface TextShapeProps {
@@ -64,6 +65,15 @@ function TextShape({
     // Hide tooltip during drag for cleaner UI
     if (onHoverChange) {
       onHoverChange(false, null, { x: 0, y: 0 });
+    }
+
+    // Emit initial snapshot for immediate ghost
+    const node = shapeRef.current;
+    if (node && user?.id) {
+      const snapshot = buildSnapshot(node);
+      presenceService
+        .setTransform(user.id, object.id, snapshot)
+        .catch(() => {});
     }
   };
 
@@ -148,6 +158,43 @@ function TextShape({
 
       // Redraw the layer
       node.getLayer()?.batchDraw();
+
+      // Emit live snapshots for all selected objects
+      try {
+        const snaps: any[] = [];
+        selectedObjects.forEach((selObj) => {
+          const p = newPositions.get(selObj.id);
+          if (!p) return;
+          snaps.push({
+            objectId: selObj.id,
+            type: selObj.type,
+            x: p.x,
+            y: p.y,
+            width: selObj.width,
+            height: selObj.height,
+            rotation: selObj.rotation || 0,
+            color: selObj.color,
+            stroke: selObj.stroke,
+            strokeWidth: selObj.strokeWidth,
+            opacity: selObj.opacity,
+            zIndex: selObj.zIndex,
+          });
+        });
+        snaps.forEach((s) => {
+          presenceService
+            .setTransform(user!.id!, s.objectId, s)
+            .catch(() => {});
+        });
+      } catch {}
+    } else {
+      // Single text drag snapshot
+      try {
+        const node = e.target as Konva.Text;
+        const snapshot = buildSnapshot(node);
+        presenceService
+          .setTransform(user!.id!, snapshot.objectId, snapshot)
+          .catch(() => {});
+      } catch {}
     }
   };
 
@@ -281,6 +328,15 @@ function TextShape({
         onHoverChange(true, updatedObject, pointerPos);
       }
     }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
   };
 
   /**
@@ -347,6 +403,43 @@ function TextShape({
         }
       }
     }
+    // Clear live transform snapshots
+    if (user?.id) {
+      const idsToClear = selectedIds.includes(object.id)
+        ? selectedIds
+        : [object.id];
+      await Promise.all(
+        idsToClear.map((id) => presenceService.clearTransform(user.id!, id))
+      ).catch(() => {});
+    }
+  };
+
+  // Emit during transform (resize/rotate) for live ghost updates
+  const handleTransform = () => {
+    const node = shapeRef.current;
+    if (!node || !user?.id) return;
+    const snapshot = buildSnapshot(node);
+    presenceService
+      .setTransform(user.id, snapshot.objectId, snapshot)
+      .catch(() => {});
+  };
+
+  // Build snapshot from current node state
+  const buildSnapshot = (node: Konva.Text) => {
+    return {
+      objectId: object.id,
+      type: object.type,
+      x: node.x(),
+      y: node.y(),
+      width: node.width(),
+      height: node.height(),
+      rotation: node.rotation() || object.rotation || 0,
+      color: object.color,
+      stroke: object.stroke,
+      strokeWidth: object.strokeWidth,
+      opacity: object.opacity,
+      zIndex: object.zIndex,
+    } as const;
   };
 
   /**
@@ -444,8 +537,9 @@ function TextShape({
         onDblClick={handleDoubleClick}
         onDblTap={handleDoubleClick}
         onDragStart={handleDragStart}
-        onDrag={handleDrag}
+        onDragMove={handleDrag}
         onDragEnd={handleDragEnd}
+        onTransform={handleTransform}
         onTransformEnd={handleTransformEnd}
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
