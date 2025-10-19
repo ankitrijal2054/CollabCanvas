@@ -83,6 +83,13 @@ export interface TransformSnapshot {
   strokeWidth?: number;
   opacity?: number;
   zIndex?: number;
+  // Text-specific (optional)
+  text?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: string;
+  fontStyle?: string;
+  textAlign?: string;
   lastUpdated: number;
 }
 

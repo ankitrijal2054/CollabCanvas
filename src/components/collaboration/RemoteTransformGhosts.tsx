@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import {
   Layer,
   Rect as KonvaRect,
@@ -119,7 +119,13 @@ export default function RemoteTransformGhosts({
             y={snap.y}
             width={snap.width}
             height={snap.height}
-            text={""}
+            text={snap.text || ""}
+            fontFamily={snap.fontFamily || "Arial"}
+            fontSize={snap.fontSize || 16}
+            fontStyle={`${snap.fontStyle || "normal"} ${
+              snap.fontWeight || "normal"
+            }`}
+            align={snap.textAlign || "left"}
             fill={snap.color || "#000"}
             opacity={common.opacity}
             rotation={common.rotation}

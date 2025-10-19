@@ -85,11 +85,16 @@ export const presenceService = {
         database,
         `/presence/${canvasId}/${userId}/transforms/${objectId}`
       );
-      await set(transformRef, {
+      const payload: Record<string, unknown> = {
         ...snapshot,
         objectId,
         lastUpdated: Date.now(),
-      });
+      };
+      // Remove undefined values – Firebase RTDB rejects undefined fields
+      const cleaned = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined)
+      );
+      await set(transformRef, cleaned);
       if (import.meta.env.DEV) {
         console.debug("[presenceService] setTransform", {
           userId,
