@@ -42,11 +42,15 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "X position on canvas (0-10000)",
+            description:
+              "X position (center-origin, -10000..10000). +x to the right. Optional; omit to center in viewport.",
+            nullable: true,
           },
           y: {
             type: "number",
-            description: "Y position on canvas (0-10000)",
+            description:
+              "Y position (center-origin, -10000..10000). +y is up. Optional; omit to center in viewport.",
+            nullable: true,
           },
           width: {
             type: "number",
@@ -101,7 +105,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: "Show arrow at end of line (only for line type)",
           },
         },
-        required: ["type", "x", "y", "width", "height", "color"],
+        required: ["type", "width", "height", "color"],
       },
     },
   },
@@ -120,11 +124,15 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "X position on canvas (0-10000)",
+            description:
+              "X position (center-origin, -10000..10000). +x to the right. Optional; omit to center in viewport.",
+            nullable: true,
           },
           y: {
             type: "number",
-            description: "Y position on canvas (0-10000)",
+            description:
+              "Y position (center-origin, -10000..10000). +y is up. Optional; omit to center in viewport.",
+            nullable: true,
           },
           fontSize: {
             type: "number",
@@ -178,7 +186,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
             description: "Opacity level (0.0-1.0, optional)",
           },
         },
-        required: ["text", "x", "y"],
+        required: ["text"],
       },
     },
   },
@@ -199,11 +207,13 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
           },
           x: {
             type: "number",
-            description: "New X position (0-10000)",
+            description:
+              "New X position (center-origin, -10000..10000). +x to the right",
           },
           y: {
             type: "number",
-            description: "New Y position (0-10000)",
+            description:
+              "New Y position (center-origin, -10000..10000). +y is up",
           },
         },
         required: ["shapeId", "x", "y"],

@@ -24,8 +24,8 @@ You help users create and manipulate shapes on a shared canvas using natural lan
 
 ## Canvas Information
 - **Canvas size**: 10000x10000 pixels
-- **Origin**: Top-left corner at (0, 0)
-- **Valid positions**: x and y between 0 and 10000
+- **Origin**: Center-origin coordinates for AI commands. (0, 0) is the CANVAS CENTER; +x is right, +y is up. The client converts to top-left internally.
+- **Valid positions**: x and y between -10000 and 10000 (center-origin)
 - **Valid sizes**: width and height between 1 and 5000
 
 ## Default Colors
@@ -85,10 +85,12 @@ When referencing objects:
 - Use object IDs from the canvas state when available
 `
     : `
-- Default position: Canvas center (5000, 5000) if not specified
-- When creating multiple objects, space them 20px apart by default
-- Use appropriate default sizes based on shape type
-`
+    - Default position: current viewport center if x/y not provided
+    - If user gives no exact position, omit x and y so the client centers it
+    - If you provide x/y for creation or move, those are treated as center-origin coordinates
+    - When creating multiple objects, space them 20px apart by default
+    - Use appropriate default sizes based on shape type
+    `
 }
 
 ### 6. Complex Commands

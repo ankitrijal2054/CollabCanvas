@@ -8,6 +8,13 @@
 
 import type { ToolCall } from "../types/ai.types";
 import type { CanvasObject } from "../types/canvas.types";
+import {
+  DEFAULT_RECTANGLE,
+  DEFAULT_CIRCLE,
+  DEFAULT_STAR,
+  DEFAULT_LINE,
+  DEFAULT_TEXT,
+} from "../types/canvas.types";
 
 /**
  * Options for creating shapes via AI
@@ -70,6 +77,7 @@ export interface CanvasContextForTools {
   // State
   objects: CanvasObject[];
   selectedIds: string[];
+  canvasSize: { width: number; height: number };
 
   // Object creation with optional parameters
   createRectangle: (options?: CreateShapeOptions) => Promise<string | void>;
@@ -425,10 +433,65 @@ async function executeCreateShape(
   });
 
   try {
+    // Interpret provided x/y as CENTER-ORIGIN coordinates (0,0 at canvas center; +y up)
+    // Convert to canvas top-left coordinates used by CanvasContext
+    const centerCoordX = x as number | undefined;
+    const centerCoordY = y as number | undefined;
+
+    let defaultWidth: number | undefined;
+    let defaultHeight: number | undefined;
+    switch (type) {
+      case "rectangle":
+        defaultWidth = DEFAULT_RECTANGLE.width;
+        defaultHeight = DEFAULT_RECTANGLE.height;
+        break;
+      case "circle":
+        defaultWidth = DEFAULT_CIRCLE.width;
+        defaultHeight = DEFAULT_CIRCLE.height;
+        break;
+      case "star":
+        defaultWidth = DEFAULT_STAR.width;
+        defaultHeight = DEFAULT_STAR.height;
+        break;
+      case "line":
+        defaultWidth = DEFAULT_LINE.width ?? 100;
+        defaultHeight = DEFAULT_LINE.height ?? 0;
+        break;
+      default:
+        break;
+    }
+
+    const resolvedWidth = (width as number | undefined) ?? defaultWidth;
+    const resolvedHeight = (height as number | undefined) ?? defaultHeight;
+
+    let topLeftX: number | undefined = undefined;
+    let topLeftY: number | undefined = undefined;
+    if (
+      centerCoordX !== undefined &&
+      centerCoordY !== undefined &&
+      resolvedWidth !== undefined &&
+      resolvedHeight !== undefined
+    ) {
+      const halfW = context.canvasSize.width / 2;
+      const halfH = context.canvasSize.height / 2;
+      // Convert center-origin to pixel center
+      let pixelCenterX = halfW + centerCoordX; // +x to the right
+      let pixelCenterY = halfH - centerCoordY; // +y up → subtract from center
+      // Clamp pixel centers to keep shape fully within canvas bounds
+      const minCenterX = resolvedWidth / 2;
+      const maxCenterX = context.canvasSize.width - resolvedWidth / 2;
+      const minCenterY = resolvedHeight / 2;
+      const maxCenterY = context.canvasSize.height - resolvedHeight / 2;
+      pixelCenterX = Math.min(Math.max(pixelCenterX, minCenterX), maxCenterX);
+      pixelCenterY = Math.min(Math.max(pixelCenterY, minCenterY), maxCenterY);
+      topLeftX = pixelCenterX - resolvedWidth / 2;
+      topLeftY = pixelCenterY - resolvedHeight / 2;
+    }
+
     // Prepare options with all AI-specific properties
     const options: CreateShapeOptions = {
-      x: x as number,
-      y: y as number,
+      x: topLeftX as number,
+      y: topLeftY as number,
       width: width as number,
       height: height as number,
       color: color as string,
@@ -528,10 +591,26 @@ async function executeCreateText(
   });
 
   try {
+    // Interpret x/y as CENTER-ORIGIN coordinates for text; convert to top-left
+    const centerCoordX = x as number | undefined;
+    const centerCoordY = y as number | undefined;
+    const textWidth = DEFAULT_TEXT.width;
+    const textHeight = DEFAULT_TEXT.height;
+    let topLeftX: number | undefined = undefined;
+    let topLeftY: number | undefined = undefined;
+    if (centerCoordX !== undefined && centerCoordY !== undefined) {
+      const halfW = context.canvasSize.width / 2;
+      const halfH = context.canvasSize.height / 2;
+      const pixelCenterX = halfW + centerCoordX;
+      const pixelCenterY = halfH - centerCoordY; // +y up
+      topLeftX = pixelCenterX - textWidth / 2;
+      topLeftY = pixelCenterY - textHeight / 2;
+    }
+
     // Prepare options with all AI-specific properties
     const options: CreateTextOptions = {
-      x: x as number,
-      y: y as number,
+      x: topLeftX as number,
+      y: topLeftY as number,
       text: text as string,
       fontSize: fontSize as number | undefined,
       fontFamily: fontFamily as string | undefined,
@@ -590,9 +669,31 @@ async function executeMoveShape(
     };
   }
 
+  // Interpret x/y as center-origin; convert to top-left by keeping size
+  const resolvedX = x as number | undefined;
+  const resolvedY = y as number | undefined;
+  let newX = object.x;
+  let newY = object.y;
+  if (resolvedX !== undefined && resolvedY !== undefined) {
+    const halfW = context.canvasSize.width / 2;
+    const halfH = context.canvasSize.height / 2;
+    // Convert center-origin to pixel center
+    let pixelCenterX = halfW + resolvedX;
+    let pixelCenterY = halfH - resolvedY; // +y up
+    // Clamp to keep shape fully within canvas
+    const minCenterX = object.width / 2;
+    const maxCenterX = context.canvasSize.width - object.width / 2;
+    const minCenterY = object.height / 2;
+    const maxCenterY = context.canvasSize.height - object.height / 2;
+    pixelCenterX = Math.min(Math.max(pixelCenterX, minCenterX), maxCenterX);
+    pixelCenterY = Math.min(Math.max(pixelCenterY, minCenterY), maxCenterY);
+    newX = pixelCenterX - object.width / 2;
+    newY = pixelCenterY - object.height / 2;
+  }
+
   await context.updateObject(shapeId as string, {
-    x: x as number,
-    y: y as number,
+    x: newX,
+    y: newY,
     lastEditedBy: "ai-agent",
     lastEditedByName: "AI Agent",
     lastEditedAt: Date.now(),
@@ -600,7 +701,7 @@ async function executeMoveShape(
 
   return {
     success: true,
-    message: `Moved shape to (${x}, ${y})`,
+    message: `Moved shape to center (${x}, ${y})`,
     objectsModified: [shapeId as string],
   };
 }
@@ -887,8 +988,15 @@ async function executeCreateGrid(
   const rowCount = rows as number;
   const colCount = cols as number;
   const gridColor = (color as string) || "#3B82F6";
-  const baseX = (startX as number) || 5000;
-  const baseY = (startY as number) || 5000;
+  // startX/startY are center-origin; convert to top-left pixel base for first cell
+  const halfW = context.canvasSize.width / 2;
+  const halfH = context.canvasSize.height / 2;
+  const startCenterX = (startX as number) ?? 0;
+  const startCenterY = (startY as number) ?? 0;
+  const baseCenterX = halfW + startCenterX;
+  const baseCenterY = halfH - startCenterY; // +y up
+  const baseX = baseCenterX - (cellWidth as number) / 2;
+  const baseY = baseCenterY - (cellHeight as number) / 2;
   const created: string[] = [];
 
   for (let row = 0; row < rowCount; row++) {
@@ -896,13 +1004,19 @@ async function executeCreateGrid(
       const x = baseX + col * ((cellWidth as number) + (spacing as number));
       const y = baseY + row * ((cellHeight as number) + (spacing as number));
 
+      // Compute center-origin coordinates to keep semantics consistent
+      const pixelCenterX = x + (cellWidth as number) / 2;
+      const pixelCenterY = y + (cellHeight as number) / 2;
+      const centerOriginX = pixelCenterX - halfW; // +x right
+      const centerOriginY = halfH - pixelCenterY; // +y up
+
       // Create rectangle
       const createTool: ToolCall = {
         tool: "createShape",
         parameters: {
           type: "rectangle",
-          x,
-          y,
+          x: centerOriginX,
+          y: centerOriginY,
           width: cellWidth,
           height: cellHeight,
           color: gridColor,
