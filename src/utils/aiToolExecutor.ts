@@ -203,6 +203,9 @@ export async function executeToolCall(
       case "updateTextStyle":
         return await executeUpdateTextStyle(toolCall, context);
 
+      case "updateShapesStyleBulk":
+        return await executeUpdateShapesStyleBulk(toolCall, context);
+
       // ===== LAYOUT TOOLS =====
 
       case "arrangeHorizontal":
@@ -871,6 +874,66 @@ async function executeUpdateTextStyle(
     success: true,
     message: `Updated text style`,
     objectsModified: [shapeId as string],
+  };
+}
+
+async function executeUpdateShapesStyleBulk(
+  toolCall: ToolCall,
+  context: CanvasContextForTools
+): Promise<InternalToolResult> {
+  const { shapeIds, color, stroke, strokeWidth, opacity } =
+    toolCall.parameters as {
+      shapeIds: string[];
+      color?: string;
+      stroke?: string;
+      strokeWidth?: number;
+      opacity?: number;
+    };
+
+  if (!Array.isArray(shapeIds) || shapeIds.length === 0) {
+    return {
+      success: false,
+      message: "No shapes to update",
+      error: "NO_SHAPES",
+    };
+  }
+
+  // Chunk updates to avoid UI jank and rate limits
+  const CHUNK_SIZE = 25;
+  const updatedIds: string[] = [];
+
+  for (let i = 0; i < shapeIds.length; i += CHUNK_SIZE) {
+    const chunk = shapeIds.slice(i, i + CHUNK_SIZE);
+
+    for (const id of chunk) {
+      const obj = context.objects.find((o) => o.id === id);
+      if (!obj) continue;
+
+      const updates: Partial<CanvasObject> = {
+        lastEditedBy: "ai-agent",
+        lastEditedByName: "AI Agent",
+        lastEditedAt: Date.now(),
+      };
+
+      if (color !== undefined) updates.color = color;
+      if (stroke !== undefined) updates.stroke = stroke;
+      if (strokeWidth !== undefined) updates.strokeWidth = strokeWidth;
+      if (opacity !== undefined) updates.opacity = opacity;
+
+      await context.updateObject(id, updates);
+      updatedIds.push(id);
+    }
+
+    // Small delay between chunks
+    if (i + CHUNK_SIZE < shapeIds.length) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
+  return {
+    success: true,
+    message: `Updated style for ${updatedIds.length} shape(s)`,
+    objectsModified: updatedIds,
   };
 }
 

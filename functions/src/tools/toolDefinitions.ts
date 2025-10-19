@@ -292,6 +292,41 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
+      name: "updateShapesStyleBulk",
+      description:
+        "Update visual styling (color, stroke, opacity) for many shapes at once",
+      parameters: {
+        type: "object",
+        properties: {
+          shapeIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "Array of shape IDs to update",
+          },
+          color: {
+            type: "string",
+            description: "New fill color (hex code or named color, optional)",
+          },
+          stroke: {
+            type: "string",
+            description: "New stroke/border color (hex code, optional)",
+          },
+          strokeWidth: {
+            type: "number",
+            description: "New stroke/border width (0-50, optional)",
+          },
+          opacity: {
+            type: "number",
+            description: "New opacity level (0.0-1.0, optional)",
+          },
+        },
+        required: ["shapeIds"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "updateShapeStyle",
       description: "Update visual styling of a shape (color, stroke, opacity)",
       parameters: {
@@ -640,6 +675,7 @@ export const toolCategories: Record<string, ToolCategory> = {
   // Action tools - Styling
   updateShapeStyle: "action",
   updateTextStyle: "action",
+  updateShapesStyleBulk: "action",
 
   // Action tools - Layout
   arrangeHorizontal: "action",

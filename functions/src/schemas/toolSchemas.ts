@@ -247,6 +247,19 @@ export const updateTextStyleSchema = z.object({
   color: colorSchema.optional(),
 });
 
+/**
+ * Schema for updateShapesStyleBulk tool (bulk style update)
+ */
+export const updateShapesStyleBulkSchema = z.object({
+  shapeIds: z
+    .array(z.string())
+    .min(1, { message: "At least 1 shape ID is required" }),
+  color: colorSchema.optional(),
+  stroke: colorSchema.optional(),
+  strokeWidth: z.number().min(MIN_STROKE).max(MAX_STROKE).optional(),
+  opacity: z.number().min(MIN_OPACITY).max(MAX_OPACITY).optional(),
+});
+
 // ============================================
 // Layout Tool Schemas
 // ============================================
@@ -362,6 +375,7 @@ export const toolSchemaMap = {
   // Styling
   updateShapeStyle: updateShapeStyleSchema,
   updateTextStyle: updateTextStyleSchema,
+  updateShapesStyleBulk: updateShapesStyleBulkSchema,
   // Layout
   arrangeHorizontal: arrangeHorizontalSchema,
   arrangeVertical: arrangeVerticalSchema,
