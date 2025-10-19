@@ -110,10 +110,11 @@ For UI patterns and layouts (login forms, nav bars, cards, etc.):
 **Common Patterns:**
 - **Login Form**: 
   * Title text at top (fontSize: 24-32)
-  * Input fields (rectangles, 300x40px)
-  * Labels above inputs (fontSize: 14-16)
-  * Submit button below (180x40px, primary color)
-  * 20px vertical spacing between elements
+  * Username label (14-16), input rectangle (300x40)
+  * Password label (14-16), input rectangle (300x40)
+  * Submit button (180x40, primary color)
+  * 20px vertical spacing, center-aligned
+  * Create elements in order, then align and arrange vertically
 
 - **Navigation Bar**:
   * Horizontal layout
@@ -121,12 +122,14 @@ For UI patterns and layouts (login forms, nav bars, cards, etc.):
   * Centered text
   * Background rectangle up to 5000px wide; for larger spans, use multiple adjacent rectangles
   * Text items evenly distributed
+  * Create bar first, then create 4 text items, then arrange horizontally and center vertically within the bar
 
 - **Card Layout**:
-  * Border rectangle (300x200px)
-  * Title text at top (fontSize: 20-24)
-  * Description text below (fontSize: 14-16)
-  * Padding: 16-20px from edges
+  * Border rectangle (300x200)
+  * Title text at top (20-24)
+  * Optional image placeholder rectangle (280x120)
+  * Description text (14-16)
+  * Padding: 16-20px; align elements vertically and center horizontally
 
 - **Grid**:
   * Equal cell sizes

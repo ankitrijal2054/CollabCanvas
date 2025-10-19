@@ -327,6 +327,7 @@ export function AIProvider({ children }: AIProviderProps) {
 
         let iteration = 0;
         let shouldContinue = true;
+        let actionOnlyContinued = false; // allow one extra iteration after action-only step
         const conversationContext: OpenAIMessage[] = [];
         const allToolCalls: ToolCall[] = [];
         let finalResponse = "";
@@ -376,24 +377,36 @@ export function AIProvider({ children }: AIProviderProps) {
               error: response,
             });
 
-            // Mark command as failed
-            commandQueue.failCommand(commandId, response);
+            if (totalToolsExecuted > 0) {
+              // Partial success: stop loop gracefully and finalize based on previous successful steps
+              console.warn(
+                "[AI Context] Partial success detected; stopping loop without failing command."
+              );
+              shouldContinue = false;
+              break;
+            } else {
+              // Mark command as failed (no successful actions yet)
+              commandQueue.failCommand(commandId, response);
 
-            // Add error message to chat
-            const errorMessage = formatErrorMessage(response);
-            addMessage({
-              id: `${commandId}-error`,
-              role: "assistant",
-              content: errorMessage,
-              timestamp: Date.now(),
-              status: "error",
-              error: errorMessage,
-            });
+              // Add error message to chat
+              const errorMessage = formatErrorMessage(response);
+              addMessage({
+                id: `${commandId}-error`,
+                role: "assistant",
+                content: errorMessage,
+                timestamp: Date.now(),
+                status: "error",
+                error: errorMessage,
+              });
 
-            // Update user message status
-            updateMessage(commandId, { status: "error", error: errorMessage });
+              // Update user message status
+              updateMessage(commandId, {
+                status: "error",
+                error: errorMessage,
+              });
 
-            return;
+              return;
+            }
           }
 
           // Store AI's response
@@ -429,14 +442,29 @@ export function AIProvider({ children }: AIProviderProps) {
           });
 
           // Decide whether to continue
-          if (
-            REACT_CONFIG.continueOnQueryTools &&
-            hadQueryTools &&
-            iteration < REACT_CONFIG.maxIterations
-          ) {
-            console.log(
-              `[AI Context] Continuing ReAct loop (query tools used)`
-            );
+          const hasToolCalls = response.toolCalls.length > 0;
+          if (iteration < REACT_CONFIG.maxIterations) {
+            if (REACT_CONFIG.continueOnQueryTools && hadQueryTools) {
+              console.log(
+                "[AI Context] Continuing ReAct loop (query tools used)"
+              );
+            } else if (hasToolCalls && !hadQueryTools && !actionOnlyContinued) {
+              // Allow a single additional iteration for action-only sequences
+              console.log(
+                "[AI Context] Continuing ReAct loop (single action-only continuation)"
+              );
+              actionOnlyContinued = true;
+            } else {
+              console.log(`[AI Context] Stopping ReAct loop`, {
+                reason: hadQueryTools
+                  ? "max iterations"
+                  : actionOnlyContinued
+                  ? "action-only already continued once"
+                  : "no query tools",
+              });
+              shouldContinue = false;
+              continue; // break this decision block
+            }
 
             // Build conversation context for next iteration
             // Add assistant's tool calls
