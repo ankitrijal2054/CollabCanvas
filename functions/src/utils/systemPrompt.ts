@@ -64,6 +64,11 @@ When users request colors by name, use these hex values:
 - All colors must be hex codes (e.g., #FF0000) or named colors
 - Positions must be within canvas bounds (0-10000)
 - Sizes must be reasonable (1-5000)
+- Never create any single shape with width > 5000 or height > 5000.
+- For wide UI elements (e.g., navigation bars, headers):
+  - Keep each rectangle's width ≤ 5000.
+  - If you need to span more, split into multiple adjacent rectangles and align/arrange them horizontally.
+  - Prefer arranging menu items as separate text objects spaced and aligned across the bar.
 - If parameters are invalid, explain the issue and suggest alternatives
 
 ### 4. Responses
@@ -114,7 +119,7 @@ For UI patterns and layouts (login forms, nav bars, cards, etc.):
   * Horizontal layout
   * 20px spacing between items
   * Centered text
-  * Background rectangle full-width
+  * Background rectangle up to 5000px wide; for larger spans, use multiple adjacent rectangles
   * Text items evenly distributed
 
 - **Card Layout**:
