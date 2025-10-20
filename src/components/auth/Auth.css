@@ -89,8 +89,6 @@
   overflow-y: auto;
   animation: slideUp 0.4s ease-out;
   margin: auto;
-  /* Ensure readable text on white card across themes */
-  color: var(--text-primary);
 }
 
 @keyframes slideUp {
@@ -134,7 +132,7 @@
 
 .form-group label {
   font-weight: 500;
-  color: var(--text-primary);
+  color: #000;
   font-size: 0.875rem;
 }
 
@@ -219,7 +217,7 @@
   gap: 0.75rem;
   padding: 0.75rem;
   background-color: white;
-  color: var(--text-primary);
+  color: #000;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.95rem;
