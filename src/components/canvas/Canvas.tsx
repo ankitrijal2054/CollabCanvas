@@ -349,7 +349,6 @@ export default function Canvas() {
 
         await exportToSVG(objectsToExport);
       }
-      console.log(`✅ Export completed: ${options.format.toUpperCase()}`);
     } catch (error) {
       console.error("❌ Export failed:", error);
       throw error;

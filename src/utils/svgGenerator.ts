@@ -260,7 +260,7 @@ export async function exportToSVG(objects: CanvasObject[]): Promise<void> {
     const filename = generateFilename("svg");
     downloadFile(url, filename);
 
-    console.log(`✅ SVG exported successfully: ${filename}`);
+    // Removed success log
   } catch (error) {
     console.error("❌ Failed to export SVG:", error);
     throw error;

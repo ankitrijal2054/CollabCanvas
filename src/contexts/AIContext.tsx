@@ -86,11 +86,13 @@ const REACT_CONFIG: ReActConfig = {
 };
 
 // Log ReAct configuration on initialization
-console.log("[AI Context] ReAct Configuration:", {
-  maxIterations: REACT_CONFIG.maxIterations,
-  continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
-  showProgress: REACT_CONFIG.showProgress,
-});
+if (import.meta.env.DEV) {
+  console.debug("[AI Context] ReAct Configuration:", {
+    maxIterations: REACT_CONFIG.maxIterations,
+    continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
+    showProgress: REACT_CONFIG.showProgress,
+  });
+}
 
 /**
  * Query tools that trigger continuation in ReAct loop
@@ -319,11 +321,12 @@ export function AIProvider({ children }: AIProviderProps) {
 
         // ===== ReAct LOOP IMPLEMENTATION (PR #27) =====
         const reactStartTime = Date.now();
-        console.log("[AI Context] Starting ReAct loop", {
-          commandId,
-          maxIterations: REACT_CONFIG.maxIterations,
-          continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
-        });
+        if (import.meta.env.DEV)
+          console.debug("[AI Context] Starting ReAct loop", {
+            commandId,
+            maxIterations: REACT_CONFIG.maxIterations,
+            continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
+          });
 
         let iteration = 0;
         let shouldContinue = true;
@@ -335,9 +338,10 @@ export function AIProvider({ children }: AIProviderProps) {
 
         while (shouldContinue && iteration < REACT_CONFIG.maxIterations) {
           iteration++;
-          console.log(
-            `[AI Context] ReAct iteration ${iteration}/${REACT_CONFIG.maxIterations}`
-          );
+          if (import.meta.env.DEV)
+            console.debug(
+              `[AI Context] ReAct iteration ${iteration}/${REACT_CONFIG.maxIterations}`
+            );
 
           // Update UI with progress
           updateMessage(commandId, {
@@ -413,11 +417,12 @@ export function AIProvider({ children }: AIProviderProps) {
           finalResponse = response.aiResponse;
 
           // Execute tool calls and get detailed results
-          console.log("[AI Context] Executing tool calls", {
-            commandId,
-            iteration,
-            toolCallCount: response.toolCalls.length,
-          });
+          if (import.meta.env.DEV)
+            console.debug("[AI Context] Executing tool calls", {
+              commandId,
+              iteration,
+              toolCallCount: response.toolCalls.length,
+            });
 
           const toolResults = await executeToolCallsWithResults(
             response.toolCalls,
@@ -434,34 +439,38 @@ export function AIProvider({ children }: AIProviderProps) {
           const toolNames = response.toolCalls.map((tc: ToolCall) => tc.tool);
           const hadQueryTools = usedQueryTools(toolNames);
 
-          console.log("[AI Context] ReAct decision", {
-            iteration,
-            hadQueryTools,
-            toolNames,
-            continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
-          });
+          if (import.meta.env.DEV)
+            console.debug("[AI Context] ReAct decision", {
+              iteration,
+              hadQueryTools,
+              toolNames,
+              continueOnQueryTools: REACT_CONFIG.continueOnQueryTools,
+            });
 
           // Decide whether to continue
           const hasToolCalls = response.toolCalls.length > 0;
           if (iteration < REACT_CONFIG.maxIterations) {
             if (REACT_CONFIG.continueOnQueryTools && hadQueryTools) {
-              console.log(
-                "[AI Context] Continuing ReAct loop (query tools used)"
-              );
+              if (import.meta.env.DEV)
+                console.debug(
+                  "[AI Context] Continuing ReAct loop (query tools used)"
+                );
             } else if (hasToolCalls && !hadQueryTools && !actionOnlyContinued) {
               // Allow a single additional iteration for action-only sequences
-              console.log(
-                "[AI Context] Continuing ReAct loop (single action-only continuation)"
-              );
+              if (import.meta.env.DEV)
+                console.debug(
+                  "[AI Context] Continuing ReAct loop (single action-only continuation)"
+                );
               actionOnlyContinued = true;
             } else {
-              console.log(`[AI Context] Stopping ReAct loop`, {
-                reason: hadQueryTools
-                  ? "max iterations"
-                  : actionOnlyContinued
-                  ? "action-only already continued once"
-                  : "no query tools",
-              });
+              if (import.meta.env.DEV)
+                console.debug(`[AI Context] Stopping ReAct loop`, {
+                  reason: hadQueryTools
+                    ? "max iterations"
+                    : actionOnlyContinued
+                    ? "action-only already continued once"
+                    : "no query tools",
+                });
               shouldContinue = false;
               continue; // break this decision block
             }
@@ -493,9 +502,10 @@ export function AIProvider({ children }: AIProviderProps) {
 
             shouldContinue = true;
           } else {
-            console.log(`[AI Context] Stopping ReAct loop`, {
-              reason: !hadQueryTools ? "no query tools" : "max iterations",
-            });
+            if (import.meta.env.DEV)
+              console.debug(`[AI Context] Stopping ReAct loop`, {
+                reason: !hadQueryTools ? "no query tools" : "max iterations",
+              });
             shouldContinue = false;
           }
         }
@@ -504,33 +514,35 @@ export function AIProvider({ children }: AIProviderProps) {
         const reactTotalTime = Date.now() - reactStartTime;
 
         // ===== COMPREHENSIVE LOGGING SUMMARY (PR #27) =====
-        console.log("═══════════════════════════════════════════");
-        console.log("[AI Context] ReAct Loop Completed");
-        console.log("═══════════════════════════════════════════");
-        console.log("Summary:", {
-          commandId,
-          userMessage: message,
-          totalIterations: iteration,
-          maxIterations: REACT_CONFIG.maxIterations,
-          totalToolsExecuted,
-          uniqueTools: [
-            ...new Set(allToolCalls.map((tc: ToolCall) => tc.tool)),
-          ],
-          totalExecutionTime: `${reactTotalTime}ms`,
-          averageTimePerIteration: `${Math.round(
-            reactTotalTime / iteration
-          )}ms`,
-          finalResponse: finalResponse.substring(0, 100) + "...",
-        });
-        console.log("Tool Breakdown:");
-        const toolCounts: Record<string, number> = {};
-        allToolCalls.forEach((tc: ToolCall) => {
-          toolCounts[tc.tool] = (toolCounts[tc.tool] || 0) + 1;
-        });
-        Object.entries(toolCounts).forEach(([tool, count]) => {
-          console.log(`  - ${tool}: ${count} call(s)`);
-        });
-        console.log("═══════════════════════════════════════════");
+        if (import.meta.env.DEV) {
+          console.debug("═══════════════════════════════════════════");
+          console.debug("[AI Context] ReAct Loop Completed");
+          console.debug("═══════════════════════════════════════════");
+          console.debug("Summary:", {
+            commandId,
+            userMessage: message,
+            totalIterations: iteration,
+            maxIterations: REACT_CONFIG.maxIterations,
+            totalToolsExecuted,
+            uniqueTools: [
+              ...new Set(allToolCalls.map((tc: ToolCall) => tc.tool)),
+            ],
+            totalExecutionTime: `${reactTotalTime}ms`,
+            averageTimePerIteration: `${Math.round(
+              reactTotalTime / iteration
+            )}ms`,
+            finalResponse: finalResponse.substring(0, 100) + "...",
+          });
+          console.debug("Tool Breakdown:");
+          const toolCounts: Record<string, number> = {};
+          allToolCalls.forEach((tc: ToolCall) => {
+            toolCounts[tc.tool] = (toolCounts[tc.tool] || 0) + 1;
+          });
+          Object.entries(toolCounts).forEach(([tool, count]) => {
+            console.debug(`  - ${tool}: ${count} call(s)`);
+          });
+          console.debug("═══════════════════════════════════════════");
+        }
 
         // Mark command as complete
         commandQueue.completeCommand(commandId, {

@@ -89,6 +89,8 @@
   overflow-y: auto;
   animation: slideUp 0.4s ease-out;
   margin: auto;
+  /* Ensure readable text on white card across themes */
+  color: var(--text-primary);
 }
 
 @keyframes slideUp {
@@ -142,6 +144,8 @@
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.2s;
+  color: var(--text-primary);
+  background-color: #ffffff;
 }
 
 .form-group input:focus {
@@ -152,6 +156,11 @@
 .form-group input:disabled {
   background-color: #f9fafb;
   cursor: not-allowed;
+}
+
+/* Improve placeholder contrast on light background */
+.form-group input::placeholder {
+  color: #9ca3af; /* Tailwind gray-400 equivalent */
 }
 
 .btn-primary {

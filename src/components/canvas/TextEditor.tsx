@@ -76,7 +76,7 @@ function TextEditor({ object, viewport, onFinishEditing }: TextEditorProps) {
             timestamp: Date.now(),
             retryCount: 0,
           });
-          console.log("📦 Queued text update (offline)");
+          // Removed offline queue log
         } else {
           await syncOps.updateObject(object.id, updates, user?.id, userName);
         }

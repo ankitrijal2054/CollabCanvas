@@ -114,7 +114,7 @@ export async function sendAICommand(
       // If this is not the last attempt, wait before retrying
       if (attempt < MAX_RETRIES - 1) {
         const retryDelay = calculateRetryDelay(attempt);
-        console.log(`[AI Service] Retrying in ${retryDelay}ms...`);
+        console.warn(`[AI Service] Retrying in ${retryDelay}ms...`);
         await delay(retryDelay);
       }
     }

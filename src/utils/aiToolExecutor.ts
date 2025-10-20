@@ -156,10 +156,7 @@ export async function executeToolCall(
   userId: string,
   aiOperationId: string
 ): Promise<InternalToolResult> {
-  console.log("[AI Tool Executor] Executing tool", {
-    tool: toolCall.tool,
-    parameters: toolCall.parameters,
-  });
+  // Removed noisy console logging
 
   try {
     switch (toolCall.tool) {
@@ -277,10 +274,7 @@ export async function executeToolCalls(
   userId: string,
   aiOperationId: string
 ): Promise<InternalToolResult> {
-  console.log("[AI Tool Executor] Executing tool calls", {
-    count: toolCalls.length,
-    tools: toolCalls.map((tc) => tc.tool),
-  });
+  // Removed noisy console logging
 
   const allObjectsCreated: string[] = [];
   const allObjectsModified: string[] = [];
@@ -349,21 +343,14 @@ export async function executeToolCallsWithResults(
   userId: string,
   aiOperationId: string
 ): Promise<ToolExecutionResult[]> {
-  console.log("[AI Tool Executor] Executing tool calls with results", {
-    count: toolCalls.length,
-    tools: toolCalls.map((tc) => tc.tool),
-  });
+  // Removed noisy console logging
 
   const results: ToolExecutionResult[] = [];
 
   for (let i = 0; i < toolCalls.length; i++) {
     const toolCall = toolCalls[i];
 
-    console.log(
-      `[AI Tool Executor] Executing tool ${i + 1}/${toolCalls.length}: ${
-        toolCall.tool
-      }`
-    );
+    // Removed noisy console logging
 
     const result = await executeToolCall(
       toolCall,
@@ -380,14 +367,7 @@ export async function executeToolCallsWithResults(
 
     results.push(resultWithTool);
 
-    // Log result for debugging
-    console.log(`[AI Tool Executor] Tool ${toolCall.tool} result:`, {
-      success: result.success,
-      message: result.message,
-      hasData: !!result.data,
-      objectsCreated: result.objectsCreated?.length || 0,
-      objectsModified: result.objectsModified?.length || 0,
-    });
+    // Removed noisy console logging
 
     // Small delay between operations to allow state updates
     if (i < toolCalls.length - 1) {
@@ -395,7 +375,7 @@ export async function executeToolCallsWithResults(
     }
   }
 
-  console.log(`[AI Tool Executor] Completed ${results.length} tool calls`);
+  // Removed noisy console logging
 
   return results;
 }
@@ -426,14 +406,7 @@ async function executeCreateShape(
     arrowEnd,
   } = toolCall.parameters;
 
-  console.log("[AI Tool Executor] Creating shape", {
-    type,
-    x,
-    y,
-    width,
-    height,
-    color,
-  });
+  // Removed noisy console logging
 
   try {
     // Interpret provided x/y as CENTER-ORIGIN coordinates (0,0 at canvas center; +y up)
@@ -550,10 +523,7 @@ async function executeCreateShape(
       };
     }
 
-    console.log("[AI Tool Executor] Shape creation complete", {
-      objectId,
-      type,
-    });
+    // Removed noisy console logging
 
     return {
       success: true,
@@ -586,12 +556,7 @@ async function executeCreateText(
     opacity,
   } = toolCall.parameters;
 
-  console.log("[AI Tool Executor] Creating text", {
-    text,
-    x,
-    y,
-    fontSize,
-  });
+  // Removed noisy console logging
 
   try {
     // Interpret x/y as CENTER-ORIGIN coordinates for text; convert to top-left
@@ -641,10 +606,7 @@ async function executeCreateText(
       };
     }
 
-    console.log("[AI Tool Executor] Text creation complete", {
-      objectId,
-      text,
-    });
+    // Removed noisy console logging
 
     return {
       success: true,

@@ -167,13 +167,7 @@ export function calculateBoundingBox(objects: CanvasObject[]): BoundingBox {
   const finalWidth = Math.ceil(maxX - minX + padding * 2);
   const finalHeight = Math.ceil(maxY - minY + padding * 2);
 
-  console.log(`📦 Bounding box calculated:`, {
-    x: finalX,
-    y: finalY,
-    width: finalWidth,
-    height: finalHeight,
-    objectCount: objects.length,
-  });
+  // Removed verbose bounding box log
 
   return {
     x: finalX >= 0 ? finalX : 0,
@@ -213,17 +207,6 @@ export async function exportToPNG(
 
     // If exporting selection only, crop to bounding box
     if (options.scope === "selection" && options.selectedObjects) {
-      console.log(
-        `🎯 Exporting ${options.selectedObjects.length} selected objects:`,
-        options.selectedObjects.map((obj) => ({
-          type: obj.type,
-          x: obj.x,
-          y: obj.y,
-          width: obj.width,
-          height: obj.height,
-        }))
-      );
-
       const bbox = calculateBoundingBox(options.selectedObjects);
 
       // Transform world coordinates to screen coordinates using viewport
@@ -241,16 +224,9 @@ export async function exportToPNG(
         height: screenHeight,
       };
 
-      console.log(`📸 Export config (world coords):`, bbox);
-      console.log(`📸 Export config (screen coords):`, {
-        x: screenX,
-        y: screenY,
-        width: screenWidth,
-        height: screenHeight,
-      });
-      console.log(`📸 Viewport:`, viewport);
+      // Removed verbose export config logs
     } else {
-      console.log(`📸 Exporting entire canvas`);
+      // Removed verbose export log
     }
 
     // Generate data URL
@@ -261,7 +237,7 @@ export async function exportToPNG(
     const filename = `collabcanvas-${timestamp}.png`;
     downloadFile(dataURL, filename);
 
-    console.log(`✅ PNG exported successfully: ${filename}`);
+    // Removed success log
   } catch (error) {
     console.error("❌ Failed to export PNG:", error);
     throw error;
