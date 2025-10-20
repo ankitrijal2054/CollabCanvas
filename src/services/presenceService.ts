@@ -95,13 +95,6 @@ export const presenceService = {
         Object.entries(payload).filter(([, v]) => v !== undefined)
       );
       await set(transformRef, cleaned);
-      if (import.meta.env.DEV) {
-        console.debug("[presenceService] setTransform", {
-          userId,
-          canvasId,
-          objectId,
-        });
-      }
     } catch (error) {
       console.error("Error setting transform snapshot:", error);
       throw error;
@@ -122,13 +115,6 @@ export const presenceService = {
         `/presence/${canvasId}/${userId}/transforms/${objectId}`
       );
       await set(transformRef, null);
-      if (import.meta.env.DEV) {
-        console.debug("[presenceService] clearTransform", {
-          userId,
-          canvasId,
-          objectId,
-        });
-      }
     } catch (error) {
       console.error("Error clearing transform snapshot:", error);
       throw error;

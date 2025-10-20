@@ -10,10 +10,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: var(--background-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
   animation: slideUpFade 0.2s ease-out;
 }
 
@@ -37,7 +37,7 @@
 .alignment-label {
   font-size: 13px;
   font-weight: 500;
-  color: #64748b;
+  color: var(--text-secondary);
   margin-right: 4px;
   user-select: none;
 }
@@ -51,27 +51,27 @@
   padding: 6px;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
-  color: #475569;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .alignment-button:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  background: var(--background-muted);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
 }
 
 .alignment-button:active {
-  background: #e2e8f0;
+  background: var(--border-subtle);
   transform: scale(0.95);
 }
 
 .alignment-button:focus {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  border-color: #3b82f6;
+  box-shadow: var(--ring);
+  border-color: var(--primary-color);
 }
 
 .alignment-button svg {
@@ -82,7 +82,7 @@
 .alignment-divider {
   width: 1px;
   height: 24px;
-  background: #e2e8f0;
+  background: var(--border-subtle);
   margin: 0 4px;
 }
 
@@ -100,35 +100,5 @@
 
   .alignment-label {
     font-size: 12px;
-  }
-}
-
-/* Dark mode support (future enhancement) */
-@media (prefers-color-scheme: dark) {
-  .alignment-toolbar {
-    background: #1e293b;
-    border-color: #334155;
-  }
-
-  .alignment-label {
-    color: #94a3b8;
-  }
-
-  .alignment-button {
-    color: #cbd5e1;
-  }
-
-  .alignment-button:hover {
-    background: #334155;
-    border-color: #475569;
-    color: #e2e8f0;
-  }
-
-  .alignment-button:active {
-    background: #475569;
-  }
-
-  .alignment-divider {
-    background: #334155;
   }
 }

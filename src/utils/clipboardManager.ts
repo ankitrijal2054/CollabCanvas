@@ -36,7 +36,7 @@ class ClipboardManager {
       isCut: false,
     };
 
-    console.log(`📋 Copied ${objects.length} object(s) to clipboard`);
+    // Removed success log
   }
 
   /**
@@ -56,7 +56,7 @@ class ClipboardManager {
       isCut: true,
     };
 
-    console.log(`✂️ Cut ${objects.length} object(s) to clipboard`);
+    // Removed success log
   }
 
   /**
@@ -87,7 +87,7 @@ class ClipboardManager {
       createdBy: obj.createdBy, // Preserve original creator (will be updated by caller)
     }));
 
-    console.log(`📌 Pasted ${pastedObjects.length} object(s)`);
+    // Removed success log
     return pastedObjects;
   }
 
@@ -110,7 +110,7 @@ class ClipboardManager {
    */
   clear(): void {
     this.clipboard = null;
-    console.log("🗑️ Clipboard cleared");
+    // Removed success log
   }
 
   /**

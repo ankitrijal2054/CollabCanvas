@@ -28,7 +28,7 @@ Visit the deployed app here: [`https://collabcanvas-1fd25.web.app/`](https://col
 - 📐 **Alignment Tools**: Align and distribute objects precisely
 - 📤 **Export**: Export as PNG (2x) or SVG vector format
 
-### AI-Powered Design (Phase 3) 🤖
+### AI-Powered Design 🤖
 
 - 💬 **Natural Language Commands**: Create and manipulate objects using conversational AI
 - 🧠 **Multi-Step Reasoning (ReAct)**: AI automatically handles complex query-dependent operations
@@ -46,6 +46,35 @@ Visit the deployed app here: [`https://collabcanvas-1fd25.web.app/`](https://col
 - **AI**: OpenAI GPT-4 Turbo with Function Calling
 - **Routing**: React Router v7
 - **Styling**: CSS with CSS Variables
+
+## Architecture
+
+The app is a client-first realtime canvas with Firebase-backed collaboration and an optional AI assistant powered by Cloud Functions.
+
+- UI components live under `src/components` (canvas, collaboration, layout, AI panel)
+- State and actions via React Contexts:
+  - `AuthContext` (auth state + actions)
+  - `CanvasContext` (objects, selection, transforms, sync, clipboard, layers, alignment)
+  - `AIContext` (chat state, tool execution queue, multi-iteration ReAct loop)
+- Hooks: `useAuth`, `useCanvas`, `usePresence`, `useRealtimeSync`, `useKeyboardShortcuts`, `useConnectionStatus`
+- Services: `authService`, `canvasService`, `presenceService`, `transactionService`, `aiService`
+- Utilities: `canvasHelpers`, `syncHelpers`, `alignmentHelpers`, `multiSelectHelpers`, `exportHelpers`, `svgGenerator`, `clipboardManager`, `offlineQueue`, `indexedDBManager`, `performanceMonitor`, `aiToolExecutor`, `aiCommandQueue`
+- Routing: `/` (Landing), `/login`, `/signup`, `/canvas` (protected by `AuthGuard`)
+
+Data model (Firebase Realtime Database):
+
+- Canvases: `/canvases/default/objects/{objectId}` with base fields like `id`, `type`, `x`, `y`, `width`, `height`, `color`, optional stroke/opacity/blend/rotation/zIndex, attribution fields, timestamps
+- Users: `/users/{userId}`
+- Presence: `/presence/default/{userId}` (online, cursor, lastSeen)
+- Optional: `/operationQueue/{userId}/{operationId}` for offline queueing
+
+AI flow (optional):
+
+1. User submits a command in `AIChatPanel`
+2. Client calls Cloud Function `{VITE_FIREBASE_FUNCTIONS_URL}/aichat`
+3. Function summarizes canvas state and builds a system prompt
+4. OpenAI returns tool calls, validated on the server via Zod
+5. Client executes tools via `CanvasContext`, syncing results to all users
 
 ## Prerequisites
 
@@ -124,21 +153,22 @@ VITE_FIREBASE_APP_ID=your_app_id
 VITE_FIREBASE_DATABASE_URL=https://your-project-default-rtdb.firebaseio.com
 
 # Firebase Functions URL (for AI features)
+
 # For local development with emulator:
 VITE_FIREBASE_FUNCTIONS_URL=http://127.0.0.1:5001/your-project-id/us-central1
+
 # For production:
 # VITE_FIREBASE_FUNCTIONS_URL=https://us-central1-your-project-id.cloudfunctions.net
 
-# AI Configuration (Optional - Phase 3 Features)
+# AI Configuration
 # Enable/disable ReAct loop for multi-step reasoning (default: true)
 VITE_AI_REACT_ENABLED=true
+
 # Maximum iterations per AI command (default: 5)
 VITE_AI_REACT_MAX_ITERATIONS=5
 ```
 
-> **Note**: The `.env.local` file is gitignored and will not be committed to version control.
-
-### 5. AI Features Setup (Optional - Phase 3)
+### 5. AI Features Setup
 
 To enable AI-powered design features:
 
@@ -186,12 +216,56 @@ Preview the production build:
 npm run preview
 ```
 
+## Run the full stack locally (with Firebase Emulators)
+
+If you want to test the full experience locally (Auth, Realtime DB, Functions):
+
+1. Install dependencies at the project root and in `functions/`:
+
+   ```bash
+   npm install
+   cd functions && npm install && cd ..
+   ```
+
+2. Start the Firebase emulators from the project root:
+
+   ```bash
+   firebase emulators:start
+   ```
+
+   Emulator UI: `http://localhost:4000`
+
+3. In another terminal, start the frontend dev server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Ensure your `.env.local` points `VITE_FIREBASE_FUNCTIONS_URL` to the emulator base URL, e.g.:
+
+   ```env
+   VITE_FIREBASE_FUNCTIONS_URL=http://127.0.0.1:5001/your-project-id/us-central1
+   ```
+
+   The frontend will call `{VITE_FIREBASE_FUNCTIONS_URL}/aichat` for AI.
+
 ## Available Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+
+## Dependencies
+
+Key runtime dependencies used in the frontend:
+
+- React, React DOM, React Router
+- Vite (dev/build tool)
+- Konva and React-Konva (canvas rendering)
+- Firebase (Auth, Realtime Database, Hosting)
+- Zod (runtime validation)
+- TypeScript (types)
 
 ## AI Command Examples
 
@@ -263,41 +337,6 @@ firebase deploy
 Your app will be live at: `https://your-project-id.web.app`
 
 This project is currently live at: [`https://collabcanvas-1fd25.web.app/`](https://collabcanvas-1fd25.web.app/)
-
-## MVP Requirements Checklist
-
-### Canvas System
-
-- ✅ Pan and zoom functionality
-- ✅ Bounded workspace with visual boundaries
-- ✅ Smooth 60 FPS performance
-
-### Object Manipulation
-
-- ✅ Rectangle shapes with default size (150x100) and color (#3B82F6)
-- ✅ Create objects via toolbar button (appears at canvas center)
-- ✅ Move objects (drag to reposition)
-- ✅ Resize objects (drag corner/edge handles)
-- ✅ Delete objects (Delete key or button)
-- ✅ Single object selection (click to select)
-
-### Real-Time Collaboration
-
-- ✅ Real-time sync between 2+ users (<100ms)
-- ✅ Multiplayer cursors with name labels (<50ms)
-- ✅ Presence awareness (sidebar shows online users)
-- ✅ Last-write-wins conflict resolution
-- ✅ Support for 5+ concurrent users
-
-### Authentication
-
-- ✅ Email/Password authentication
-- ✅ Google Sign-In authentication
-
-### Persistence
-
-- ✅ Canvas state persists on disconnect/refresh
-- ✅ Deployed and publicly accessible
 
 ## Troubleshooting
 

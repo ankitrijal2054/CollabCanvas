@@ -15,7 +15,6 @@ import {
 } from "../../../services/transactionService";
 import { useAuth } from "../../../hooks/useAuth";
 import { presenceService } from "../../../services/presenceService";
-import { syncHelpers } from "../../../utils/syncHelpers";
 import { calculateGroupMovePositions } from "../../../utils/multiSelectHelpers";
 
 interface StarShapeProps {

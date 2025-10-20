@@ -367,7 +367,7 @@ function TextShape({
             timestamp: Date.now(),
             retryCount: 0,
           });
-          console.log("📦 Queued text position update (offline)");
+          // Removed offline queue log
         } else {
           await syncOps.updateObject(object.id, updates, user?.id, userName);
         }
@@ -458,7 +458,7 @@ function TextShape({
           timestamp: Date.now(),
           retryCount: 0,
         });
-        console.log("📦 Queued text resize (offline)");
+        // Removed offline queue log
       } else {
         await syncOps.updateObject(object.id, updates, user?.id, userName);
       }

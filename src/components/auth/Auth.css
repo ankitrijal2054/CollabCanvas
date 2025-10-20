@@ -132,7 +132,7 @@
 
 .form-group label {
   font-weight: 500;
-  color: var(--text-primary);
+  color: #000;
   font-size: 0.875rem;
 }
 
@@ -142,6 +142,8 @@
   border-radius: 8px;
   font-size: 0.95rem;
   transition: all 0.2s;
+  color: var(--text-primary);
+  background-color: #ffffff;
 }
 
 .form-group input:focus {
@@ -152,6 +154,11 @@
 .form-group input:disabled {
   background-color: #f9fafb;
   cursor: not-allowed;
+}
+
+/* Improve placeholder contrast on light background */
+.form-group input::placeholder {
+  color: #9ca3af; /* Tailwind gray-400 equivalent */
 }
 
 .btn-primary {
@@ -210,7 +217,7 @@
   gap: 0.75rem;
   padding: 0.75rem;
   background-color: white;
-  color: var(--text-primary);
+  color: #000;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 0.95rem;

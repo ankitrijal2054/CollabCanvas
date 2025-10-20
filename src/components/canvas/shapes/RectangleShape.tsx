@@ -70,10 +70,6 @@ function RectangleShape({
       onHoverChange(false, null, { x: 0, y: 0 });
     }
 
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RectangleShape] dragStart", object.id);
-    }
-
     // Emit an initial snapshot so viewers get an immediate ghost
     const node = shapeRef.current;
     if (node && user?.id) {
@@ -211,9 +207,6 @@ function RectangleShape({
    * Handle drag end - sync to Firebase (with group move support)
    */
   const handleDragEnd = async (e: Konva.KonvaEventObject<DragEvent>) => {
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RectangleShape] dragEnd", object.id);
-    }
     if (isCanvasDisabled) {
       console.warn("🚫 Canvas is disabled - cannot update objects");
       return;
@@ -431,11 +424,6 @@ function RectangleShape({
 
   // Emit during transform (resize/rotate) for live ghost updates
   const handleTransform = () => {
-    if (process.env.NODE_ENV !== "production") {
-      if (Math.random() < 0.05) {
-        console.log("[RectangleShape] transform", object.id);
-      }
-    }
     const node = shapeRef.current;
     if (!node || !user?.id) return;
     const snapshot = buildSnapshot(node);
@@ -496,9 +484,6 @@ function RectangleShape({
       80 // ~12fps for network stability
     );
     throttledEmitTransform.current = emit;
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[RectangleShape] emitter ready", user.id);
-    }
     return () => {
       throttledEmitTransform.current = null;
     };
