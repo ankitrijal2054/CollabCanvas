@@ -19,9 +19,13 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file (for local development):
+Backend requires a single environment variable:
 
-```
+**`OPENAI_API_KEY`** – Your OpenAI API key used by the AI endpoint.
+
+For local development, create a `.env` in `functions/`:
+
+```env
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
@@ -31,42 +35,68 @@ For production, set the secret using Firebase CLI:
 firebase functions:secrets:set OPENAI_API_KEY
 ```
 
+> Note: The frontend calls this function via `VITE_FIREBASE_FUNCTIONS_URL` configured in the app's `.env.local`.
+
+## Architecture
+
+This package exposes a single HTTP endpoint that orchestrates OpenAI function-calling tools for canvas operations.
+
+- Endpoint: `POST /aichat`
+- Validates inputs with Zod
+- Summarizes current canvas state to reduce token usage
+- Builds a structured system prompt and invokes OpenAI
+- Returns validated tool calls for the client to execute via `CanvasContext`
+
 ## Project Structure
 
 ```
 functions/
 ├── src/
-│   ├── index.ts                          # ✅ Main API endpoint (Tasks 23.8, 23.9)
+│   ├── index.ts                          # ✅ Main API endpoint
 │   ├── types/
-│   │   └── ai.types.ts                   # ✅ AI types (Task 23.2)
+│   │   └── ai.types.ts                   # ✅ AI types
 │   ├── schemas/
-│   │   └── toolSchemas.ts                # ✅ Zod schemas for 16 tools (Task 23.2)
+│   │   └── toolSchemas.ts                # ✅ Zod schemas for 16 tools
 │   ├── services/
-│   │   └── openaiService.ts              # ✅ OpenAI client (Task 23.3)
+│   │   └── openaiService.ts              # ✅ OpenAI client
 │   ├── tools/
-│   │   └── toolDefinitions.ts            # ✅ 16 AI tool definitions (Task 23.6)
+│   │   └── toolDefinitions.ts            # ✅ 16 AI tool definitions
 │   └── utils/
-│       ├── canvasStateSummarizer.ts      # ✅ Canvas state optimizer (Task 23.4)
-│       ├── systemPrompt.ts               # ✅ System prompt builder (Task 23.5)
-│       └── toolValidator.ts              # ✅ Parameter validation (Task 23.7)
-├── lib/                                  # Compiled JavaScript (generated)
+│       ├── canvasStateSummarizer.ts      # ✅ Canvas state optimizer
+│       ├── systemPrompt.ts               # ✅ System prompt builder
+│       └── toolValidator.ts              # ✅ Parameter validation
+├── lib/                                  # Compiled JavaScript
 ├── package.json                          # Dependencies and scripts
 └── tsconfig.json                         # TypeScript configuration
 ```
 
-**Progress:** 9 out of 11 tasks complete for PR #23
+## Running Locally
 
-- ✅ Task 23.1: Initialize Firebase Cloud Functions
-- ✅ Task 23.2: Create AI types and schemas
-- ✅ Task 23.3: Set up OpenAI client
-- ✅ Task 23.4: Create canvas state summarizer
-- ✅ Task 23.5: Create system prompt builder
-- ✅ Task 23.6: Define function calling tools
-- ✅ Task 23.7: Create tool parameter validator
-- ✅ Task 23.8: Create main API endpoint
-- ✅ Task 23.9: Implement API endpoint logic
-- ⏳ Task 23.10: Set up environment variables (requires user action)
-- ⏳ Task 23.11: Test API endpoint (requires deployment)
+There are two common ways to run Functions locally.
+
+### Option A: Full emulators (recommended)
+
+Run from the project root to emulate Auth, Realtime DB, and Functions together:
+
+```bash
+firebase emulators:start
+```
+
+The Functions base URL will be similar to:
+
+```
+http://127.0.0.1:5001/<your-project-id>/us-central1
+```
+
+Ensure the frontend `.env.local` points `VITE_FIREBASE_FUNCTIONS_URL` to that base URL.
+
+### Option B: Functions-only serve
+
+```bash
+npm run serve
+```
+
+This starts only the Functions emulator for faster iteration.
 
 ## Available Scripts
 
@@ -79,40 +109,22 @@ functions/
 
 ## Local Testing
 
-**Quick Start:**
+### Quick check with curl
 
-1. Set up your OpenAI API key:
+After starting emulators, you can POST to the local endpoint (replace `<project-id>`):
 
-   ```bash
-   cd functions
-   echo "OPENAI_API_KEY=your-key" > .env
-   ```
+```bash
+curl -s -X POST \
+  http://127.0.0.1:5001/<project-id>/us-central1/aichat \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "message": "Create a red circle at 100, 200",
+    "canvasId": "default",
+    "userId": "local-user"
+  }' | jq
+```
 
-2. Start the Firebase emulator:
-
-   ```bash
-   cd ..  # Back to project root
-   firebase emulators:start
-   ```
-
-3. Run tests (in a new terminal):
-
-   ```bash
-   cd functions
-   ./test-ai-endpoint.sh
-   ```
-
-4. View results:
-   - Terminal output shows responses
-   - Emulator UI: http://localhost:4000
-
-**Detailed Guide:** See `LOCAL_TESTING_GUIDE.md` for comprehensive testing instructions.
-
-**Test Files:**
-
-- `test-ai-endpoint.sh` - Automated test script
-- `test-data.json` - Sample canvas data for testing
-- `LOCAL_TESTING_GUIDE.md` - Complete testing documentation
+For more thorough testing, see `LOCAL_TESTING_GUIDE.md` and the scripts in this folder.
 
 ## API Endpoints
 
@@ -151,7 +163,7 @@ npm run serve
 ```
 
 This starts the Firebase emulator and makes functions available at:
-`http://127.0.0.1:5001/collabcanvas-1fd25/us-central1/aichat`
+`http://127.0.0.1:5001/<your-project-id>/us-central1/aichat`
 
 ### Deployment
 
@@ -166,17 +178,3 @@ npm run deploy
 - **openai**: OpenAI API client for GPT-4
 - **zod**: Runtime type validation for tool parameters
 - **cors**: CORS middleware for cross-origin requests
-
-## Phase 3 Implementation Status
-
-- [x] Task 23.1: Initialize Firebase Cloud Functions
-- [ ] Task 23.2: Create AI types and schemas
-- [ ] Task 23.3: Set up OpenAI client
-- [ ] Task 23.4: Create canvas state summarizer
-- [ ] Task 23.5: Create system prompt builder
-- [ ] Task 23.6: Define function calling tools
-- [ ] Task 23.7: Create tool parameter validator
-- [ ] Task 23.8: Create main API endpoint
-- [ ] Task 23.9: Implement API endpoint logic
-- [ ] Task 23.10: Set up environment variables
-- [ ] Task 23.11: Test API endpoint
