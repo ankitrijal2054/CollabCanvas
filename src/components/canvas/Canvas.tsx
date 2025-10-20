@@ -99,7 +99,7 @@ export default function Canvas() {
   }, []);
 
   // Read CSS variables for canvas colors
-  const { canvasFill, gridColor, borderColor } = useMemo(() => {
+  const { canvasFill, borderColor } = useMemo(() => {
     const root = document.documentElement;
     const styles = getComputedStyle(root);
     const fill =

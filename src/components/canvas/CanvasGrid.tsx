@@ -1,4 +1,5 @@
 import { Line } from "react-konva";
+import type { JSX } from "react";
 
 interface CanvasGridProps {
   width: number;
